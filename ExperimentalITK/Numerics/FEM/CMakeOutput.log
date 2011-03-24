@@ -1,0 +1,100 @@
+The system is: Linux - 2.4.20-24.9smp - i686
+Determining if the C compiler is GNU succeeded with the following output:
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+# 1 "<built-in>"
+# 1 "<command line>"
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+
+void THIS_IS_GNU();
+
+Determining if the C++ compiler is GNU succeeded with the following output:
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+# 1 "<built-in>"
+# 1 "<command line>"
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+
+void THIS_IS_GNU();
+
+Determining if the C compiler works passed with the following output:
+Building object file testCCompiler.o...
+gcc -o testCCompiler.o             -c /mnt/data1/tustison/Projects/InsightToolkit-2.2.0/Code/Numerics/FEM/CMakeTmp/testCCompiler.c
+Building executable /mnt/data1/tustison/Projects/InsightToolkit-2.2.0/Code/Numerics/FEM/CMakeTmp/cmTryCompileExec...
+gcc             -fPIC  testCCompiler.o    -o /mnt/data1/tustison/Projects/InsightToolkit-2.2.0/Code/Numerics/FEM/CMakeTmp/cmTryCompileExec -rdynamic 
+
+
+Determining if the CXX compiler works passed with the following output:
+Building object file testCXXCompiler.o...
+c++ -o testCXXCompiler.o             -c /mnt/data1/tustison/Projects/InsightToolkit-2.2.0/Code/Numerics/FEM/CMakeTmp/testCXXCompiler.cxx
+Building executable /mnt/data1/tustison/Projects/InsightToolkit-2.2.0/Code/Numerics/FEM/CMakeTmp/cmTryCompileExec...
+c++              -fPIC  testCXXCompiler.o    -o /mnt/data1/tustison/Projects/InsightToolkit-2.2.0/Code/Numerics/FEM/CMakeTmp/cmTryCompileExec -rdynamic 
+
+
+The system is: Linux - 2.4.20-24.9smp - i686
+Determining if the C compiler is GNU succeeded with the following output:
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+# 1 "<built-in>"
+# 1 "<command line>"
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+
+void THIS_IS_GNU();
+
+Determining if the C++ compiler is GNU succeeded with the following output:
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+# 1 "<built-in>"
+# 1 "<command line>"
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+
+void THIS_IS_GNU();
+
+Determining if the C compiler works passed with the following output:
+
+
+Determining if the CXX compiler works passed with the following output:
+
+
+The system is: Linux - 2.4.20-24.9smp - i686
+Determining if the C compiler is GNU succeeded with the following output:
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+# 1 "<built-in>"
+# 1 "<command line>"
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+
+void THIS_IS_GNU();
+
+Determining if the C++ compiler is GNU succeeded with the following output:
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+# 1 "<built-in>"
+# 1 "<command line>"
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+
+void THIS_IS_GNU();
+
+Determining if the C compiler works passed with the following output:
+
+
+Determining if the CXX compiler works passed with the following output:
+
+
+The system is: Linux - 2.4.20-24.9smp - i686
+Determining if the C compiler is GNU succeeded with the following output:
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+# 1 "<built-in>"
+# 1 "<command line>"
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+
+void THIS_IS_GNU();
+
+Determining if the C++ compiler is GNU succeeded with the following output:
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+# 1 "<built-in>"
+# 1 "<command line>"
+# 1 "/mnt/data1/tustison/pkg/CMake/share/CMake/Modules/CMakeTestGNU.c"
+
+void THIS_IS_GNU();
+
+Determining if the C compiler works passed with the following output:
+
+
+Determining if the CXX compiler works passed with the following output:
+
+

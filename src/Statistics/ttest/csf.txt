@@ -1,0 +1,4 @@
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062706/C-SF1/
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062906/C-SM1/
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062906/C-SM2/
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062906/C-SM3/

@@ -1,0 +1,1458 @@
+/*=========================================================================
+
+Program:   Insight Segmentation & Registration Toolkit
+Module:    $RCSfile: itkFEMRegistrationFilter.txx.current,v $
+Language:  C++
+
+Date:      $Date: 2008/10/18 00:13:40 $
+Version:   $Revision: 1.1.1.1 $
+
+Copyright (c) Insight Software Consortium. All rights reser
+See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for detail.
+
+This software is distributed WITHOUT ANY WARRANTY; without even 
+the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.  See the above copyright notices for more information.
+
+=========================================================================*/
+
+#ifndef _itkFEMRegistrationFilter_txx_
+#define _itkFEMRegistrationFilter_txx_
+
+// disable debug warnings in MS compiler
+#ifdef _MSC_VER
+#pragma warning(disable: 4786)
+#endif
+ 
+#include "itkFEMRegistrationFilter.h"
+#include "itkFEMElements.h"
+#include "itkFEMLoadBC.h"
+#include "itkFEMDefaultImageToMeshFilter.h"
+
+#include "itkBSplineKernelFunction.h"
+
+#include "itkCastImageFilter.h"
+#include "itkMeanSquareRegistrationFunction.h"
+#include "itkVectorIndexSelectionCastImageFilter.h"
+#include "itkWarpImageFilter.h"
+#include "itkImageDuplicator.h"
+
+#include "vnl/vnl_math.h"
+#include "vnl/algo/vnl_determinant.h"
+#include "vnl/algo/vnl_matrix_inverse.h"
+
+#include "itkImageFileWriter.h"
+
+
+namespace itk {
+namespace fem {
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::FEMRegistrationFilter()
+{
+  this->m_MeshResolution = ArrayContainerType::New();
+  this->m_MeshResolution->Initialize();
+
+  // Default values  
+  this->SetDoLineSearchOnImageEnergy( false );
+  this->SetLineSearchMaximumIterations( 100 );
+  this->SetEnergyReductionFactor( 0.5 );
+  this->SetAlpha( 0.5 );
+  this->SetTimeStep( 1.0 );
+  this->SetNumberOfLevels( 1 );
+  this->SetElasticity( 1.0e4 ); 
+  this->SetRho( 1.0e4 );
+  this->SetGamma( 1.0 ); 
+  this->SetMaximumNumberOfIterations( 20 );
+  this->SetMeshResolution( 64 );
+  this->SetMetricRadius( 1 );  
+  this->SetUseMassMatrix( true );
+  this->SetUseWebSplines( false );
+  this->SetBackgroundValue( NumericTraits<PixelType>::Zero );
+
+  // Default element and material
+  typename MaterialLinearElasticity::Pointer 
+     material = MaterialLinearElasticity::New();
+  material->GN = 0;                  // Global number of the this->m_Material
+  material->A = 1.0;                 // Cross-sectional area
+  material->h = 1.0;                 // Thickness
+  material->I = 1.0;                 // Moment of inertia
+  material->nu = 0.0;                // Poisson's ratio -- DONT CHOOSE 1.0!!
+  material->RhoC = 1.0;              // Density
+  material->E = this->GetElasticity();
+  this->SetMaterial( material );
+
+  this->m_UseImageToImageMetric = false;
+
+  if ( ImageDimension == 2 )
+    {
+    typedef Element2DC0LinearQuadrilateralMembrane ElementType;
+    typedef VisitorDispatcher<ElementType, 
+       typename ElementType::LoadType, 
+       typename ElementType::LoadImplementationFunctionPointer> DispatcherType;
+    typename ElementType::LoadImplementationFunctionPointer fp = 
+        &ImageMetricLoadImplementation<PDEDeformableMetricLoadType>
+	       ::ImplementImageMetricLoad;
+    DispatcherType::RegisterVisitor( ( PDEDeformableMetricLoadType* )0, fp );
+
+    typename ElementType::Pointer element = ElementType::New();
+    element->m_mat = dynamic_cast<MaterialLinearElasticity*>( this->m_Material );
+    this->SetElement( element );
+    }
+  else // ( ImageDimension == 3 )
+    {
+    typedef Element3DC0LinearHexahedronMembrane ElementType;
+    typedef VisitorDispatcher<ElementType, 
+       typename ElementType::LoadType, 
+       typename ElementType::LoadImplementationFunctionPointer> DispatcherType;
+    typename ElementType::LoadImplementationFunctionPointer fp = 
+        &ImageMetricLoadImplementation<PDEDeformableMetricLoadType>
+        ::ImplementImageMetricLoad;
+    DispatcherType::RegisterVisitor( (PDEDeformableMetricLoadType*)0, fp );
+
+    typename ElementType::Pointer element = ElementType::New();
+    element->m_mat = dynamic_cast<MaterialLinearElasticity*>( this->m_Material );
+    this->SetElement( element );
+  }
+ 
+  // Set up the default metric type (mean squares)
+  typedef MeanSquareRegistrationFunction
+        <FixedImageType, MovingImageType, DeformationFieldType> DefaultMetricType;  
+  typename DefaultMetricType::Pointer DefaultMetric
+          = DefaultMetricType::New();
+  this->m_PDEDeformableMetric = DefaultMetric;
+  this->m_PDEDeformableMetric->SetNormalizeGradient( false );
+  this->SetMaximizeMetric( false );
+
+  // Set up the default image interpolator
+  typedef LinearInterpolateImageFunction
+          <MovingImageType, RealType> DefaultImageInterpolatorType;
+  typename DefaultImageInterpolatorType::Pointer Interpolator
+          = DefaultImageInterpolatorType::New();
+  this->m_ImageInterpolator = Interpolator;
+  
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::~FEMRegistrationFilter()
+{
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::SetElement( typename Element::Pointer element )
+{
+  this->m_Element = element; 
+  if ( dynamic_cast<Element2DBSplinePatch*>( element ) != NULL ||
+       dynamic_cast<Element3DBSplinePatch*>( element ) != NULL )
+    {
+    this->m_UseBSplines = true;
+    }
+  else
+    {
+    this->m_UseBSplines = false;
+    }
+  this->Modified();  
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::SetMeshResolution( ArrayType array, unsigned int i )
+{
+  itkDebugMacro( "Setting MeshResolution[" << i << "] to " << array );
+  this->m_MeshResolution->InsertElement( i, array );  
+  this->Modified();
+} 
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::SetMeshResolution( unsigned int N, unsigned int i )
+{
+  ArrayType array;
+  array.Fill( N );
+  this->SetMeshResolution( array, i );
+} 
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::SetMeshResolution( unsigned int N )
+{
+  for ( unsigned int i = 0; i < ImageDimension; i++ )
+    {   
+    this->SetMeshResolution( N, i );  
+    }
+} 
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::SetPDEDeformableMetric( PDEDeformableMetricType *M )
+{
+  this->m_PDEDeformableMetric = M;
+  this->m_UseImageToImageMetric = false;
+  this->Modified();
+} 
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::SetImageToImageMetric( ImageToImageMetricType *M )
+{
+  this->m_ImageToImageMetric = M;
+  this->m_UseImageToImageMetric = true;
+  this->Modified(); 
+} 
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::SetNumberOfLevels( unsigned int n )
+{
+  if ( n > 0 )
+    {  
+    RealType tmp_E, tmp_G, tmp_R;
+    unsigned int tmp_MI, tmp_IP, tmp_MW;
+    ArrayType tmp_MR;
+    
+    if ( this->m_NumberOfLevels != 0 )
+      {
+      tmp_E = this->m_Elasticity[0];
+      tmp_G = this->m_Gamma[0];
+      tmp_R = this->m_Rho[0];
+   
+      tmp_MI = this->m_MaximumNumberOfIterations[0];
+      tmp_MR = this->m_MeshResolution->ElementAt( 0 );
+      tmp_MW = this->m_MetricRadius[0];
+      }
+    
+    this->m_Elasticity.set_size( n );
+    this->m_Gamma.set_size( n );
+    this->m_Rho.set_size( n );
+    this->m_MaximumNumberOfIterations.set_size( n );
+    this->m_MetricRadius.set_size( n );
+
+    if ( this->m_NumberOfLevels != 0 )
+      {
+      this->m_Elasticity.fill( tmp_E );
+      this->m_Gamma.fill( tmp_G );
+      this->m_Rho.fill( tmp_R );
+      this->m_MaximumNumberOfIterations.fill( tmp_MI );
+      this->m_MetricRadius.fill( tmp_MW );
+      for ( unsigned int i = 0; i < ImageDimension; i++ )
+        {
+        this->m_MeshResolution->InsertElement( i, tmp_MR );
+        }
+      }
+    this->m_NumberOfLevels = n;
+    this->Modified();
+    }  
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::GenerateData()
+{
+  if ( this->GetNumberOfInputs() < 2 )
+    {
+    itkExceptionMacro(<< "Images are not specified.");
+    }
+
+  itkDebugMacro( << "Registering the images.");
+  
+  this->RegisterImages();
+
+  if ( this->m_DeformationField )
+    {
+    typedef WarpImageFilter<MovingImageType, 
+                            WarpedImageType, 
+                            DeformationFieldType> WarperType;
+    typename WarperType::Pointer warper = WarperType::New();
+
+    warper->SetInput( this->GetInput( 0 ) );
+    warper->SetDeformationField( this->m_DeformationField );
+    warper->SetInterpolator( this->m_ImageInterpolator );
+    warper->SetOutputSpacing( this->GetInput( 1 )->GetSpacing() );
+    warper->SetOutputOrigin( this->GetInput( 1 )->GetOrigin() );
+    warper->Update();
+    this->m_WarpedImage = warper->GetOutput();  
+    this->GraftNthOutput( 0, this->m_WarpedImage );
+    }
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::RegisterImages()
+{
+
+  this->m_MovingPyramid = MovingPyramidType::New();
+  this->m_MovingPyramid->SetInput( this->GetInput( 0 ) );
+  this->m_MovingPyramid->SetNumberOfLevels( this->m_NumberOfLevels );
+
+  this->m_FixedPyramid = FixedPyramidType::New();
+  this->m_FixedPyramid->SetInput( this->GetInput( 1 ) );
+  this->m_FixedPyramid->SetNumberOfLevels( this->m_NumberOfLevels );
+ 
+  typename FixedPyramidType::ScheduleType 
+  schedule( this->m_NumberOfLevels, ImageDimension );
+  
+  for ( int i = this->m_NumberOfLevels-1; i >= 0; i-- )
+    {
+    RealType factor = pow( 2.0, static_cast<RealType>( this->m_NumberOfLevels-i-1 ) );
+    for ( unsigned int j = 0; j < ImageDimension; j++ )
+      {
+      if ( static_cast<RealType>( 
+           this->GetInput( 1 )->GetRequestedRegion().GetSize()[j] )/factor >= 32.0 )
+        { 
+        schedule(i, j) = static_cast<unsigned int>( factor );
+        }
+      else
+        {
+	       if ( i < this->m_NumberOfLevels-1 )
+          {
+          schedule(i, j) = schedule(i+1, j);
+	         }
+        else
+	         {
+          schedule(i, j) = 1;
+          }
+       	}  
+      }
+    }
+  this->m_MovingPyramid->SetSchedule( schedule ); 
+  this->m_MovingPyramid->Update();
+  this->m_FixedPyramid->SetSchedule( schedule ); 
+  this->m_FixedPyramid->Update();
+
+  for ( unsigned int i = 0; i < this->m_NumberOfLevels; i++ )
+    {
+    this->m_PyramidLevelImageSizes.push_back( 
+       this->m_MovingPyramid->GetOutput( i )->GetLargestPossibleRegion().GetSize() );
+    } 
+  
+  VectorType V;  
+  V.Fill( 0.0 );  
+  this->m_DeformationField = DeformationFieldType::New();
+  this->m_DeformationField->SetOrigin( this->m_MovingPyramid->GetOutput( 0 )->GetOrigin() );
+  this->m_DeformationField->SetSpacing( this->m_MovingPyramid->GetOutput( 0 )->GetSpacing() );
+  this->m_DeformationField->SetRegions( this->m_PyramidLevelImageSizes[0] );
+  this->m_DeformationField->Allocate(); 
+  this->m_DeformationField->FillBuffer( V );
+
+  if ( this->m_UseBSplines )
+  {  
+    unsigned int order;
+    if ( ImageDimension == 2 )
+      {
+      order = dynamic_cast<Element2DBSplinePatch*>
+              ( this->m_Element )->GetBSplineOrder() - 1;
+      }
+    else
+      {
+      order = dynamic_cast<Element3DBSplinePatch*>
+              ( this->m_Element )->GetBSplineOrder() - 1;
+      } 
+    typename DeformationFieldType::RegionType::SizeType size;
+    ArrayType array;
+
+    if ( this->m_UseBSplines )
+      {
+      for ( unsigned int i = 0; i < ImageDimension; i++ )
+        {
+        size[i] = this->m_MeshResolution->ElementAt( 0 )[i] + order;
+        }
+     
+      VectorType V( 0.0 );
+      this->m_BSplineNodalValues = DeformationFieldType::New();
+      this->m_BSplineNodalValues->SetRegions( size );
+      this->m_BSplineNodalValues->Allocate();
+      this->m_BSplineNodalValues->FillBuffer( V );  
+    }  
+  }  
+
+  for ( this->m_CurrentLevel = 0; this->m_CurrentLevel < this->m_NumberOfLevels; this->m_CurrentLevel++ )
+    {
+    itkDebugMacro( << "Current Level = " << this->m_CurrentLevel 
+                   << ", Image Size = " << this->m_PyramidLevelImageSizes[this->m_CurrentLevel] );
+
+    if ( this->m_MaximumNumberOfIterations[this->m_CurrentLevel] > 0 )
+      {
+      RealType scaling[ImageDimension];
+      for ( unsigned int i = 0; i < ImageDimension; i++ )
+        {
+        scaling[i] = static_cast<RealType>(
+                      this->m_MovingPyramid->GetSchedule()[this->m_CurrentLevel][i] );	
+        }
+
+      this->m_Solver.SetDeltatT( this->m_TimeStep );  
+      this->m_Solver.SetRho( this->m_Rho[this->m_CurrentLevel] );     
+      this->m_Solver.SetAlpha( this->m_Alpha );    
+      this->GenerateFEMMesh( this->m_FixedPyramid->GetOutput( this->m_CurrentLevel ) );  
+      this->ApplyLoads( scaling );
+      this->ApplyImageLoads();
+        
+      LinearSystemWrapperItpack itpackWrapper; 
+      itpackWrapper.SetTolerance( 0.1 );
+      itpackWrapper.JacobianConjugateGradient(); 
+      itpackWrapper.SetMaximumNumberIterations( 2*this->m_Solver.GetNumberOfDegreesOfFreedom() ); 
+      itpackWrapper.SetMaximumNonZeroValuesInMatrix( this->m_Solver.GetMaximumNumberOfNonZeroElements() );
+      this->m_Solver.SetLinearSystemWrapper( &itpackWrapper );   
+
+      if ( this->m_UseMassMatrix ) 
+        {
+        itkDebugMacro( << "Assemble the K and M matrices. " );
+        this->m_Solver.AssembleKandM(); 
+        itkDebugMacro( << "Finished assembling the K and M matrices. " );
+        }
+      else
+        {
+        itkDebugMacro( << "Assemble the K matrix. " );
+        this->m_Solver.InitializeForSolution();
+        this->m_Solver.AssembleK();
+        itkDebugMacro( << "Finished assembling the K matrix. " );
+        }  
+
+      if ( this->m_CurrentLevel > 0 )  
+        {
+        this->PropagateSolutionToTheCurrentLevel();
+        }
+
+      itkDebugMacro( << "Begin iterative solve. " );
+      this->IterativeSolve();
+      itkDebugMacro( << "Finish iterative solve. " );
+
+      if ( this->m_UseBSplines && this->m_NumberOfLevels > 0 
+           && this->m_CurrentLevel < this->m_NumberOfLevels-1 )
+        {
+        this->GetBSplineNodalValuesForNextLevel();
+        }
+      }
+    if ( this->m_CurrentLevel < this->m_NumberOfLevels - 1
+           && this->m_DeformationField )
+      {
+      typename FixedImageType::SizeType CurrentSize = 
+         this->m_PyramidLevelImageSizes[this->m_CurrentLevel];
+      typename FixedImageType::SizeType NextSize = 
+         this->m_PyramidLevelImageSizes[this->m_CurrentLevel+1];  
+      
+      typename DeformationFieldType::Pointer 
+        NewDeformationField = DeformationFieldType::New();
+      NewDeformationField->SetOrigin( 
+          this->m_MovingPyramid->GetOutput( this->m_CurrentLevel+1 )->GetOrigin() );
+      NewDeformationField->SetSpacing( 
+          this->m_MovingPyramid->GetOutput( this->m_CurrentLevel+1 )->GetSpacing() );
+      NewDeformationField->SetRegions( NextSize );
+      NewDeformationField->Allocate();  
+
+      typedef VectorIndexSelectionCastImageFilter<DeformationFieldType,
+               RealImageType> SelectorType;
+      typename SelectorType::Pointer selector = SelectorType::New();
+      selector->SetInput( this->m_DeformationField );
+
+      DeformationFieldIteratorType It( NewDeformationField, 
+            NewDeformationField->GetLargestPossibleRegion() );
+           
+      for ( unsigned int i = 0; i < ImageDimension; i++ )
+        {
+        selector->SetIndex( i );
+        selector->Update();
+        this->m_ImageInterpolator->SetInputImage( selector->GetOutput() );
+         
+        for ( It.GoToBegin(); !It.IsAtEnd(); ++It )
+          {
+          typename DeformationFieldType::PixelType V = It.Get();
+          typename ImageInterpolatorType::ContinuousIndexType idx;
+          for ( unsigned int j = 0; j < ImageDimension; j++ )
+            {
+            idx[j] = static_cast<RealType>( It.GetIndex()[j] )
+                     * static_cast<RealType>( CurrentSize[j] - 1 )
+                     / static_cast<RealType>( NextSize[j] - 1 ); 
+            }
+          V[i] = this->m_ImageInterpolator->EvaluateAtContinuousIndex( idx );
+          It.Set( V );
+          }
+        }
+      this->m_DeformationField = NewDeformationField; 
+      }
+    }  
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::IterativeSolve()
+{
+
+  unsigned int iters = 0;
+  RealType Et;
+  RealType Etm1;
+  if ( this->m_MaximizeMetric )
+    {
+    Etm1 = NumericTraits<RealType>::NonpositiveMin();
+    }
+  else
+    {
+    Etm1 = NumericTraits<RealType>::max();
+    }
+
+  if ( this->m_UseMassMatrix )
+    {
+    this->m_Solver.AssembleFforTimeStep();
+    }
+  else
+    { 
+    this->m_Solver.AssembleF();
+    }
+
+  if ( this->m_UseImageToImageMetric )
+    {
+    this->m_ImageToImageMetricLoad->SetMetric( this->m_ImageToImageMetric );
+    Et = this->m_ImageToImageMetricLoad->EvaluateMetricOverEntireImage();
+    this->m_ImageToImageMetricLoad->InitializeMetric();
+    }
+  else
+    {
+    this->m_PDEDeformableMetricLoad->SetMetric( this->m_PDEDeformableMetric );
+    Et = this->m_PDEDeformableMetricLoad->EvaluateMetricOverEntireImage();
+    this->m_PDEDeformableMetricLoad->GetMetric()->InitializeIteration();
+    }
+  
+  while ( iters++ < this->m_MaximumNumberOfIterations[this->m_CurrentLevel] &&
+          ( ( Et < Etm1 && !this->m_MaximizeMetric ) 
+         || ( Et > Etm1 &&  this->m_MaximizeMetric ) ) 
+         )
+    {
+    itkDebugMacro( << "Iteration = " << iters-1 << ", Current Energy = " << Et << ", Change = " << Et - Etm1 );
+
+    this->m_Solver.Solve();
+
+    RealType GradientStep;
+    if ( this->m_DoLineSearchOnImageEnergy )
+      {
+      GradientStep = this->GoldenSection( this->m_LineSearchMaximumIterations );
+      }
+    else     
+      {
+      GradientStep = this->m_Solver.GetCurrentMaxSolution();
+      if ( GradientStep == NumericTraits<RealType>::Zero )
+        {
+        GradientStep = 1.0;
+        }
+      GradientStep = vnl_math_min( 1.0, 
+            this->m_Gamma[this->m_CurrentLevel]/GradientStep );
+      }
+    itkDebugMacro( << "Gradient step = " << GradientStep );
+
+    this->m_Solver.AddToDisplacements( GradientStep );    
+    this->InterpolateDeformationField( 0.0 );
+ 
+    if ( this->m_UseImageToImageMetric )
+      { 
+      this->m_ImageToImageMetricLoad->SetMovingImage( 
+            this->m_MovingPyramid->GetOutput( this->m_CurrentLevel ) );
+      this->m_ImageToImageMetricLoad->SetDeformationField( this->m_DeformationField );
+      }
+    else
+      {
+      this->m_PDEDeformableMetricLoad->SetMovingImage( 
+            this->m_MovingPyramid->GetOutput( this->m_CurrentLevel ) );
+      this->m_PDEDeformableMetricLoad->SetDeformationField( this->m_DeformationField );
+      }
+      
+
+    if ( this->m_UseMassMatrix )
+      {
+      this->m_Solver.AssembleFforTimeStep();
+      }
+    else
+      { 
+      this->m_Solver.AssembleF();
+      }
+    
+    Etm1 = Et;
+    
+    if ( this->m_UseImageToImageMetric )
+      {
+      this->m_ImageToImageMetricLoad->SetMetric( this->m_ImageToImageMetric );
+      Et = this->m_ImageToImageMetricLoad->EvaluateMetricOverEntireImage();
+      this->m_ImageToImageMetricLoad->InitializeMetric();
+      }
+    else
+      {  
+      this->m_PDEDeformableMetricLoad->SetMetric( this->m_PDEDeformableMetric );
+      Et = this->m_PDEDeformableMetricLoad->EvaluateMetricOverEntireImage();
+      this->m_PDEDeformableMetricLoad->GetMetric()->InitializeIteration();
+      }
+    }
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::PropagateSolutionToTheCurrentLevel()
+{
+  if (this->m_UseBSplines)
+    {
+    this->DoubleResolutionOfFEMBSplineMesh();
+    }
+  else
+    {
+    // For the general case in which the displacement field interpolates
+    // the nodal values, we simply interpolate the new nodal values based
+    // on the expanded displacement field.
+
+    typedef VectorIndexSelectionCastImageFilter<DeformationFieldType,
+             RealImageType> SelectorType;
+    typename SelectorType::Pointer selector = SelectorType::New();
+    selector->SetInput( this->m_DeformationField );
+
+    Node::ArrayType* nodes = &this->m_Solver.node;
+    Node::ArrayType::iterator it; 
+   
+    for ( it = nodes->begin(); it != nodes->end(); it++ ) 
+      {
+      Element::VectorType coord = ( *it )->GetCoordinates();
+
+      typename ImageInterpolatorType::ContinuousIndexType idx;
+      for ( unsigned int i = 0; i < ImageDimension; i++ ) 
+        {
+        idx[i] = static_cast<RealType>( coord[i] );
+        }
+
+      for ( unsigned int i = 0; i < ImageDimension; i++ )
+        {
+        selector->SetIndex( i );
+        selector->Update();
+        this->m_ImageInterpolator->SetInputImage( selector->GetOutput() );
+        RealType value = this->m_ImageInterpolator->EvaluateAtContinuousIndex( idx );          
+
+        this->m_Solver.GetLinearSystemWrapper()->
+          SetSolutionValue( ( *it )->GetDegreeOfFreedom( i ), 
+          value, this->m_Solver.TotalSolutionIndex );    
+        this->m_Solver.GetLinearSystemWrapper()->
+          SetSolutionValue( ( *it )->GetDegreeOfFreedom( i ), 
+          value, this->m_Solver.SolutionTMinus1Index );    
+        }
+      }  
+    }
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::GenerateFEMMesh( FixedImageType *fixed )
+{
+  if ( !this->m_MeshFileName.empty() )
+    {    
+    itkDebugMacro( << "Reading mesh file. " );
+    
+    std::ifstream meshstream; 
+    meshstream.open( this->m_MeshFileName.c_str() );
+    if ( !meshstream )
+      {
+      itkExceptionMacro( << "The mesh file, " << this->m_MeshFileName << ", was not found!" );
+      }
+    this->m_Solver.Read( meshstream ); 
+    this->m_Solver.GenerateGFN();
+
+    itk::fem::MaterialLinearElasticity::Pointer m = 
+      dynamic_cast<MaterialLinearElasticity*>( this->m_Solver.mat.Find( 0 ) );   
+    this->m_Material->E = this->GetElasticity( this->m_CurrentLevel );
+
+    // now scale the mesh to the current scale
+    Element::VectorType coord;  
+    Node::ArrayType* nodes = &this->m_Solver.node;
+    Node::ArrayType::iterator node = nodes->begin();
+    this->m_Element = ( *( (*node)->m_elements.begin() ) );
+    for ( node = nodes->begin(); node != nodes->end(); node++ ) 
+      {
+      coord = (*node)->GetCoordinates();    
+      for ( unsigned int i = 0; i < ImageDimension; i++ )
+        { 
+        coord[i] /= pow( 2.0, static_cast<RealType>( 
+	         this->m_NumberOfLevels - this->m_CurrentLevel - 1 ) );
+        } 
+      (*node)->SetCoordinates( coord );  
+      }
+    return;
+    }
+
+  this->m_Material->E = this->GetElasticity( this->m_CurrentLevel );
+  this->m_Solver.GenerateGFN();
+
+  typedef FEMDefaultImageToMeshFilter<FixedImageType> MeshFilterType;
+  typename MeshFilterType::Pointer mesher = MeshFilterType::New();
+  typename MeshFilterType::FixedArrayType numberOfElements;
+   
+  mesher->SetInput( fixed );
+  mesher->SetUseWebSplines( this->m_UseWebSplines );
+  mesher->SetSolver( &this->m_Solver );
+  mesher->SetElement( this->m_Element );
+  mesher->SetNumberOfElements( 
+      this->m_MeshResolution->ElementAt( this->m_CurrentLevel ) );
+      
+  if ( this->m_UseBSplines )
+    {     
+    if ( ImageDimension == 2 )
+      {
+      mesher->SetSplineOrder( dynamic_cast<Element2DBSplinePatch*>
+              ( this->m_Element )->GetBSplineOrder() );
+      }
+    else   	      
+      {
+      mesher->SetSplineOrder( dynamic_cast<Element3DBSplinePatch*>
+              ( this->m_Element )->GetBSplineOrder() );
+      }
+    } 
+  itkDebugMacro( << "Generating mesh." );
+  mesher->Update();
+  itkDebugMacro( << "Finished generating mesh." );
+  this->m_Solver.GenerateGFN();
+
+  vnl_vector<RealType> MeshOriginV( ImageDimension ); 
+  vnl_vector<RealType> MeshSizeV( ImageDimension ); 
+  vnl_vector<RealType> ImageSizeV( ImageDimension ); 
+  for ( unsigned int i = 0; i < ImageDimension; i++ )
+    { 
+    MeshSizeV[i] = static_cast<RealType>( 
+      this->m_PyramidLevelImageSizes[this->m_CurrentLevel][i] ) - 1.0;
+    MeshOriginV[i] = static_cast<RealType>( this->GetInput( 1 )->GetOrigin()[i] );
+    ImageSizeV[i] = static_cast<RealType>( 
+      this->m_PyramidLevelImageSizes[this->m_CurrentLevel][i] );  
+    }
+  
+  itkDebugMacro( << "Initialize interpolation grid." );
+  this->m_Solver.InitializeInterpolationGrid( ImageSizeV, MeshOriginV, MeshSizeV );
+  itkDebugMacro( << "Finished initializing interpolation grid." );
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::ApplyImageLoads()
+{ 
+  itkDebugMacro( << "Applying the image loads." )
+
+  typename FixedImageType::SizeType radius;
+  radius.Fill( this->m_MetricRadius[this->m_CurrentLevel] );
+
+  if ( this->m_UseImageToImageMetric )
+    { 
+    this->m_ImageToImageMetricLoad = ImageToImageMetricLoadType::New();
+    this->m_ImageToImageMetricLoad->SetMovingImage(
+        this->m_MovingPyramid->GetOutput( this->m_CurrentLevel ) ); 
+    this->m_ImageToImageMetricLoad->SetFixedImage( 
+                             this->m_FixedPyramid->GetOutput( this->m_CurrentLevel ) ); 
+    this->m_ImageToImageMetricLoad->SetMetric( this->m_ImageToImageMetric );
+    this->m_ImageToImageMetricLoad->SetDeformationField( this->m_DeformationField );
+    this->m_ImageToImageMetricLoad->InitializeMetric();
+    this->m_ImageToImageMetricLoad->SetGamma( this->m_Gamma[this->m_CurrentLevel] );
+    this->m_ImageToImageMetricLoad->SetMaximizeMetric( this->m_MaximizeMetric );
+    this->m_ImageToImageMetricLoad->SetMetricRadius( radius );
+    this->m_ImageToImageMetricLoad->SetSolution( this->m_Solver.GetLS() );
+    this->m_ImageToImageMetricLoad->GN = this->m_Solver.load.size() + 1; 
+    this->m_Solver.load.push_back( FEMP<Load>( &*this->m_ImageToImageMetricLoad ) );    
+    this->m_ImageToImageMetricLoad = dynamic_cast<ImageToImageMetricLoadType*> 
+      ( &*this->m_Solver.load.Find( this->m_Solver.load.size() ) );  
+    }
+  else
+    {
+    this->m_PDEDeformableMetric->SetGradientStep( this->m_Gamma[this->m_CurrentLevel] );
+    this->m_PDEDeformableMetricLoad = PDEDeformableMetricLoadType::New();
+    this->m_PDEDeformableMetricLoad->SetMovingImage(
+        this->m_MovingPyramid->GetOutput( this->m_CurrentLevel ) ); 
+    this->m_PDEDeformableMetricLoad->SetFixedImage( 
+                             this->m_FixedPyramid->GetOutput( this->m_CurrentLevel ) ); 
+    this->m_PDEDeformableMetricLoad->SetDeformationField( this->m_DeformationField );
+    this->m_PDEDeformableMetricLoad->SetMetricRadius( radius );
+    this->m_PDEDeformableMetricLoad->SetMetric( this->m_PDEDeformableMetric );
+    this->m_PDEDeformableMetricLoad->GetMetric()->InitializeIteration();
+    this->m_PDEDeformableMetricLoad->SetSolution( this->m_Solver.GetLS() );
+    this->m_PDEDeformableMetricLoad->SetGamma( this->m_Gamma[this->m_CurrentLevel] );
+    this->m_PDEDeformableMetricLoad->GN = this->m_Solver.load.size() + 1; 
+    this->m_Solver.load.push_back(FEMP<Load>( &*this->m_PDEDeformableMetricLoad ) );    
+    this->m_PDEDeformableMetricLoad = dynamic_cast<PDEDeformableMetricLoadType*> 
+      ( &*this->m_Solver.load.Find( this->m_Solver.load.size() ) );  
+    }
+  itkDebugMacro( << "Finished applying the image loads.")
+}   
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::ApplyLoads(RealType* scaling)
+{
+  itkDebugMacro( << "Applying the non-image loads." );
+
+  vnl_vector<RealType> pd( ImageDimension );
+  vnl_vector<RealType> pu( ImageDimension );
+
+  if ( !this->m_LandmarkFileName.empty() )
+    {
+    std::ifstream f( this->m_LandmarkFileName.c_str() );
+    if ( !f )
+      {
+      itkExceptionMacro( << "Cannot read landmark file " 
+                         << this->m_LandmarkFileName );
+      } 
+
+    itkDebugMacro( << "Loading landmarks from file." );
+
+    Load::ArrayType::iterator it;
+    LoadLandmark::Pointer l3;
+    this->m_LandmarkArray.clear();
+
+    try
+      { 
+      this->m_Solver.load.clear(); // NOTE: CLEARING ALL LOADS - LMS MUST BE APPLIED FIRST
+      this->m_Solver.Read( f );
+      }
+    catch ( itk::ExceptionObject &err )
+      { 
+      itkExceptionMacro( << "Cannot load landmarks " << this->m_LandmarkFileName );
+      }
+    f.close();
+        
+    this->m_LandmarkArray.resize( this->m_Solver.load.size() );
+    unsigned int ct = 0;
+    for ( it = this->m_Solver.load.begin(); it != this->m_Solver.load.end(); it++ ) 
+      {
+      if ( l3 = dynamic_cast<LoadLandmark*>( &( *( *it ) ) ) ) 
+        {
+        this->m_LandmarkArray[ct++] = dynamic_cast<LoadLandmark*>( l3->Clone() );
+        }
+      }
+    this->m_Solver.load.clear(); // NOTE: CLEARING ALL LOADS - LMS MUST BE APPLIED FIRST
+
+    if ( !this->m_LandmarkArray.empty() )
+    {
+      itkDebugMacro( << "Scaling the landmarks." );
+      
+      for( unsigned int i = 0; i < this->m_LandmarkArray.size(); i++ ) 
+      {
+        this->m_LandmarkArray[i]->el[0] = NULL;
+        if ( scaling ) 
+          {
+          this->m_LandmarkArray[i]->ScalePointAndForce( scaling, 
+                        this->m_EnergyReductionFactor );
+          }           
+        pu = this->m_LandmarkArray[i]->GetSource();
+        pd = this->m_LandmarkArray[i]->GetPoint();
+
+        Element::ArrayType::const_iterator it;
+        for ( it = this->m_Solver.el.begin(); it != this->m_Solver.el.end(); it++ ) 
+          {
+          if ( ( *it )->GetLocalFromGlobalCoordinates( pu, pd ) )
+            { 
+            this->m_LandmarkArray[i]->SetPoint( pd );
+            this->m_LandmarkArray[i]->el[0] = ( &**it );
+	           break;
+            }
+        }
+        this->m_LandmarkArray[i]->GN = i;            
+        LoadLandmark::Pointer l5 = dynamic_cast<LoadLandmark::Pointer>( 
+	          this->m_LandmarkArray[i]->Clone() );
+        this->m_Solver.load.push_back( FEMP<Load>( l5 ) ); 
+      } 
+    }
+  }
+
+  if ( this->m_UseWebSplines )
+    { 
+    return;
+    }
+     
+  itkDebugMacro( << "Applying the boundary condition loads (i.e. pinning the image corner)." );
+
+  LoadBC::Pointer l1;
+  Node::ArrayType* nodes = &this->m_Solver.node;
+
+  unsigned int CornerCounter, EdgeCounter = 0;
+  Element::VectorType coord; 
+  Node::ArrayType::iterator node = nodes->begin();
+  unsigned int nloads = 0;
+
+  while ( node != nodes->end() && EdgeCounter < ImageDimension ) 
+    {
+    coord = ( *node )->GetCoordinates();
+    CornerCounter = 0;
+    for ( unsigned int i = 0; i < ImageDimension; i++ )
+      { 
+      if ( coord[i] == this->GetInput( 1 )->GetOrigin()[i] || 
+           coord[i] == this->m_PyramidLevelImageSizes[this->m_CurrentLevel][i]-1 ) 
+        {
+        CornerCounter++;
+        }	
+      }
+    if ( CornerCounter == ImageDimension )  // the node is located at a true corner
+      {
+	
+      unsigned int ndofpernode = ( *( ( *node )->m_elements.begin() ) )->GetNumberOfDegreesOfFreedomPerNode();
+      unsigned int numnodesperelt = ( *( ( *node )->m_elements.begin() ) )->GetNumberOfNodes();
+      
+      typedef typename Node::SetOfElements NodeEltSetType;
+      NodeEltSetType::iterator it;
+      for ( it = ( *node )->m_elements.begin(); it != ( *node )->m_elements.end(); it++ ) 
+        {
+        for ( unsigned int whichnode = 0; whichnode <= numnodesperelt-1; whichnode++ )
+          {
+          coord = ( *it )->GetNode( whichnode )->GetCoordinates();
+          CornerCounter = 0;          
+          for ( unsigned int i = 0; i < ImageDimension; i++ )
+       	    {
+            if ( coord[i] == this->GetInput(1)->GetOrigin()[i] || 
+                 coord[i] == this->m_PyramidLevelImageSizes[this->m_CurrentLevel][i]-1 ) 
+	             {  
+              CornerCounter++;
+              }  
+            }        
+          if ( CornerCounter == ImageDimension - 1 ) // edge found
+            {
+            for ( unsigned int j = 0; j < ndofpernode; j++ )
+              {            
+              l1=LoadBC::New();
+              // now we get the element from the node -- 
+              // we assume we need fix the dof only once
+              // even if more than one element shares it.
+              l1->m_element = *it;  
+              l1->m_dof = whichnode*ndofpernode + j; 
+              l1->m_value = vnl_vector<RealType>( 1, 0.0 );
+              this->m_Solver.load.push_back( FEMP<Load>( &*l1 ) );
+              }
+            EdgeCounter++;
+            }
+          }
+        }
+      }    
+    node++;
+    }
+  itkDebugMacro( << "Finished applying the non-image loads." );
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::InterpolateDeformationField( RealType gamma )
+{
+  vnl_vector<RealType> Pos( ImageDimension );  // solution at the point
+  vnl_vector<RealType> Gpt( ImageDimension );  // global position given by local point
+
+  int count = 0;
+
+  DeformationFieldIteratorType It(
+    this->m_DeformationField, this->m_DeformationField->GetLargestPossibleRegion() );
+  for ( It.GoToBegin(); !It.IsAtEnd(); ++It )
+    {
+    for ( unsigned int d = 0; d < ImageDimension; d++ )
+      { 
+      Gpt[d] = static_cast<RealType>( It.GetIndex()[d] );
+      }      
+    Element::ConstPointer eltp = this->m_Solver.GetElementAtPoint( Gpt );   
+
+    if ( eltp )
+      {
+      eltp->GetLocalFromGlobalCoordinates( Gpt, Pos );
+      typename Element::VectorType shapef( eltp->GetNumberOfNodes() );
+      shapef = eltp->ShapeFunctions( Pos );
+
+      VectorType Sol; 
+      for ( unsigned int f = 0; f < ImageDimension; f++ )
+        {
+	       Sol[f] = 0.0;
+        for ( unsigned int n = 0; n < eltp->GetNumberOfNodes(); n++ )
+          {
+          Sol[f] += shapef[n]*( 
+                    this->m_Solver.GetLS()->GetSolutionValue( 
+                    eltp->GetNode( n )->GetDegreeOfFreedom( f ), 
+                    this->m_Solver.TotalSolutionIndex )
+                  + gamma*this->m_Solver.GetLS()->GetSolutionValue( 
+                    eltp->GetNode( n )->GetDegreeOfFreedom( f ), 
+                    this->m_Solver.SolutionTIndex )
+                    );
+                    
+          }
+        }
+      It.Set( Sol );
+      }
+    }
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::GetBSplineNodalValuesForNextLevel()
+{
+  unsigned int order;
+  if ( ImageDimension == 2 )
+    {
+    order = dynamic_cast<Element2DBSplinePatch*>
+            ( this->m_Element )->GetBSplineOrder() - 1;
+    }
+  else
+    {
+    order = dynamic_cast<Element3DBSplinePatch*>
+            ( this->m_Element )->GetBSplineOrder() - 1;
+    } 
+  typename DeformationFieldType::RegionType::SizeType size;
+  ArrayType array;
+
+  for ( unsigned int i = 0; i < ImageDimension; i++ )
+    {
+    size[i] = this->m_MeshResolution->ElementAt( this->m_CurrentLevel )[i] + order;
+    if ( this->m_PyramidLevelImageSizes[this->m_CurrentLevel][i] == 
+         this->m_PyramidLevelImageSizes[this->m_CurrentLevel+1][i] )
+      {
+      array[i] = this->m_MeshResolution->ElementAt( this->m_CurrentLevel )[i];
+      }
+    else
+      {
+      array[i] = 2*this->m_MeshResolution->ElementAt( this->m_CurrentLevel )[i];
+      }
+    }
+  this->SetMeshResolution( array, this->m_CurrentLevel+1 );
+
+  VectorType V( 0.0 );
+  this->m_BSplineNodalValues = DeformationFieldType::New();
+  this->m_BSplineNodalValues->SetRegions( size );
+  this->m_BSplineNodalValues->Allocate();
+  this->m_BSplineNodalValues->FillBuffer( V );  
+
+  DeformationFieldIteratorType It( this->m_BSplineNodalValues, 
+               this->m_BSplineNodalValues->GetBufferedRegion() );
+
+  Node::ArrayType* nodes = &this->m_Solver.node;
+  Node::ArrayType::iterator it; 
+  for ( it = nodes->begin(), It.GoToBegin(); it != nodes->end(); it++ , ++It ) 
+    {
+    for ( unsigned int i = 0; i < ImageDimension; i++ )
+      { 
+      V[i] = this->m_Solver.GetLinearSystemWrapper()->
+             GetSolutionValue( ( *it )->GetDegreeOfFreedom( i ), 
+	            this->m_Solver.TotalSolutionIndex );    
+      } 
+    It.Set( V );
+    } 
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::DoubleResolutionOfFEMBSplineMesh() 
+{
+  unsigned int order;
+  if ( ImageDimension == 2 )
+    {
+    order = dynamic_cast<Element2DBSplinePatch*>
+            ( this->m_Element )->GetBSplineOrder() - 1;
+    }
+  else
+    {
+    order = dynamic_cast<Element3DBSplinePatch*>
+            ( this->m_Element )->GetBSplineOrder() - 1;
+    } 
+
+  typename FixedImageType::SizeType size;
+  bool expandDimension[ImageDimension];
+  for (unsigned int i = 0; i < ImageDimension; i++)
+    {
+    size[i] = this->m_MeshResolution->ElementAt( this->m_CurrentLevel )[i] + order;
+    if ( this->m_PyramidLevelImageSizes[this->m_CurrentLevel][i] == 
+         this->m_PyramidLevelImageSizes[this->m_CurrentLevel-1][i] )
+      {	 
+      expandDimension[i] = false;
+      }
+    else
+      {
+      expandDimension[i] = true;
+      }
+    }
+  DeformationFieldPointer RefinedLattice = DeformationFieldType::New();
+  typename DeformationFieldType::PixelType V( 0.0 );
+  RefinedLattice->SetRegions( size );
+  RefinedLattice->Allocate();
+  RefinedLattice->FillBuffer( V );  
+
+  DeformationFieldIteratorType It( RefinedLattice, 
+       RefinedLattice->GetLargestPossibleRegion() );
+  typename DeformationFieldType::IndexType idx, idx_Psi, tmp, tmp_Psi;
+  typename DeformationFieldType::IndexType off, off_Psi;
+  typename DeformationFieldType::RegionType::SizeType size_Psi;
+
+  size.Fill( 2 );
+  size_Psi.Fill( order+1 );  
+
+  typedef BSplineKernelFunction<3> KernelType;  
+  typename KernelType::Pointer Kernel = KernelType::New();
+  Kernel->SetSplineOrder( order );
+  typename KernelType::MatrixType R, C, Coefficients;
+
+  C = Kernel->GetShapeFunctionsInZeroToOneInterval();
+  R = C;
+  for ( int i = 0; i < C.cols(); i++ )
+    {
+    RealType c = pow( 2.0, static_cast<RealType>( C.cols()-i-1 ) );
+    for ( int j = 0; j < C.rows(); j++ )
+      {
+      R(j, i) *= c;
+      }
+    }  
+  R = R.transpose();  
+  C = C.transpose();  
+  R.flipud();
+  C.flipud();
+
+  Coefficients = ( vnl_svd<RealType>( R ).solve( C ) ).extract( 2, C.cols() );
+
+  It.GoToBegin();
+  while ( !It.IsAtEnd() )
+    {
+    idx = It.GetIndex();
+    for ( unsigned int i = 0; i < ImageDimension; i++ )
+      {
+      if ( expandDimension[i] )
+        {
+        idx_Psi[i] = static_cast<unsigned int>( 0.5*idx[i] );
+       	}
+      else
+	       {
+        idx_Psi[i] = static_cast<unsigned int>( idx[i] );    
+        }
+      }	
+    for ( unsigned int i = 0; 
+          i < pow( 2.0, static_cast<RealType>( ImageDimension ) ); i++ )
+      {     
+      VectorType Sum( 0.0 );
+      off = this->IndexToSubscript( i, size );
+      
+      bool OutOfBoundary = false;
+      for ( unsigned int j = 0; j < ImageDimension; j++ )
+        {
+        tmp[j] = idx[j] + off[j];
+        if ( tmp[j] >= this->m_MeshResolution->ElementAt( this->m_CurrentLevel )[j] + order )
+          {
+          OutOfBoundary = true;
+          break;
+          }
+        }	
+      if ( OutOfBoundary )
+        {
+        continue;
+        }
+
+      int N = static_cast<int>( pow( static_cast<int>( order+1 ), 
+                                     static_cast<int>( ImageDimension ) ) );
+      for ( unsigned int j = 0; j < N; j++ )
+        {
+        off_Psi = this->IndexToSubscript( j, size_Psi );
+        bool OutOfBoundary = false;
+        for ( unsigned int k = 0; k < ImageDimension; k++ )
+          {
+          tmp_Psi[k] = idx_Psi[k] + off_Psi[k];
+          if ( tmp_Psi[k] >= this->m_MeshResolution->ElementAt( this->m_CurrentLevel-1 )[k] + order )
+            {
+            OutOfBoundary = true;
+            break;
+            }
+          }	
+        if ( OutOfBoundary )
+          {
+          continue;
+          }      
+          
+        RealType coeff = 1.0;
+        for ( unsigned int k = 0; k < ImageDimension; k++ )
+          {
+          coeff *= Coefficients( off[k], off_Psi[k] );
+          }   
+        V = this->m_BSplineNodalValues->GetPixel( tmp_Psi );
+        V *= coeff;
+        Sum += V;
+        }
+      RefinedLattice->SetPixel( tmp, Sum );
+      }  
+
+    bool IsEvenIndex = false;
+    while ( !IsEvenIndex && !It.IsAtEnd() )
+      {      
+      ++It;  
+      idx = It.GetIndex();
+      IsEvenIndex = true;
+      for ( unsigned int i = 0; i < ImageDimension; i++ )
+       {
+        if ( idx[i] % 2 != 0 )
+          {
+          IsEvenIndex = false;
+          }
+        }
+      }
+    }
+  Node::ArrayType* nodes = &this->m_Solver.node;
+  Node::ArrayType::iterator it; 
+ 
+  for ( it = nodes->begin(), It.GoToBegin(); it != nodes->end(); it++, ++It ) 
+    {
+    for ( unsigned int i = 0; i < ImageDimension; i++ )
+      { 
+      this->m_Solver.GetLinearSystemWrapper()->
+            SetSolutionValue( ( *it )->GetDegreeOfFreedom( i ), It.Get()[i], 
+            this->m_Solver.TotalSolutionIndex );    
+      this->m_Solver.GetLinearSystemWrapper()->
+            SetSolutionValue( ( *it )->GetDegreeOfFreedom( i ), It.Get()[i], 
+	           this->m_Solver.SolutionTMinus1Index );  
+      } 
+    }
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::PrintSelf(std::ostream& os, Indent indent) const 
+{ 
+  Superclass::PrintSelf( os, indent );
+
+  if ( this->m_LandmarkFileName.empty() )
+    {
+    os << indent << "No landmark file specified. " << std::endl;
+    }
+  else
+    {  
+    os << indent << "landmark file: " 
+       << this->m_LandmarkFileName << std::endl;
+    }
+  if ( this->m_MeshFileName.empty() )
+    {
+    os << indent << "No mesh file specified. " << std::endl;
+    }
+  else
+    {
+    os << indent << "mesh file: " << this->m_MeshFileName << std::endl;
+    } 
+
+  os << indent << "Alpha = " << this->m_Alpha << std::endl;
+  os << indent << "Energy reduction factor = " << this->m_EnergyReductionFactor << std::endl;
+  os << indent << "Time Step = " << this->m_TimeStep << std::endl;
+  os << indent << "Elasticity = " << this->m_Elasticity << std::endl;
+  os << indent << "Rho = " << this->m_Rho << std::endl;
+  os << indent << "Gamma = " << this->m_Gamma << std::endl;
+  os << indent << "Maximum iterations = " << this->m_MaximumNumberOfIterations << std::endl;
+  os << indent << "Number of levels = " << this->m_NumberOfLevels << std::endl;
+  os << indent << "Do line search on image energy = " << this->m_DoLineSearchOnImageEnergy << std::endl;
+
+  if ( this->m_DoLineSearchOnImageEnergy )
+    {
+    os << indent << "Line search maximum iterations = " << this->m_LineSearchMaximumIterations << std::endl; 
+    }  
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+typename FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>::RealType 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::GoldenSection( unsigned int MaxIters )
+{
+
+  // We should now have a, b and c, as well as f(a), f(b), f(c), 
+  // where b gives the minimum energy position;
+  RealType ax, bx, cx;
+  this->FindBracketingTriplet( &ax, &bx, &cx );
+
+  const RealType R = 0.6180339;
+  const RealType C = 1.0 - R;
+  const RealType tol = 1.0;
+
+  RealType x0 = ax;
+  RealType x1;
+  RealType x2;
+  RealType x3 = cx;
+  if ( vnl_math_abs( cx-bx ) > vnl_math_abs( bx-ax ) )
+    {
+    x1 = bx;
+    x2 = bx + C*( cx-bx );
+    }
+  else
+    {
+    x2 = bx;
+    x1 = bx - C*( bx-ax );
+    }
+
+  RealType f1 = this->EvaluateEnergyForLineSearch( x1 );
+  RealType f2 = this->EvaluateEnergyForLineSearch( x2 );
+  unsigned int iters = 0;
+  while ( iters++ < MaxIters && 
+          vnl_math_abs( x3-x0 ) > tol*( vnl_math_abs( x1 ) + vnl_math_abs( x2 ) ) )
+    {
+    if ( f2 < f1 )
+      {
+      x0 = x1; 
+      x1 = x2; 
+      x2 = R*x1 + C*x3;
+      f1 = f2; 
+      f2 = this->EvaluateEnergyForLineSearch( x2 );
+      } 
+    else
+      {
+      x3 = x2; 
+      x2 = x1; 
+      x1 = R*x2+C*x0;
+      f2 = f1; 
+      f1 = this->EvaluateEnergyForLineSearch( x1 );
+      }
+    }
+  RealType xmin;
+  RealType fmin;
+  if ( f1 < f2 )
+    {
+    xmin = x1;
+    fmin = f1;
+    }
+  else
+    {
+    xmin = x2;
+    fmin = f2;
+    }
+    
+  itkDebugMacro( << "Results of line search: E(" << xmin << ") = " << fmin << "." );
+  return xmin;
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+typename FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>::RealType 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::EvaluateEnergyForLineSearch( RealType t )
+{
+  RealType E;
+
+  typedef ImageDuplicator<DeformationFieldType> DuplicatorType;
+  typename DuplicatorType::Pointer duplicator = DuplicatorType::New();
+  duplicator->SetInputImage( this->m_DeformationField );
+  duplicator->Update();
+
+  this->InterpolateDeformationField( t );
+  if ( this->m_UseImageToImageMetric )
+    {
+    this->m_ImageToImageMetricLoad->SetMovingImage( 
+            this->m_MovingPyramid->GetOutput( this->m_CurrentLevel ) );
+    this->m_ImageToImageMetricLoad->SetDeformationField( this->m_DeformationField );
+    E = this->m_ImageToImageMetricLoad->EvaluateMetricOverEntireImage();
+    }
+  else
+    {
+    this->m_PDEDeformableMetricLoad->SetMovingImage( 
+            this->m_MovingPyramid->GetOutput( this->m_CurrentLevel ) );
+    this->m_PDEDeformableMetricLoad->SetDeformationField( this->m_DeformationField );
+    E = this->m_PDEDeformableMetricLoad->EvaluateMetricOverEntireImage();
+    }
+  this->m_DeformationField = duplicator->GetOutput();  
+  return E;
+}
+
+template<class TMovingImage, class TFixedImage, class TWarpedImage>
+void 
+FEMRegistrationFilter<TMovingImage, TFixedImage, TWarpedImage>
+::FindBracketingTriplet( RealType* a, RealType* b, RealType* c )
+{
+  const RealType Gold = 1.618034;
+  const RealType Glimit = 100.0;
+  const RealType Tiny = 1e-2;
+  RealType ax = 0.0;
+  RealType bx = 1;
+  RealType fa = this->EvaluateEnergyForLineSearch( ax );
+  RealType fb = this->EvaluateEnergyForLineSearch( bx );
+
+  RealType dum;
+  if ( fb > fa )
+    {
+    dum = ax; 
+    ax = bx; 
+    bx = dum;
+    dum = fb; 
+    fb = fa; 
+    fa = dum;
+    }
+
+  RealType cx = bx + Gold*( bx-ax );  
+  RealType fc = this->EvaluateEnergyForLineSearch( cx );
+
+  RealType ulim, u, r, q, fu;
+  unsigned int iter = 0;
+  while ( fb > fc )
+    {
+    r = ( bx-ax )*( fb-fc );
+    q = ( bx-cx )*( fb-fa );
+    RealType denom = 2.0*this->m_Solver.GSSign( this->m_Solver.GSMax( vnl_math_abs( q-r ), Tiny ), q-r );
+    u = bx - ( ( bx-cx )*q - ( bx-ax )*r )/denom;
+    ulim = bx + Glimit*( cx-bx );
+    if ( ( bx-u )*( u-cx ) > 0.0 )
+      {
+      fu = this->EvaluateEnergyForLineSearch( u );
+      if ( fu < fc )
+        {
+        ax = bx;
+        bx = u;
+        *a = ax; 
+        *b = bx; 
+        *c = cx;
+        return;
+        }
+      else if ( fu > fb )
+        {
+        cx = u;
+        *a = ax; 
+        *b = bx; 
+        *c = cx;
+        return;
+        }
+      u = cx + Gold*( cx-bx );
+      fu = this->EvaluateEnergyForLineSearch( u );
+    }
+    else if ( ( cx-u )*( u-ulim ) > 0.0 )
+      {
+      fu = this->EvaluateEnergyForLineSearch( u );
+      if ( fu < fc )
+        {
+        bx = cx; 
+        cx = u; 
+        u = cx + Gold*( cx-bx );
+        fb = fc; 
+        fc = fu; 
+        fu = this->EvaluateEnergyForLineSearch( u );
+        }
+      }
+    else if ( ( u-ulim )*( ulim-cx ) >=  0.0 )
+      {
+      u = ulim;
+      fu = this->EvaluateEnergyForLineSearch( u );
+      }
+    else
+      {
+      u = cx + Gold*( cx-bx );
+      fu = this->EvaluateEnergyForLineSearch( u );
+      }
+
+    ax = bx; 
+    bx = cx; 
+    cx = u;
+    fa = fb; 
+    fb = fc; 
+    fc = fu;
+    
+    std::cout.setf( std::ios::fixed, std::ios::floatfield );
+    std::cout << "Bracketing Triplet (iter = " << iter++ << "): "
+                                        << " E(" << ax << ") = " << fa << ", "
+                                        << " E(" << bx << ") = " << fb << ", "
+                                        << " E(" << cx << ") = " << fc << std::endl;
+    
+    }
+  *a = ax; 
+  *b = bx; 
+  *c = cx;
+}
+
+}} // end namespace itk::fem
+
+#endif

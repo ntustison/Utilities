@@ -1,0 +1,1 @@
+# request Bourne shell as shell for job#$ -S /bin/shperl /mnt/data1/tustison/Projects/UltrasoundRegistration/buildTemplate.pl

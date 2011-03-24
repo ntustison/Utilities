@@ -1,0 +1,4 @@
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062706/C-SF1/Registered/demons.hdr
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062906/C-SM1/Registered/demons.hdr
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062906/C-SM2/Registered/demons.hdr
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062906/C-SM3/Registered/demons.hdr

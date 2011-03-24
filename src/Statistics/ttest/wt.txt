@@ -1,0 +1,5 @@
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062006/wt1downsample1/
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062006/wt2downsample1/
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062006/wt3downsample1/
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062006/wt4downsample1/
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062006/wt5downsample1/

@@ -1,0 +1,5 @@
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062706/SPD1/
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062706/SPD2/
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062706/SPD3/
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062706/SPD4/
+/Users/nick/pkg/Projects/HackzuLungStudies/Data/062706/SPD5/

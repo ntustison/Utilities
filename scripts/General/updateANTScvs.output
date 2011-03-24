@@ -1,0 +1,245 @@
+   Site: new-host.home
+   Build name: Darwin-c++
+Determine Nightly Start Time
+   Specified time: 00:00:00 EST
+Create new tag: 20100212-0500 - Nightly
+Start processing tests
+   Site: new-host.home
+   Build name: Darwin-c++
+Start processing tests
+Updating the repository
+   Updating the repository: /Users/nick/pkg/PICSL/ANTS/Examples
+   Use SVN repository type
+Determine Nightly Start Time
+   Specified time: 00:00:00 EST
+   Old revision of repository is: 335
+   Current revision of repository is: 340
+   Gathering version information (each . represents one updated file):
+    .
+   Found 1 updated files
+   Site: new-host.home
+   Build name: Darwin-c++
+Start processing tests
+Configure project
+   Each . represents 1024 bytes of output
+    . Size of output: 0K
+   Site: new-host.home
+   Build name: Darwin-c++
+Start processing tests
+Build project
+   Each symbol represents 1024 bytes of output.
+   '!' represents an error and '*' a warning.
+    .!!! Size of output: 3K
+   6 Compiler errors
+   0 Compiler warnings
+   Site: new-host.home
+   Build name: Darwin-c++
+Start processing tests
+Submit files (using http)
+   Using HTTP submit method
+   Drop site: http://picsl.upenn.edu/cdash/submit.php?project=ANTS
+   Uploaded: /Users/nick/pkg/PICSL/ANTS/bin/Testing/20100212-0500/Build.xml
+   Uploaded: /Users/nick/pkg/PICSL/ANTS/bin/Testing/20100212-0500/Configure.xml
+   Uploaded: /Users/nick/pkg/PICSL/ANTS/bin/Testing/20100212-0500/Update.xml
+   Submission successful
+   Site: new-host.home
+   Build name: Darwin-c++
+Start processing tests
+Test project /Users/nick/pkg/PICSL/ANTS/bin
+  1/132 Testing ANTS_CC_1                        Passed
+  2/132 Testing ANTS_CC_1_WARP                   Passed
+  3/132 Testing ANTS_CC_1_JPG                    Passed
+  4/132 Testing ANTS_CC_1_WARP_METRIC_0       ***Failed 
+  5/132 Testing ANTS_CC_1_WARP_METRIC_1       ***Failed 
+  6/132 Testing ANTS_CC_1_WARP_METRIC_2          Passed
+  7/132 Testing ANTS_CC_1_INVERSEWARP            Passed
+  8/132 Testing ANTS_CC_1_INVERSEWARP_METRIC_0***Failed 
+  9/132 Testing ANTS_CC_1_INVERSEWARP_METRIC_1***Failed 
+ 10/132 Testing ANTS_CC_1_INVERSEWARP_METRIC_2   Passed
+ 11/132 Testing ANTS_CC_2                        Passed
+ 12/132 Testing ANTS_CC_2_WARP                   Passed
+ 13/132 Testing ANTS_CC_2_JPG                    Passed
+ 14/132 Testing ANTS_CC_2_WARP_METRIC_0       ***Failed 
+ 15/132 Testing ANTS_CC_2_WARP_METRIC_1       ***Failed 
+ 16/132 Testing ANTS_CC_2_WARP_METRIC_2          Passed
+ 17/132 Testing ANTS_CC_2_INVERSEWARP            Passed
+ 18/132 Testing ANTS_CC_2_INVERSEWARP_METRIC_0***Failed 
+ 19/132 Testing ANTS_CC_2_INVERSEWARP_METRIC_1***Failed 
+ 20/132 Testing ANTS_CC_2_INVERSEWARP_METRIC_2   Passed
+ 21/132 Testing ANTS_CC_3                        Passed
+ 22/132 Testing ANTS_CC_3_WARP                   Passed
+ 23/132 Testing ANTS_CC_3_JPG                    Passed
+ 24/132 Testing ANTS_CC_3_WARP_METRIC_0       ***Failed 
+ 25/132 Testing ANTS_CC_3_WARP_METRIC_1       ***Failed 
+ 26/132 Testing ANTS_CC_3_WARP_METRIC_2          Passed
+ 27/132 Testing ANTS_CC_3_INVERSEWARP            Passed
+ 28/132 Testing ANTS_CC_3_INVERSEWARP_METRIC_0***Failed 
+ 29/132 Testing ANTS_CC_3_INVERSEWARP_METRIC_1***Failed 
+ 30/132 Testing ANTS_CC_3_INVERSEWARP_METRIC_2   Passed
+ 31/132 Testing ANTS_MSQ                         Passed
+ 32/132 Testing ANTS_MSQ_WARP                    Passed
+ 33/132 Testing ANTS_MSQ_JPG                     Passed
+ 34/132 Testing ANTS_MSQ_WARP_METRIC_0        ***Failed 
+ 35/132 Testing ANTS_MSQ_WARP_METRIC_1        ***Failed 
+ 36/132 Testing ANTS_MSQ_WARP_METRIC_2           Passed
+ 37/132 Testing ANTS_MSQ_INVERSEWARP             Passed
+ 38/132 Testing ANTS_MSQ_INVERSEWARP_METRIC_0 ***Failed 
+ 39/132 Testing ANTS_MSQ_INVERSEWARP_METRIC_1 ***Failed 
+ 40/132 Testing ANTS_MSQ_INVERSEWARP_METRIC_2    Passed
+ 41/132 Testing ANTS_MI_1                        Passed
+ 42/132 Testing ANTS_MI_1_WARP                   Passed
+ 43/132 Testing ANTS_MI_1_JPG                    Passed
+ 44/132 Testing ANTS_MI_1_WARP_METRIC_0       ***Failed 
+ 45/132 Testing ANTS_MI_1_WARP_METRIC_1       ***Failed 
+ 46/132 Testing ANTS_MI_1_WARP_METRIC_2          Passed
+ 47/132 Testing ANTS_MI_1_INVERSEWARP            Passed
+ 48/132 Testing ANTS_MI_1_INVERSEWARP_METRIC_0***Failed 
+ 49/132 Testing ANTS_MI_1_INVERSEWARP_METRIC_1***Failed 
+ 50/132 Testing ANTS_MI_1_INVERSEWARP_METRIC_2   Passed
+ 51/132 Testing ANTS_MI_2                        Passed
+ 52/132 Testing ANTS_MI_2_WARP                   Passed
+ 53/132 Testing ANTS_MI_2_JPG                    Passed
+ 54/132 Testing ANTS_MI_2_WARP_METRIC_0       ***Failed 
+ 55/132 Testing ANTS_MI_2_WARP_METRIC_1       ***Failed 
+ 56/132 Testing ANTS_MI_2_WARP_METRIC_2          Passed
+ 57/132 Testing ANTS_MI_2_INVERSEWARP            Passed
+ 58/132 Testing ANTS_MI_2_INVERSEWARP_METRIC_0***Failed 
+ 59/132 Testing ANTS_MI_2_INVERSEWARP_METRIC_1***Failed 
+ 60/132 Testing ANTS_MI_2_INVERSEWARP_METRIC_2   Passed
+ 61/132 Testing ANTS_ELASTIC                     Passed
+ 62/132 Testing ANTS_ELASTIC_WARP                Passed
+ 63/132 Testing ANTS_ELASTIC_JPG                 Passed
+ 64/132 Testing ANTS_ELASTIC_WARP_METRIC_0    ***Failed 
+ 65/132 Testing ANTS_ELASTIC_WARP_METRIC_1    ***Failed 
+ 66/132 Testing ANTS_ELASTIC_WARP_METRIC_2       Passed
+ 67/132 Testing ANTS_GSYN                        Passed
+ 68/132 Testing ANTS_GSYN_WARP                   Passed
+ 69/132 Testing ANTS_GSYN_JPG                    Passed
+ 70/132 Testing ANTS_GSYN_WARP_METRIC_0       ***Failed 
+ 71/132 Testing ANTS_GSYN_WARP_METRIC_1       ***Failed 
+ 72/132 Testing ANTS_GSYN_WARP_METRIC_2          Passed
+ 73/132 Testing ANTS_GSYN_INVERSEWARP            Passed
+ 74/132 Testing ANTS_GSYN_JPGINV                 Passed
+ 75/132 Testing ANTS_GSYN_INVERSEWARP_METRIC_0***Failed 
+ 76/132 Testing ANTS_GSYN_INVERSEWARP_METRIC_1***Failed 
+ 77/132 Testing ANTS_GSYN_INVERSEWARP_METRIC_2   Passed
+ 78/132 Testing ANTS_EXP                         Passed
+ 79/132 Testing ANTS_EXP_WARP                    Passed
+ 80/132 Testing ANTS_EXP_JPG                     Passed
+ 81/132 Testing ANTS_EXP_WARP_METRIC_0        ***Failed 
+ 82/132 Testing ANTS_EXP_WARP_METRIC_1        ***Failed 
+ 83/132 Testing ANTS_EXP_WARP_METRIC_2           Passed
+ 84/132 Testing ANTS_EXP_INVERSEWARP             Passed
+ 85/132 Testing ANTS_EXP_INVERSEWARP_METRIC_0 ***Failed 
+ 86/132 Testing ANTS_EXP_INVERSEWARP_METRIC_1 ***Failed 
+ 87/132 Testing ANTS_EXP_INVERSEWARP_METRIC_2    Passed
+ 88/132 Testing ANTS_SYN                         Passed
+ 89/132 Testing ANTS_SYN_WARP                    Passed
+ 90/132 Testing ANTS_SYN_JPG                     Passed
+ 91/132 Testing ANTS_SYN_WARP_METRIC_0        ***Failed 
+ 92/132 Testing ANTS_SYN_WARP_METRIC_1        ***Failed 
+ 93/132 Testing ANTS_SYN_WARP_METRIC_2           Passed
+ 94/132 Testing ANTS_SYN_INVERSEWARP             Passed
+ 95/132 Testing ANTS_SYN_JPGINV                  Passed
+ 96/132 Testing ANTS_SYN_INVERSEWARP_METRIC_0 ***Failed 
+ 97/132 Testing ANTS_SYN_INVERSEWARP_METRIC_1 ***Failed 
+ 98/132 Testing ANTS_SYN_INVERSEWARP_METRIC_2    Passed
+ 99/132 Testing ANTS_PSE_MSQ_IMG                 Passed
+100/132 Testing ANTS_PSE_MSQ_IMG_WARP            Passed
+101/132 Testing ANTS_PSE_JPG                     Passed
+102/132 Testing ANTS_PSE_MSQ_IMG_WARP_METRIC_0   Passed
+103/132 Testing ANTS_PSE_MSQ_IMG_WARP_METRIC_1***Failed 
+104/132 Testing ANTS_PSE_MSQ_IMG_WARP_METRIC_2   Passed
+105/132 Testing ANTS_PSE_MSQ_IMG_INVERSEWARP     Passed
+106/132 Testing ANTS_PSE_JPGINV                  Passed
+107/132 Testing ANTS_PSE_MSQ_IMG_INVERSEWARP_M   Passed
+108/132 Testing ANTS_PSE_MSQ_IMG_INVERSEWARP_M***Failed 
+109/132 Testing ANTS_PSE_MSQ_IMG_INVERSEWARP_M   Passed
+110/132 Testing ANTS_PSE_MSQ_TXT                 Passed
+111/132 Testing ANTS_PSE_MSQ_VTK                 Passed
+112/132 Testing ANTS_ROT_GSYN                    Passed
+113/132 Testing ANTS_ROT_GSYN_WARP               Passed
+114/132 Testing ANTS_ROT_GSYN_WARP_METRIC_0      Passed
+115/132 Testing ANTS_ROT_GSYN_INVERSEWARP        Passed
+116/132 Testing ANTS_ROT_GSYN_INVERSEWARP_METR***Failed 
+117/132 Testing ANTS_ROT_EXP                     Passed
+118/132 Testing ANTS_ROT_EXP_WARP                Passed
+119/132 Testing ANTS_ROT_EXP_WARP_METRIC_0       Passed
+120/132 Testing ANTS_ROT_EXP_WARP2               Passed
+121/132 Testing ANTS_ROT_EXP_WARP2_METRIC_0_2    Passed
+122/132 Testing ANTS_ROT_EXP_INVERSEWARP         Passed
+123/132 Testing ANTS_ROT_EXP_INVERSEWARP_METRI   Passed
+124/132 Testing ANTS_ROT_EXP_INVERSEWARP2        Passed
+125/132 Testing ANTS_ROT_EXP_INVERSEWARP2_METR   Passed
+126/132 Testing ANTS_SYN_WITH_TIME               Passed
+127/132 Testing ANTS_SYN_WITH_TIME_WARP          Passed
+128/132 Testing ANTS_SYN_WITH_TIME_METRIC        Passed
+129/132 Testing APOC_OTSU_INIT                   Passed
+130/132 Testing APOC_OTSU_INIT_RADIUS_2x2        Passed
+131/132 Testing APOC_KMEANS_INIT                 Passed
+132/132 Testing APOC_PRIORLABELIMAGE_INIT        Passed
+
+69% tests passed, 41 tests failed out of 132
+	  4 - ANTS_CC_1_WARP_METRIC_0 (Failed)
+	  5 - ANTS_CC_1_WARP_METRIC_1 (Failed)
+	  8 - ANTS_CC_1_INVERSEWARP_METRIC_0 (Failed)
+	  9 - ANTS_CC_1_INVERSEWARP_METRIC_1 (Failed)
+	 14 - ANTS_CC_2_WARP_METRIC_0 (Failed)
+	 15 - ANTS_CC_2_WARP_METRIC_1 (Failed)
+	 18 - ANTS_CC_2_INVERSEWARP_METRIC_0 (Failed)
+	 19 - ANTS_CC_2_INVERSEWARP_METRIC_1 (Failed)
+	 24 - ANTS_CC_3_WARP_METRIC_0 (Failed)
+	 25 - ANTS_CC_3_WARP_METRIC_1 (Failed)
+	 28 - ANTS_CC_3_INVERSEWARP_METRIC_0 (Failed)
+	 29 - ANTS_CC_3_INVERSEWARP_METRIC_1 (Failed)
+	 34 - ANTS_MSQ_WARP_METRIC_0 (Failed)
+	 35 - ANTS_MSQ_WARP_METRIC_1 (Failed)
+	 38 - ANTS_MSQ_INVERSEWARP_METRIC_0 (Failed)
+	 39 - ANTS_MSQ_INVERSEWARP_METRIC_1 (Failed)
+	 44 - ANTS_MI_1_WARP_METRIC_0 (Failed)
+	 45 - ANTS_MI_1_WARP_METRIC_1 (Failed)
+	 48 - ANTS_MI_1_INVERSEWARP_METRIC_0 (Failed)
+	 49 - ANTS_MI_1_INVERSEWARP_METRIC_1 (Failed)
+	 54 - ANTS_MI_2_WARP_METRIC_0 (Failed)
+	 55 - ANTS_MI_2_WARP_METRIC_1 (Failed)
+	 58 - ANTS_MI_2_INVERSEWARP_METRIC_0 (Failed)
+	 59 - ANTS_MI_2_INVERSEWARP_METRIC_1 (Failed)
+	 64 - ANTS_ELASTIC_WARP_METRIC_0 (Failed)
+	 65 - ANTS_ELASTIC_WARP_METRIC_1 (Failed)
+	 70 - ANTS_GSYN_WARP_METRIC_0 (Failed)
+	 71 - ANTS_GSYN_WARP_METRIC_1 (Failed)
+	 75 - ANTS_GSYN_INVERSEWARP_METRIC_0 (Failed)
+	 76 - ANTS_GSYN_INVERSEWARP_METRIC_1 (Failed)
+	 81 - ANTS_EXP_WARP_METRIC_0 (Failed)
+	 82 - ANTS_EXP_WARP_METRIC_1 (Failed)
+	 85 - ANTS_EXP_INVERSEWARP_METRIC_0 (Failed)
+	 86 - ANTS_EXP_INVERSEWARP_METRIC_1 (Failed)
+	 91 - ANTS_SYN_WARP_METRIC_0 (Failed)
+	 92 - ANTS_SYN_WARP_METRIC_1 (Failed)
+	 96 - ANTS_SYN_INVERSEWARP_METRIC_0 (Failed)
+	 97 - ANTS_SYN_INVERSEWARP_METRIC_1 (Failed)
+	103 - ANTS_PSE_MSQ_IMG_WARP_METRIC_1 (Failed)
+	108 - ANTS_PSE_MSQ_IMG_INVERSEWARP_METRIC_1 (Failed)
+	116 - ANTS_ROT_GSYN_INVERSEWARP_METRIC_0 (Failed)
+   Site: new-host.home
+   Build name: Darwin-c++
+Start processing tests
+Submit files (using http)
+   Using HTTP submit method
+   Drop site: http://picsl.upenn.edu/cdash/submit.php?project=ANTS
+   Uploaded: /Users/nick/pkg/PICSL/ANTS/bin/Testing/20100212-0500/Build.xml
+   Uploaded: /Users/nick/pkg/PICSL/ANTS/bin/Testing/20100212-0500/Configure.xml
+   Uploaded: /Users/nick/pkg/PICSL/ANTS/bin/Testing/20100212-0500/Test.xml
+   Uploaded: /Users/nick/pkg/PICSL/ANTS/bin/Testing/20100212-0500/Update.xml
+   Submission successful
+   Site: new-host.home
+   Build name: Darwin-c++
+Start processing tests
+Submit files (using http)
+   Using HTTP submit method
+   Drop site: http://picsl.upenn.edu/cdash/submit.php?project=ANTS
+   Uploaded: /Users/nick/pkg/PICSL/ANTS/bin/Testing/20100212-0500/Build.xml
+   Uploaded: /Users/nick/pkg/PICSL/ANTS/bin/Testing/20100212-0500/Configure.xml
+   Uploaded: /Users/nick/pkg/PICSL/ANTS/bin/Testing/20100212-0500/Test.xml
+   Uploaded: /Users/nick/pkg/PICSL/ANTS/bin/Testing/20100212-0500/Update.xml
+   Submission successful

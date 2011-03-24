@@ -1,0 +1,114 @@
+? .DS_Store
+? GaborFeatureImage.cxx
+? JunctionAndBranch.cxx
+? MakeCheckerBoardImage.cxx
+? OldCode
+? Statistics
+? CustomColormaps/.DS_Store
+M ApocritaSegmentation.cxx
+M AtroposSegmentation.cxx
+M ConvertLabeledPointSet.cxx
+M FastMarching.cxx
+M HessianBasedFeatures.cxx
+R RegisterPointSetsFFD.cxx
+M SegmentAirways.cxx
+M UnaryOperateImage.cxx
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /Users/nick/pkg/Utilities/bin
+[  0%] Built target AdaptiveHistogramEqualizeImage
+[  1%] Built target AddGaussianNoiseToImage
+[  2%] Built target AddImpulseNoiseToImage
+[  3%] Built target AlignImageCenters
+[  4%] Built target ApproximateImageWithBSplines
+[  7%] Built target AtroposSegmentation
+[  8%] Built target BSplineBasisFunctions
+[  9%] Built target BinaryMorphology
+[ 10%] Built target BinaryOperateImages
+[ 11%] Built target BoykovGraphCutFilter
+[ 12%] Built target CalculateFirstOrderStatisticsFromImage
+[ 13%] Built target CalculateHausdorffDistance
+[ 14%] Built target CalculateStatisticsFromImagePair
+[ 15%] Built target CalculateVolumeFromBinaryImage
+[ 16%] Built target ChangeImageInformation
+[ 17%] Built target CompareLandmarks
+[ 18%] Built target ConcatenateAvantsLandmarks
+[ 19%] Built target ConvertAvantsLandmarkFileToVTK
+[ 20%] Built target ConvertAvantsLandmarkFileToVTKLines
+[ 21%] Built target ConvertDICOMImageSeries
+[ 22%] Built target ConvertDeformationFieldToAvantsLandmarkFiles
+[ 23%] Built target ConvertImage
+[ 24%] Built target ConvertImageSeries
+[ 25%] Built target ConvertImageToDICOM
+[ 26%] Built target ConvertLabeledPointSet
+[ 27%] Built target ConvertScalarImageToRGB
+[ 28%] Built target ConvertScalarImageToVTKSurface
+[ 29%] Built target ConvertUnlabeledPointSet
+[ 30%] Built target CreateDeformedGrid
+[ 31%] Built target CreateDirectionalStrainImages
+[ 32%] Built target CreateImageSource
+[ 33%] Built target CreatePCAImageDecomposition
+[ 34%] Built target CreatePrincipalStrainImages
+[ 35%] Built target CreateTopologicalNumberMapFromBinaryImage
+[ 36%] Built target CreateZeroImage
+[ 37%] Built target DiceMetric
+[ 38%] Built target DivideLungs
+[ 39%] Built target ExtractContours
+[ 40%] Built target ExtractLungs
+[ 41%] Built target ExtractMaskImage
+[ 42%] Built target ExtractRegionFromImage
+[ 43%] Built target ExtractSliceFromImage
+[ 44%] Built target ExtractTagLinePoints
+[ 45%] Built target FastMarching
+[ 46%] Built target FitBSplineCurveToAvantsLandmarks
+[ 47%] Built target FlipImage
+[ 48%] Built target FloodFill
+[ 49%] Built target GeneralToBSplineDeformationField
+[ 50%] Built target GenerateAttenuationMask
+[ 50%] Built target GenerateCooccurrenceMeasures
+[ 51%] Built target GenerateDeformationFieldMagnitudeImage
+[ 52%] Built target GenerateDistanceImage
+[ 53%] Built target GenerateFractalImage
+[ 54%] Built target GenerateImageFromControlPointLattice
+[ 55%] Built target GeneratePercentileAttenuationMask
+[ 56%] Built target GenerateRunLengthMeasures
+[ 57%] Built target GenerateStatisticsFromImage
+[ 58%] Built target GenerateTPSDeformationField
+[ 59%] Built target GenerateVectorFieldFromControlPointLattice
+[ 60%] Built target GetConnectedComponents
+[ 61%] Built target GradientAnisotropicDiffusionImageFilter
+[ 62%] Built target GradientMagnitudeImageFilter
+[ 63%] Built target GrayscaleMorphology
+[ 64%] Built target HessianBasedFeatures
+[ 65%] Built target HistogramMatchImages
+[ 66%] Built target HoughTransform
+[ 69%] Built target InhomogeneityCorrectImage
+[ 70%] Built target JHCT
+[ 71%] Built target LabelGeometryMeasures
+[ 72%] Built target LabelOverlapMeasures
+[ 73%] Built target MakePDFImageFromPointSet
+[ 74%] Built target MinimalPath
+[ 75%] Built target MultipleOperateImages
+[ 76%] Built target OtsuThresholdImage
+[ 77%] Built target PadImage
+[ 78%] Built target PermuteAxesImage
+[ 79%] Built target PointSetPairStatistics
+[ 80%] Built target RegionalMinMax
+[ 83%] Built target RegisterPointSetsDMFFD
+[ 84%] Built target ResampleImage
+[ 85%] Built target RescaleImageIntensity
+[ 86%] Built target Rigid3DTransformImage
+[ 87%] Built target SegmentAirways
+[ 88%] Built target SegmentHeliumLungs
+[ 89%] Built target SeparateLungs
+[ 90%] Built target ShapeMorphology
+[ 91%] Built target ShapePriorLevelSet
+[ 92%] Built target SmoothLungs
+[ 93%] Built target SplitHeliumLungs
+[ 94%] Built target ThresholdImage
+[ 95%] Built target TileImages
+[ 96%] Built target UnaryOperateImage
+[ 97%] Built target WarpPoints
+[ 98%] Built target WarpVTKPolyData
+[ 99%] Built target WellComposeImage
+[100%] Built target ZeroCrossingImage

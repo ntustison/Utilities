@@ -1,0 +1,95 @@
+? .DS_Store
+? Applications/.DS_Store
+? Applications/ExtractImageRegion/.DS_Store
+? Code/.DS_Store
+? Code/Experimental
+? Code/Review/.DS_Store
+? Examples/.DS_Store
+? Testing/.DS_Store
+? Testing/Code/.DS_Store
+? Testing/Data/.DS_Store
+? Utilities/vxl/config/cmake/Modules/VXLConfig.cmake
+? Validation/StatisticalClustering/Inputs/.DS_Store
+M itkIncludeDirectories.cmake
+M Code/BasicFilters/itkBSplineInterpolateImageFunction.h
+M Code/BasicFilters/itkBSplineInterpolateImageFunction.txx
+M Code/BasicFilters/itkLabelStatisticsImageFilter.h
+P Code/Common/itkVersion.h
+M Code/Numerics/Statistics/itkKdTreeBasedKmeansEstimator.h
+M Code/Numerics/Statistics/itkScalarImageToGreyLevelCooccurrenceMatrixGenerator.h
+-- Found UUID: /System/Library/Frameworks/System.framework
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /Users/nick/pkg/InsightToolkit/bin
+[  0%] Built target itksys
+[  5%] Built target itkjpeg8
+[ 11%] Built target itkjpeg12
+[ 16%] Built target itkjpeg16
+[ 17%] Built target itkzlib
+[ 18%] Built target itkpng
+[ 18%] Built target itkmkg3states
+[ 21%] Built target itktiff
+[ 22%] Built target itkopenjpeg
+[ 24%] Built target ITKMetaIO
+[ 27%] Built target ITKNrrdIO
+[ 28%] Built target ITKEXPAT
+[ 28%] Built target ITKznz
+[ 28%] Built target ITKniftiio
+[ 28%] Built target ITKDICOMParser
+[ 29%] Built target itkvcl
+[ 50%] Built target itkv3p_netlib
+[ 50%] Built target itktestlib
+[ 68%] Built target itkvnl
+[ 73%] Built target itkvnl_algo
+[ 75%] Built target itkNetlibSlatec
+[ 78%] Built target itkgdcm
+[ 79%] Built target itkvnl_inst
+Scanning dependencies of target ITKCommon
+[ 79%] Building CXX object Code/Common/CMakeFiles/ITKCommon.dir/itkObjectFactoryBase.o
+[ 79%] Building CXX object Code/Common/CMakeFiles/ITKCommon.dir/itkTransformFactoryBase.o
+[ 79%] Building CXX object Code/Common/CMakeFiles/ITKCommon.dir/itkVersion.o
+Linking CXX static library ../../bin/libITKCommon.a
+[ 86%] Built target ITKCommon
+[ 89%] Built target ITKNumerics
+[ 89%] Built target ITKBasicFilters
+[ 90%] Built target ITKStatistics
+[ 90%] Built target ITKAlgorithms
+Scanning dependencies of target ITKSpatialObject
+[ 90%] Building CXX object Code/SpatialObject/CMakeFiles/ITKSpatialObject.dir/itkSpatialObjectFactoryBase.o
+Linking CXX static library ../../bin/libITKSpatialObject.a
+[ 90%] Built target ITKSpatialObject
+Scanning dependencies of target ITKIO
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkNiftiImageIOFactory.o
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkAnalyzeImageIOFactory.o
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkBioRadImageIOFactory.o
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkBMPImageIOFactory.o
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkBrains2MaskImageIOFactory.o
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkDICOMImageIO2Factory.o
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkDicomImageIOFactory.o
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkGDCMImageIO.o
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkGDCMImageIOFactory.o
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkGE4ImageIOFactory.o
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkGE5ImageIOFactory.o
+[ 90%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkGEAdwImageIOFactory.o
+[ 91%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkGiplImageIOFactory.o
+[ 91%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkJPEGImageIOFactory.o
+[ 91%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkLSMImageIOFactory.o
+[ 92%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkMetaImageIOFactory.o
+[ 92%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkNrrdImageIOFactory.o
+[ 92%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkPNGImageIOFactory.o
+[ 92%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkSiemensVisionImageIOFactory.o
+[ 92%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkStimulateImageIOFactory.o
+[ 93%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkTIFFImageIOFactory.o
+[ 93%] Building CXX object Code/IO/CMakeFiles/ITKIO.dir/itkVTKImageIOFactory.o
+Linking CXX static library ../../bin/libITKIO.a
+[ 95%] Built target ITKIO
+Scanning dependencies of target ITKIOReview
+[ 96%] Building CXX object Code/Review/CMakeFiles/ITKIOReview.dir/itkBruker2DSEQImageIOFactory.o
+[ 96%] Building CXX object Code/Review/CMakeFiles/ITKIOReview.dir/itkPhilipsRECImageIOFactory.o
+[ 96%] Building CXX object Code/Review/CMakeFiles/ITKIOReview.dir/itkVoxBoCUBImageIOFactory.o
+Linking CXX static library ../../bin/libITKIOReview.a
+[ 96%] Built target ITKIOReview
+[ 96%] Built target ITKQuadEdgeMesh
+Linking CXX executable ../../bin/itkTestDriver
+[ 96%] Built target itkTestDriver
+[100%] Built target ITKFEM

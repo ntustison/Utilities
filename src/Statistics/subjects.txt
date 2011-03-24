@@ -1,0 +1,5 @@
+/Users/nick/Documents/Academic/Gee/Projects/ITK/HackzuLungStudies/Data/062706/SPD1/Registered/demons.hdr
+/Users/nick/Documents/Academic/Gee/Projects/ITK/HackzuLungStudies/Data/062706/SPD2/Registered/demons.hdr
+/Users/nick/Documents/Academic/Gee/Projects/ITK/HackzuLungStudies/Data/062706/SPD3/Registered/demons.hdr
+/Users/nick/Documents/Academic/Gee/Projects/ITK/HackzuLungStudies/Data/062706/SPD4/Registered/demons.hdr
+/Users/nick/Documents/Academic/Gee/Projects/ITK/HackzuLungStudies/Data/062706/SPD5/Registered/demons.hdr
