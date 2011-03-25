@@ -54,88 +54,147 @@ std::vector<TValue> ConvertVector( std::string optionString )
   return values;
 }
 
-template <unsigned int ImageDimension>
-int BB( unsigned int argc, char *argv[] )
+int main( unsigned int argc, char *argv[] )
 {
+  if ( argc < 7 )
+    {
+    std::cout << argv[0] << " inputImage outputImage center dimensions normal inplaneRotationAngle" << std::endl;
+    exit( 1 );
+    }
+
+  const unsigned int ImageDimension = 3;
+
   typedef float PixelType;
   typedef itk::Image<PixelType, ImageDimension> ImageType;
 
   typedef itk::GroupSpatialObject<ImageDimension> SceneType;
   typedef itk::SpatialObjectToImageFilter<SceneType, ImageType>
     SpatialObjectToImageFilterType;
-  typename SceneType::Pointer scene = SceneType::New();
+  SceneType::Pointer scene = SceneType::New();
 
   typedef itk::ImageFileReader<ImageType> ReaderType;
-  typename ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( argv[2] );
+  ReaderType::Pointer reader = ReaderType::New();
+  reader->SetFileName( argv[1] );
   reader->Update();
 
   std::vector<float> center =
-    ConvertVector<float>( std::string( argv[4] ) );
+    ConvertVector<float>( std::string( argv[3] ) );
   std::vector<float> dimensions =
-    ConvertVector<float>( std::string( argv[5] ) );
+    ConvertVector<float>( std::string( argv[4] ) );
   std::vector<float> normal =
-    ConvertVector<float>( std::string( argv[6] ) );
+    ConvertVector<float>( std::string( argv[5] ) );
+
+
+  // Find the angle between initial (assume initial = 1,0,0) and normal
+  std::vector<float> initial;
+  initial.push_back( 1.0 );
+  for( unsigned int i = 1; i < ImageDimension; i++ )
+    {
+    initial.push_back( 0 );
+    }
+
+  // Normalize normal vector and initial vector and find angle between them
+  float magnitudeNormal = 0.0;
+  float magnitudeInitial = 0.0;
+  for( unsigned int i = 0; i < ImageDimension; i++ )
+    {
+    magnitudeNormal += vnl_math_sqr( normal[i] );
+    magnitudeInitial += vnl_math_sqr( initial[i] );
+    }
+  magnitudeNormal = vcl_sqrt( magnitudeNormal );
+  magnitudeInitial = vcl_sqrt( magnitudeInitial );
+
+  float dotProduct = 0.0;
+  for( unsigned int i = 0; i < ImageDimension; i++ )
+    {
+    normal[i] /= magnitudeNormal;
+    initial[i] /= magnitudeInitial;
+
+    dotProduct += normal[i] * initial[i];
+    }
+  float theta = vcl_acos( dotProduct );
+
+  std::vector<float> crossProduct;
+  crossProduct.push_back( initial[1] * normal[2] - initial[2] * normal[1] );
+  crossProduct.push_back( -initial[0] * normal[2] + initial[2] * normal[0] );
+  crossProduct.push_back( initial[0] * normal[1] - initial[1] * normal[0] );
+
+  // Set up the box spatial object
 
   typedef itk::BoxSpatialObject<ImageDimension> BoxType;
-  typename BoxType::Pointer box = BoxType::New();
+  BoxType::Pointer box = BoxType::New();
 
   scene->AddSpatialObject( box );
 
-  typename BoxType::SizeType dimensions2;
-  typename BoxType::TransformType::MatrixType matrix;
-  typename BoxType::TransformType::OffsetType offset;
+  BoxType::SizeType dimensions2;
+  dimensions2[0] = dimensions[0];
+  dimensions2[1] = dimensions[1];
+  dimensions2[2] = dimensions[2];
+
+  BoxType::TransformType::MatrixType matrix;
+  BoxType::TransformType::OffsetType offset;
 
   matrix.SetIdentity();
 
-  for( unsigned int i = 0; i < ImageDimension; i++ )
-    {
-    double theta = vcl_acos( normal[i] );
-    if( ImageDimension == 2 )
-      {
-      matrix[0][0] = matrix[1][1] = vcl_cos( theta );
-      matrix[0][1] = vcl_sin( theta );
-      matrix[1][0] = -vcl_sin( theta );
-      break;
-      }
-    else
-      {
-      typename BoxType::TransformType::MatrixType dmatrix;
-      dmatrix.SetIdentity();
-      if( i == 0 )
-        {
-        dmatrix[1][1] = dmatrix[2][2] = vcl_cos( theta );
-        dmatrix[1][2] = -vcl_sin( theta );
-        dmatrix[2][1] = vcl_sin( theta );
-        }
-      else if( i == 1 )
-        {
-        dmatrix[0][0] = dmatrix[2][2] = vcl_cos( theta );
-        dmatrix[0][2] = vcl_sin( theta );
-        dmatrix[2][0] = -vcl_sin( theta );
-        }
-      else
-        {
-        dmatrix[0][0] = dmatrix[1][1] = vcl_cos( theta );
-        dmatrix[0][1] = -vcl_sin( theta );
-        dmatrix[1][0] = vcl_sin( theta );
-        }
-      matrix *= dmatrix;
-      }
-    }
+  float u = crossProduct[0];
+  float v = crossProduct[1];
+  float w = crossProduct[2];
+
+  float u2 = vnl_math_sqr( u );
+  float v2 = vnl_math_sqr( v );
+  float w2 = vnl_math_sqr( w );
+
+  matrix[0][0] = u2 + (v2 + w2) * vcl_cos( theta );
+  matrix[1][0] = u * v * ( 1.0 - vcl_cos( theta ) ) + w * vcl_sin( theta );
+  matrix[2][0] = u * w * ( 1.0 - vcl_cos( theta ) ) - v * vcl_sin( theta );
+
+  matrix[0][1] = u * v * ( 1.0 - vcl_cos( theta ) ) - w * vcl_sin( theta );
+  matrix[1][1] = v2 + (u2 + w2) * vcl_cos( theta );
+  matrix[2][1] = v * w * ( 1.0 - vcl_cos( theta ) ) + u * vcl_sin( theta );
+
+  matrix[0][2] = u * w * ( 1.0 - vcl_cos( theta ) ) + v * vcl_sin( theta );
+  matrix[1][2] = v * w * ( 1.0 - vcl_cos( theta ) ) - u * vcl_sin( theta );
+  matrix[2][2] = w2 + (u2 + v2) * vcl_cos( theta );
+
+  BoxType::TransformType::MatrixType matrix2;
+  matrix2.SetIdentity();
+
+  theta = atof( argv[6] );
+
+  u = normal[0];
+  v = normal[1];
+  w = normal[2];
+
+  u2 = vnl_math_sqr( u );
+  v2 = vnl_math_sqr( v );
+  w2 = vnl_math_sqr( w );
+
+  matrix2[0][0] = u2 + (v2 + w2) * vcl_cos( theta );
+  matrix2[1][0] = u * v * ( 1.0 - vcl_cos( theta ) ) + w * vcl_sin( theta );
+  matrix2[2][0] = u * w * ( 1.0 - vcl_cos( theta ) ) - v * vcl_sin( theta );
+
+  matrix2[0][1] = u * v * ( 1.0 - vcl_cos( theta ) ) - w * vcl_sin( theta );
+  matrix2[1][1] = v2 + (u2 + w2) * vcl_cos( theta );
+  matrix2[2][1] = v * w * ( 1.0 - vcl_cos( theta ) ) + u * vcl_sin( theta );
+
+  matrix2[0][2] = u * w * ( 1.0 - vcl_cos( theta ) ) + v * vcl_sin( theta );
+  matrix2[1][2] = v * w * ( 1.0 - vcl_cos( theta ) ) - u * vcl_sin( theta );
+  matrix2[2][2] = w2 + (u2 + v2) * vcl_cos( theta );
+
+  matrix2 *= matrix;
 
   for( unsigned int i = 0; i < ImageDimension; i++ )
-    {
-    dimensions2[i] = dimensions[i];
-    offset[i] = center[i];
-    for( unsigned int j = 0; j < ImageDimension; j++ )
       {
-      offset[i] -= matrix[i][j] * ( 0.5 * dimensions[j] );
+      dimensions2[i] = dimensions[i];
+      offset[i] = center[i];
+      for( unsigned int j = 0; j < ImageDimension; j++ )
+        {
+        offset[i] -= matrix2[i][j] * ( 0.5 * dimensions[j] );
+        }
       }
-    }
 
   box->SetSize( dimensions2 );
-  box->GetObjectToParentTransform()->SetMatrix( matrix );
+  box->GetObjectToParentTransform()->SetMatrix( matrix2 );
   box->GetObjectToParentTransform()->SetOffset( offset );
   box->ComputeObjectToWorldTransform();
 
@@ -145,7 +204,7 @@ int BB( unsigned int argc, char *argv[] )
 
 
 
-  typename SpatialObjectToImageFilterType::Pointer filter =
+  SpatialObjectToImageFilterType::Pointer filter =
     SpatialObjectToImageFilterType::New();
   filter->SetInput( scene );
   filter->SetSize( reader->GetOutput()->GetLargestPossibleRegion().GetSize() );
@@ -157,33 +216,11 @@ int BB( unsigned int argc, char *argv[] )
   filter->Update();
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
-  typename WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( argv[3] );
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName( argv[2] );
   writer->SetInput( filter->GetOutput() );
   writer->Update();
 
   return 0;
-}
-
-int main( int argc, char *argv[] )
-{
-  if ( argc < 7 )
-    {
-    std::cout << argv[0] << " imageDimension inputImage outputImage center dimensions normal" << std::endl;
-    exit( 1 );
-    }
-
-  switch( atoi( argv[1] ) )
-   {
-   case 2:
-     BB<2>( argc, argv );
-     break;
-   case 3:
-     BB<3>( argc, argv );
-     break;
-   default:
-      std::cerr << "Unsupported dimension" << std::endl;
-      exit( EXIT_FAILURE );
-   }
 }
 

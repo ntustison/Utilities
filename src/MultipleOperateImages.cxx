@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include <fstream>
+
 template <unsigned int ImageDimension>
 int MultipleOperateImages( int argc, char * argv[] )
 {
@@ -24,9 +26,25 @@ int MultipleOperateImages( int argc, char * argv[] )
    * list the files
    */
   std::cout << "Using the following files: " << std::endl;
-  for( unsigned int n = 4; n < static_cast<unsigned int>( argc ); n++ )
+  for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
     {
-    std::cout << "   " << n-3 << ": " << argv[n] << std::endl;
+    std::cout << "   " << n-4 << ": " << argv[n] << std::endl;
+    }
+
+  typename LabelImageType::Pointer mask = LabelImageType::New();
+  mask = NULL;
+  try
+    {
+    typedef itk::ImageFileReader<LabelImageType> ReaderType;
+    typename ReaderType::Pointer labelImageReader = ReaderType::New();
+    labelImageReader->SetFileName( argv[4] );
+    labelImageReader->Update();
+    mask = labelImageReader->GetOutput();
+//    labelImageReader->DisconnectPipeline();
+    }
+  catch(...)
+    {
+    std::cout << "Not using a mask." << std::endl;
     }
 
   std::string op = std::string( argv[2] );
@@ -48,13 +66,16 @@ int MultipleOperateImages( int argc, char * argv[] )
       reader->Update();
 
       N += 1.0;
-      itk::ImageRegionIterator<ImageType> It( reader->GetOutput(),
+      itk::ImageRegionIteratorWithIndex<ImageType> It( reader->GetOutput(),
         reader->GetOutput()->GetLargestPossibleRegion() );
       itk::ImageRegionIterator<ImageType> ItO( output,
         output->GetLargestPossibleRegion() );
       for( It.GoToBegin(), ItO.GoToBegin(); !It.IsAtEnd(); ++It, ++ItO )
         {
-        ItO.Set( ItO.Get() * ( N - 1.0 ) / N + It.Get() / N );
+        if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
+          {
+          ItO.Set( ItO.Get() * ( N - 1.0 ) / N + It.Get() / N );
+          }
         }
       }
 
@@ -88,10 +109,9 @@ int MultipleOperateImages( int argc, char * argv[] )
       reader->SetFileName( argv[n] );
       reader->Update();
 
-
       N += 1.0;
 
-      itk::ImageRegionIterator<ImageType> It( reader->GetOutput(),
+      itk::ImageRegionIteratorWithIndex<ImageType> It( reader->GetOutput(),
         reader->GetOutput()->GetLargestPossibleRegion() );
       itk::ImageRegionIterator<ImageType> ItO( output,
         output->GetLargestPossibleRegion() );
@@ -99,11 +119,14 @@ int MultipleOperateImages( int argc, char * argv[] )
         meanImage->GetLargestPossibleRegion() );
       for( It.GoToBegin(), ItO.GoToBegin(), ItM.GoToBegin(); !It.IsAtEnd(); ++It, ++ItO, ++ItM )
         {
-        ItM.Set( ItM.Get() * ( N - 1.0 ) / N + It.Get() / N );
-        if ( N > 1.0 )
+        if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
           {
-          ItO.Set( ItO.Get() * ( N - 1.0 )/N +
-            ( It.Get() - ItM.Get() )*( It.Get() - ItM.Get() ) / ( N - 1.0 ) );
+          ItM.Set( ItM.Get() * ( N - 1.0 ) / N + It.Get() / N );
+          if ( N > 1.0 )
+            {
+            ItO.Set( ItO.Get() * ( N - 1.0 )/N +
+              ( It.Get() - ItM.Get() )*( It.Get() - ItM.Get() ) / ( N - 1.0 ) );
+            }
           }
         }
       }
@@ -117,7 +140,7 @@ int MultipleOperateImages( int argc, char * argv[] )
   else if( op.compare( std::string( "s" ) ) == 0 )
     {
     std::vector<typename LabelImageType::Pointer> labelImages;
-    for( unsigned int n = 4; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
       {
       typename LabelReaderType::Pointer reader = LabelReaderType::New();
       reader->SetFileName( argv[n] );
@@ -178,53 +201,56 @@ int MultipleOperateImages( int argc, char * argv[] )
 
     for( It.GoToBegin(); !It.IsAtEnd(); ++It )
       {
-      labelCount.Fill( 0 );
-      for( unsigned int n = 0; n < labelImages.size(); n++ )
+      if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
         {
-        LabelType label = labelImages[n]->GetPixel( It.GetIndex() );
-        std::vector<LabelType>::iterator loc
-          = std::find( labels.begin(), labels.end(), label );
-        if( loc == labels.end() )
+        labelCount.Fill( 0 );
+        for( unsigned int n = 0; n < labelImages.size(); n++ )
           {
-          std::cerr << "Label " << label << " not found." << std::endl;
-          return EXIT_FAILURE;
+          LabelType label = labelImages[n]->GetPixel( It.GetIndex() );
+          std::vector<LabelType>::iterator loc
+            = std::find( labels.begin(), labels.end(), label );
+          if( loc == labels.end() )
+            {
+            std::cerr << "Label " << label << " not found." << std::endl;
+            return EXIT_FAILURE;
+            }
+          unsigned int index = static_cast<unsigned int>(
+            std::distance( labels.begin(), loc ) );
+          labelCount[index]++;
           }
-        unsigned int index = static_cast<unsigned int>(
-          std::distance( labels.begin(), loc ) );
-        labelCount[index]++;
-        }
 
-      if( labelCount[backgroundIndex] == labelImages.size() )
-        {
-        continue;
-        }
-
-      float totalProbability = 0.0;
-      for( unsigned int m = 0; m < labelCount.Size(); m++ )
-        {
-        if( m == backgroundIndex )
+        if( labelCount[backgroundIndex] == labelImages.size() )
           {
           continue;
           }
-        float probability = static_cast<float>( labelCount[m] ) /
-          static_cast<float>( labelImages.size() );
 
-        if( probability > maxProbabilities[m] )
+        float totalProbability = 0.0;
+        for( unsigned int m = 0; m < labelCount.Size(); m++ )
           {
-          maxProbabilities[m] = probability;
-          }
-        for( unsigned int n = 0; n < labelCount.Size(); n++ )
-          {
-          if( m == n || n == backgroundIndex )
+          if( m == backgroundIndex )
             {
             continue;
             }
-          probability *= ( 1.0 - static_cast<float>( labelCount[n] ) /
-          static_cast<float>( labelImages.size() ) );
+          float probability = static_cast<float>( labelCount[m] ) /
+            static_cast<float>( labelImages.size() );
+
+          if( probability > maxProbabilities[m] )
+            {
+            maxProbabilities[m] = probability;
+            }
+          for( unsigned int n = 0; n < labelCount.Size(); n++ )
+            {
+            if( m == n || n == backgroundIndex )
+              {
+              continue;
+              }
+            probability *= ( 1.0 - static_cast<float>( labelCount[n] ) /
+            static_cast<float>( labelImages.size() ) );
+            }
+          totalProbability += probability;
           }
-        totalProbability += probability;
+        output->SetPixel( It.GetIndex(), totalProbability );
         }
-      output->SetPixel( It.GetIndex(), totalProbability );
       }
 
     /**
@@ -328,21 +354,24 @@ int MultipleOperateImages( int argc, char * argv[] )
       output->GetLargestPossibleRegion() );
     for( ItO.GoToBegin(); !ItO.IsAtEnd(); ++ItO )
       {
-      float probability = 0.0;
-      for( unsigned int i = 0; i < images.size(); i++ )
+      if( mask && mask->GetPixel( ItO.GetIndex() ) != 0 )
         {
-        float negation = 1.0;
-        for( unsigned int j = 0; j < images.size(); j++ )
+        float probability = 0.0;
+        for( unsigned int i = 0; i < images.size(); i++ )
           {
-          if( i == j )
+          float negation = 1.0;
+          for( unsigned int j = 0; j < images.size(); j++ )
             {
-            continue;
+            if( i == j )
+              {
+              continue;
+              }
+            negation *= ( 1.0 - images[j]->GetPixel( ItO.GetIndex() ) );
             }
-          negation *= ( 1.0 - images[j]->GetPixel( ItO.GetIndex() ) );
+          probability += negation * images[i]->GetPixel( ItO.GetIndex() );
           }
-        probability += negation * images[i]->GetPixel( ItO.GetIndex() );
+        ItO.Set( probability );
         }
-      ItO.Set( probability );
       }
     typedef itk::ImageFileWriter<ImageType> WriterType;
     typename WriterType::Pointer writer = WriterType::New();
@@ -353,7 +382,7 @@ int MultipleOperateImages( int argc, char * argv[] )
   else if( op.compare( std::string( "ex" ) ) == 0 )
     {
     std::vector<typename ImageType::Pointer> images;
-    for( unsigned int n = 4; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
       {
       typename ReaderType::Pointer reader = ReaderType::New();
       reader->SetFileName( argv[n] );
@@ -373,18 +402,47 @@ int MultipleOperateImages( int argc, char * argv[] )
       output->GetLargestPossibleRegion() );
     for( ItO.GoToBegin(); !ItO.IsAtEnd(); ++ItO )
       {
-      float exVent = 0.0;
-      for( unsigned int i = 0; i < images.size(); i++ )
+      if( !mask || mask->GetPixel( ItO.GetIndex() ) != 0 )
         {
-        exVent += ( ( i + 1 ) * images[i]->GetPixel( ItO.GetIndex() ) );
+        float exVent = 0.0;
+        for( unsigned int i = 0; i < images.size(); i++ )
+          {
+          exVent += ( ( i + 1 ) * images[i]->GetPixel( ItO.GetIndex() ) );
+          }
+        ItO.Set( exVent );
         }
-      ItO.Set( exVent );
       }
     typedef itk::ImageFileWriter<ImageType> WriterType;
     typename WriterType::Pointer writer = WriterType::New();
     writer->SetInput( output );
     writer->SetFileName( argv[3] );
     writer->Update();
+    }
+  else if( op.compare( std::string( "sample" ) ) == 0 )
+    {
+    std::vector<typename ImageType::Pointer> images;
+    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( argv[n] );
+      reader->Update();
+      images.push_back( reader->GetOutput() );
+      }
+
+    std::ofstream str( argv[3] );
+    itk::ImageRegionIteratorWithIndex<ImageType> It( images[0],
+      images[0]->GetLargestPossibleRegion() );
+    for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+      {
+      if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
+        {
+        for( unsigned int n = 0; n < images.size(); n++ )
+          {
+          str << images[n]->GetPixel( It.GetIndex() ) << " ";
+          }
+        str << std::endl;
+        }
+      }
     }
   else
     {
@@ -399,14 +457,15 @@ int main( int argc, char *argv[] )
   if( argc < 6 )
     {
     std::cerr << "Usage: " << std::endl;
-    std::cerr << argv[0] << " imageDimension operation outputImage "
+    std::cerr << argv[0] << " imageDimension operation outputImage [maskImage] "
               << "image-list-via-wildcard " << std::endl;
     std::cerr << "  operations: " << std::endl;
-    std::cerr << "    s:    Create speed image from atlas" << std::endl;
-    std::cerr << "    mean: Create mean image" << std::endl;
-    std::cerr << "    var:  Create variance image" << std::endl;
-    std::cerr << "    w:    create probabilistic weight image from label probability images" << std::endl;
-    std::cerr << "    ex:   Create expected ventilation from posterior prob. images" << std::endl;
+    std::cerr << "    s:      Create speed image from atlas" << std::endl;
+    std::cerr << "    mean:   Create mean image" << std::endl;
+    std::cerr << "    var:    Create variance image" << std::endl;
+    std::cerr << "    w:      create probabilistic weight image from label probability images" << std::endl;
+    std::cerr << "    ex:     Create expected ventilation from posterior prob. images" << std::endl;
+    std::cerr << "    sample: Print samples to output text file (specified in place of outputImage)" << std::endl;
     return EXIT_FAILURE;
     }
 
