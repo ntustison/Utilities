@@ -46,6 +46,8 @@ link_directories(
 
 set(SOURCES "/Users/ntustison/Pkg/Utilities/ExperimentalITK/Common/itkCommandLineParser" "/Users/ntustison/Pkg/Utilities/ExperimentalITK/Common/itkCommandLineOption" )
 
+set(UI_SOURCES "../ExperimentalITK/Common/antsCommandLineParser" "../ExperimentalITK/Common/antsCommandLineOption" )
+
 add_executable( itkTimeAndMemoryProbeTest itkTimeAndMemoryProbeTest.cxx )
 target_link_libraries( itkTimeAndMemoryProbeTest ${ITK_LIBRARIES})
 
@@ -307,6 +309,9 @@ target_link_libraries(InvertImageIntensity ${ITK_LIBRARIES})
 
 #add_executable(JHCT JHCT.cxx)
 #target_link_libraries(JHCT ${ITK_LIBRARIES} )
+
+add_executable(KellyKapowski KellyKapowski.cxx ${UI_SOURCES})
+target_link_libraries(KellyKapowski ${ITK_LIBRARIES})
 
 # add_executable(EvaluatePointSetMetric EvaluatePointSetMetric.cxx)
 # target_link_libraries(EvaluatePointSetMetric ${ITK_LIBRARIES} )
