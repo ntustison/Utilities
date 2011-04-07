@@ -76,6 +76,8 @@ public:
 
   /** Convenient typedefs for simplifying declarations. */
   typedef TInputImage                           InputImageType;
+  typedef typename InputImageType::Pointer      InputImagePointer;
+  typedef typename InputImageType::PixelType    InputPixelType;
   typedef TOutputImage                          OutputImageType;
 
   typedef double                                RealType;
@@ -87,6 +89,7 @@ public:
   typedef Image<VectorType,
     itkGetStaticConstMacro( ImageDimension )>   VectorImageType;
   typedef typename VectorImageType::Pointer     VectorImagePointer;
+  typedef typename VectorImageType::PointType   PointType;
 
   /**
    * Set the segmentation image.  The segmentation image is a labeled image
@@ -201,10 +204,41 @@ protected:
 
 private:
 
+
+  /**
+   */
+  RealImagePointer DiffuseWhiteMatterRegion( const InputImageType *, unsigned int );
+
+  /**
+   */
+  InputImagePointer DilateRegion( const InputImageType *, unsigned int,
+    unsigned int );
+
+  /**
+   */
+  InputImagePointer ExtractRegionalContours( const InputImageType *, unsigned int );
+
+  /**
+   */
+  VectorImagePointer ComposeDiffeomorphisms( const VectorImageType *,
+    const VectorImageType * );
+
+  /**
+   */
+  RealImagePointer WarpImage( const RealImageType *, const VectorImageType * );
+
+  /**
+   */
+  void InvertDeformationField( const VectorImageType *, VectorImageType * );
+
   unsigned int                                   m_MaximumNumberOfIterations;
   RealType                                       m_ThicknessPriorEstimate;
   RealType                                       m_SmoothingSigma;
   RealType                                       m_GradientStep;
+  unsigned int                                   m_NumberOfIntegrationPoints;
+
+  unsigned int                                   m_GrayMatterLabel;
+  unsigned int                                   m_WhiteMatterLabel;
 };
 
 } // end namespace itk

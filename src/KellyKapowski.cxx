@@ -211,7 +211,6 @@ int DiReCT( itk::ants::CommandLineParser *parser )
       smoothingSigmaOption->GetValue() ) );
     }
 
-
   try
     {
     //direct->DebugOn();
