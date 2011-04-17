@@ -75,9 +75,9 @@ DiReCTImageFilter<TInputImage, TOutputImage>
 
   // Dilate the gray/white matters
 
-  InputImagePointer grayMatter = this->ThresholdRegion(
+  InputImagePointer grayMatter = this->ExtractRegion(
     this->GetSegmentationImage(), this->m_GrayMatterLabel );
-  InputImagePointer whiteMatter = this->ThresholdRegion(
+  InputImagePointer whiteMatter = this->ExtractRegion(
     this->GetSegmentationImage(), this->m_WhiteMatterLabel );
 
   typedef AddImageFilter<InputImageType, InputImageType, InputImageType> AdderType;
@@ -86,8 +86,25 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   adder->SetInput2( whiteMatter );
   adder->Update();
 
-  InputImagePointer dilatedMatters = this->DilateRegion(                  // gmgrow
-    adder->GetOutput(), 1, 1 );
+  InputImagePointer thresholdedRegion = this->ThresholdRegion(
+    const_cast<const InputImageType *>( adder->GetOutput() ), 1 );
+
+  typedef BinaryBallStructuringElement<InputPixelType, ImageDimension>
+    StructuringElementType;
+  typedef BinaryDilateImageFilter<InputImageType, InputImageType,
+    StructuringElementType> DilatorType;
+
+  StructuringElementType  structuringElement;
+  structuringElement.SetRadius( 1 );
+  structuringElement.CreateStructuringElement();
+
+  typename DilatorType::Pointer dilator = DilatorType::New();
+  dilator->SetInput( thresholdedRegion );
+  dilator->SetKernel( structuringElement );
+  dilator->SetDilateValue( 1 );
+  dilator->Update();
+
+  InputImagePointer dilatedMatters = dilator->GetOutput();                  // gmgrow
 
   // Extract the gray and white matter contours
 
@@ -113,6 +130,11 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   corticalThicknessImage->SetRegions( this->GetInput()->GetRequestedRegion() );
   corticalThicknessImage->Allocate();
   corticalThicknessImage->FillBuffer( 0.0 );
+
+  VectorImagePointer eulerianField = VectorImageType::New();            // invfield
+  eulerianField->CopyInformation( this->GetInput() );
+  eulerianField->SetRegions( this->GetInput()->GetRequestedRegion() );
+  eulerianField->Allocate();
 
   VectorImagePointer forwardIncrementalField = VectorImageType::New(); // incrfield
   forwardIncrementalField->CopyInformation( this->GetInput() );
@@ -221,8 +243,8 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     unsigned int integrationPoint = 0;
     while( integrationPoint++ < this->m_NumberOfIntegrationPoints )
       {
-      inverseField = this->ComposeDiffeomorphisms( inverseIncrementalField,
-        inverseField );
+      this->ComposeDiffeomorphisms( inverseIncrementalField,
+        inverseField, inverseField );
 
    	  RealImagePointer warpedWhiteMatterProbabilityMap = this->WarpImage( // surfdef
    	    this->GetWhiteMatterProbabilityImage(), inverseField );
@@ -375,8 +397,8 @@ DiReCTImageFilter<TInputImage, TOutputImage>
         {
         integratedField->FillBuffer( zeroVector );
         }
-      this->InvertDeformationField( inverseField, integratedField );
-      this->InvertDeformationField( integratedField, inverseField );
+      this->InvertDeformationField( inverseField, integratedField, eulerianField );
+      this->InvertDeformationField( integratedField, inverseField, eulerianField );
       }
     ItCorticalThicknessImage.GoToBegin();
     ItForwardIncrementalField.GoToBegin();
@@ -426,7 +448,7 @@ DiReCTImageFilter<TInputImage, TOutputImage>
 template<class TInputImage, class TOutputImage>
 typename DiReCTImageFilter<TInputImage, TOutputImage>::InputImagePointer
 DiReCTImageFilter<TInputImage, TOutputImage>
-::ThresholdRegion( const InputImageType *segmentationImage,
+::ExtractRegion( InputImageType *segmentationImage,
   unsigned int whichRegion )
 {
   typedef BinaryThresholdImageFilter<InputImageType, InputImageType>
@@ -444,60 +466,6 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   thresholdRegion->DisconnectPipeline();
 
   return thresholdRegion;
-}
-
-template<class TInputImage, class TOutputImage>
-typename DiReCTImageFilter<TInputImage, TOutputImage>::RealImagePointer
-DiReCTImageFilter<TInputImage, TOutputImage>
-::SmoothRegion( const InputImageType *segmentationImage,
-  unsigned int whichRegion, RealType variance )
-{
-  InputImagePointer thresholdedRegion = this->ThresholdRegion(
-    segmentationImage, whichRegion );
-
-  typedef DiscreteGaussianImageFilter<RealImageType, RealImageType> SmootherType;
-  typename SmootherType::Pointer smoother = SmootherType::New();
-  smoother->SetVariance( variance );
-  smoother->SetUseImageSpacingOn();
-  smoother->SetMaximumError( 0.01f );
-  smoother->SetInput( thresholdedRegion );
-
-  RealImagePointer smoothRegion = smoother->GetOutput();
-  smoothRegion->Update();
-  smoothRegion->DisconnectPipeline();
-
-  return smoothRegion;
-}
-
-template<class TInputImage, class TOutputImage>
-typename DiReCTImageFilter<TInputImage, TOutputImage>::InputImagePointer
-DiReCTImageFilter<TInputImage, TOutputImage>
-::DilateRegion( const InputImageType *segmentationImage,
-  unsigned int whichRegion, unsigned int radius )
-{
-  InputImagePointer thresholdedRegion = this->ThresholdRegion(
-    segmentationImage, whichRegion );
-
-  typedef BinaryBallStructuringElement<InputPixelType, ImageDimension>
-    StructuringElementType;
-  typedef BinaryDilateImageFilter<InputImageType, InputImageType,
-    StructuringElementType> DilatorType;
-
-  StructuringElementType  structuringElement;
-  structuringElement.SetRadius( radius );
-  structuringElement.CreateStructuringElement();
-
-  typename DilatorType::Pointer dilator = DilatorType::New();
-  dilator->SetInput( thresholdedRegion );
-  dilator->SetKernel( structuringElement );
-  dilator->SetDilateValue( 1 );
-
-  InputImagePointer dilatedRegion = dilator->GetOutput();
-  dilatedRegion->Update();
-  dilatedRegion->DisconnectPipeline();
-  dilatedRegion->SetRegions( segmentationImage->GetRequestedRegion() );
-
-  return dilatedRegion;
 }
 
 template<class TInputImage, class TOutputImage>
@@ -526,18 +494,12 @@ DiReCTImageFilter<TInputImage, TOutputImage>
 }
 
 template<class TInputImage, class TOutputImage>
-typename DiReCTImageFilter<TInputImage, TOutputImage>::VectorImagePointer
+void
 DiReCTImageFilter<TInputImage, TOutputImage>
 ::ComposeDiffeomorphisms( const VectorImageType *inputField,
-  const VectorImageType *warp )
+  const VectorImageType *warp, VectorImageType *outputField )
 {
   VectorType zeroVector( 0.0 );
-
-  VectorImagePointer outputField = VectorImageType::New();
-  outputField->CopyInformation( warp );
-  outputField->SetRegions( warp->GetRequestedRegion() );
-  outputField->Allocate();
-  outputField->FillBuffer( zeroVector );
 
   typedef VectorLinearInterpolateImageFunction<VectorImageType, RealType>
     InterpolatorType;
@@ -550,8 +512,10 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     outputField->GetRequestedRegion() );
   for( ItW.GoToBegin(), ItF.GoToBegin(); !ItW.IsAtEnd(); ++ItW, ++ItF )
     {
+    typename VectorImageType::IndexType index = ItW.GetIndex();
+
     PointType point1;
-    warp->TransformIndexToPhysicalPoint( ItW.GetIndex(), point1 );
+    warp->TransformIndexToPhysicalPoint( index, point1 );
 
     PointType point2 = point1 + ItW.Get();
 
@@ -559,16 +523,13 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     if( interpolator->IsInsideBuffer( point2 ) )
       {
       displacement = interpolator->Evaluate( point2 );
+      ItF.Set( ( point2 + displacement ) - point1 );
       }
     else
       {
-      displacement.Fill( 0.0 );
+      ItF.Set( zeroVector );
       }
-
-    ItF.Set( ( point2 + displacement ) - point1 );
     }
-
-  return outputField;
 }
 
 template<class TInputImage, class TOutputImage>
@@ -598,7 +559,7 @@ template<class TInputImage, class TOutputImage>
 void
 DiReCTImageFilter<TInputImage, TOutputImage>
 ::InvertDeformationField( const VectorImageType *deformationField,
-  VectorImageType *inverseField )
+  VectorImageType *inverseField, VectorImageType *eulerianField )
 {
   typename VectorImageType::SpacingType spacing =
     deformationField->GetSpacing();
@@ -611,8 +572,8 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     meanNorm = 0.0;
     maxNorm = 0.0;
 
-    VectorImagePointer eulerianField =
-      this->ComposeDiffeomorphisms( deformationField, inverseField );
+    this->ComposeDiffeomorphisms(
+      deformationField, inverseField, eulerianField );
 
     ImageRegionIterator<VectorImageType> ItE( eulerianField,
       eulerianField->GetRequestedRegion() );

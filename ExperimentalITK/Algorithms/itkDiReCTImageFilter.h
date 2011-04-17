@@ -234,21 +234,12 @@ private:
 
   /**
    */
-  RealImagePointer SmoothRegion( const InputImageType *, unsigned int, RealType );
-
-  /**
-   */
-  InputImagePointer DilateRegion( const InputImageType *, unsigned int,
-    unsigned int );
-
-  /**
-   */
   InputImagePointer ExtractRegionalContours( const InputImageType *, unsigned int );
 
   /**
    */
-  VectorImagePointer ComposeDiffeomorphisms( const VectorImageType *,
-    const VectorImageType * );
+  void ComposeDiffeomorphisms( const VectorImageType *,
+    const VectorImageType *, VectorImageType * );
 
   /**
    */
@@ -256,7 +247,8 @@ private:
 
   /**
    */
-  void InvertDeformationField( const VectorImageType *, VectorImageType * );
+  void InvertDeformationField( const VectorImageType *, VectorImageType *,
+    VectorImageType * );
 
   /**
    */
