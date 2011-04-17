@@ -12,44 +12,39 @@
 #include <algorithm>
 #include <vector>
 
-//template<class TFilter>
-//class CommandIterationUpdate : public itk::Command
-//{
-//public:
-//  typedef CommandIterationUpdate   Self;
-//  typedef itk::Command             Superclass;
-//  typedef itk::SmartPointer<Self>  Pointer;
-//  itkNewMacro( Self );
-//protected:
-//  CommandIterationUpdate() {};
-//public:
-//
-//  void Execute(itk::Object *caller, const itk::EventObject & event)
-//    {
-//    Execute( (const itk::Object *) caller, event);
-//    }
-//
-//  void Execute(const itk::Object * object, const itk::EventObject & event)
-//    {
-//    const TFilter * filter =
-//      dynamic_cast< const TFilter * >( object );
-//    if( typeid( event ) != typeid( itk::IterationEvent ) )
-//      { return; }
-//    if( filter->GetElapsedIterations() == 1 )
-//      {
-//      std::cout << "Current level = " << filter->GetCurrentLevel() + 1
-//        << std::endl;
-//      }
-//    std::cout << "  Iteration " << filter->GetElapsedIterations()
-//      << " (of "
-//      << filter->GetMaximumNumberOfIterations()[filter->GetCurrentLevel()]
-//      << ").  ";
-//    std::cout << " Current convergence value = "
-//      << filter->GetCurrentConvergenceMeasurement()
-//      << " (threshold = " << filter->GetConvergenceThreshold()
-//      << ")" << std::endl;
-//    }
-//};
+template<class TFilter>
+class CommandIterationUpdate : public itk::Command
+{
+public:
+  typedef CommandIterationUpdate   Self;
+  typedef itk::Command             Superclass;
+  typedef itk::SmartPointer<Self>  Pointer;
+  itkNewMacro( Self );
+protected:
+  CommandIterationUpdate() {};
+public:
+
+  void Execute(itk::Object *caller, const itk::EventObject & event)
+    {
+    Execute( (const itk::Object *) caller, event);
+    }
+
+  void Execute(const itk::Object * object, const itk::EventObject & event)
+    {
+    const TFilter * filter =
+      dynamic_cast< const TFilter * >( object );
+    if( typeid( event ) != typeid( itk::IterationEvent ) )
+      { return; }
+    std::cout << "  Iteration " << filter->GetElapsedIterations()
+      << " (of "
+      << filter->GetMaximumNumberOfIterations()
+      << ").  ";
+    std::cout << "Current convergence value = "
+      << filter->GetCurrentConvergenceMeasurement()
+      << " (threshold = " << filter->GetConvergenceThreshold()
+      << ")" << std::endl;
+    }
+};
 
 template <unsigned int ImageDimension>
 int DiReCT( itk::ants::CommandLineParser *parser )
@@ -132,7 +127,7 @@ int DiReCT( itk::ants::CommandLineParser *parser )
     greyMatterProbabilityImage = smoother->GetOutput();
     greyMatterProbabilityImage->DisconnectPipeline();
     }
-  direct->SetGreyMatterProbabilityImage( greyMatterProbabilityImage );
+  direct->SetGrayMatterProbabilityImage( greyMatterProbabilityImage );
 
   //
   // white matter probability image
@@ -153,7 +148,7 @@ int DiReCT( itk::ants::CommandLineParser *parser )
     }
   else
     {
-    std::cout << "Grey matter probability image not specified. "
+    std::cout << "White matter probability image not specified. "
       << "Creating one from the segmentation image." << std::endl;
 
     typedef itk::BinaryThresholdImageFilter<LabelImageType, ImageType>
@@ -177,6 +172,25 @@ int DiReCT( itk::ants::CommandLineParser *parser )
     whiteMatterProbabilityImage->DisconnectPipeline();
     }
   direct->SetWhiteMatterProbabilityImage( whiteMatterProbabilityImage );
+
+  //
+  // convergence options
+  //
+  typename itk::ants::CommandLineParser::OptionType::Pointer convergenceOption =
+    parser->GetOption( "convergence" );
+  if( convergenceOption )
+    {
+    if( convergenceOption->GetNumberOfParameters() > 0 )
+      {
+      direct->SetMaximumNumberOfIterations( parser->Convert<unsigned int>(
+        convergenceOption->GetParameter( 0 ) ) );
+      }
+    if( convergenceOption->GetNumberOfParameters() > 1 )
+      {
+      direct->SetConvergenceThreshold( parser->Convert<float>(
+					    convergenceOption->GetParameter( 1 ) ) );
+      }
+    }
 
   //
   // thickness prior estimate
@@ -211,10 +225,17 @@ int DiReCT( itk::ants::CommandLineParser *parser )
       smoothingSigmaOption->GetValue() ) );
     }
 
+  typedef CommandIterationUpdate<DiReCTFilterType> CommandType;
+  typename CommandType::Pointer observer = CommandType::New();
+  direct->AddObserver( itk::IterationEvent(), observer );
+
+  itk::TimeProbe timer;
   try
     {
     //direct->DebugOn();
+    timer.Start();
     direct->Update();
+    timer.Stop();
     }
   catch( itk::ExceptionObject &e )
     {
@@ -222,6 +243,8 @@ int DiReCT( itk::ants::CommandLineParser *parser )
     return EXIT_FAILURE;
     }
   direct->Print( std::cout, 3 );
+
+  std::cout << "DiReCT elapsed time: " << timer.GetMeanTime() << std::endl;
 
   /**
    * output
@@ -299,6 +322,18 @@ void InitializeCommandLineOptions( itk::ants::CommandLineParser *parser )
   option->SetLongName( "white-matter-probability-image" );
   option->SetShortName( 'w' );
   option->SetUsageOption( 0, "imageFilename" );
+  option->SetDescription( description );
+  parser->AddOption( option );
+  }
+
+  {
+  std::string description =
+    std::string( "Convergence is determined by...." );
+
+  OptionType::Pointer option = OptionType::New();
+  option->SetLongName( "convergence" );
+  option->SetShortName( 'c' );
+  option->SetUsageOption( 0, "[<numberOfIterations=50>,<convergenceThreshold=0.001>]" );
   option->SetDescription( description );
   parser->AddOption( option );
   }

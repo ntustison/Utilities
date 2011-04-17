@@ -89,6 +89,7 @@ public:
   typedef Image<VectorType,
     itkGetStaticConstMacro( ImageDimension )>   VectorImageType;
   typedef typename VectorImageType::Pointer     VectorImagePointer;
+  typedef typename VectorType::ValueType        VectorValueType;
   typedef typename VectorImageType::PointType   PointType;
 
   /**
@@ -112,7 +113,7 @@ public:
   /**
    * Set the grey matter probability image.
    */
-  void SetGreyMatterProbabilityImage( const RealImageType *gm )
+  void SetGrayMatterProbabilityImage( const RealImageType *gm )
     {
     this->SetNthInput( 1, const_cast<RealImageType *>( gm ) );
     this->Modified();
@@ -121,7 +122,7 @@ public:
   /**
    * Get the grey matter probability image.
    */
-  const RealImageType* GetGreyMatterProbabilityImage() const
+  const RealImageType* GetGrayMatterProbabilityImage() const
     {
     return static_cast<const RealImageType*>(
       this->ProcessObject::GetInput( 1 ) );
@@ -142,7 +143,7 @@ public:
   const RealImageType* GetWhiteMatterProbabilityImage() const
     {
     return static_cast<const RealImageType*>(
-      this->ProcessObject::GetInput( 1 ) );
+      this->ProcessObject::GetInput( 2 ) );
     }
 
   /**
@@ -154,6 +155,16 @@ public:
    * Get the maximum number of registration iterations.  Default = 50.
    */
   itkGetConstMacro( MaximumNumberOfIterations, unsigned int );
+
+  /**
+   * Set the convergence threshold.  Convergence is determined by the
+   */
+  itkSetMacro( ConvergenceThreshold, RealType );
+
+  /**
+   * Get the convergence threshold.  Convergence is determined by the
+   */
+  itkGetConstMacro( ConvergenceThreshold, RealType );
 
   /**
    * Set the thickness prior estimate---provides a constraint on the
@@ -193,6 +204,18 @@ public:
    */
   itkGetConstMacro( SmoothingSigma, RealType );
 
+  /**
+   * Get the number of elapsed iterations.  This is a helper function for
+   * reporting observations.
+   */
+  itkGetConstMacro( ElapsedIterations, unsigned int );
+
+  /**
+   * Get the current convergence measurement.  This is a helper function for
+   * reporting observations.
+   */
+  itkGetConstMacro( CurrentConvergenceMeasurement, RealType );
+
 protected:
 
   DiReCTImageFilter();
@@ -207,7 +230,11 @@ private:
 
   /**
    */
-  RealImagePointer DiffuseWhiteMatterRegion( const InputImageType *, unsigned int );
+  InputImagePointer ThresholdRegion( const InputImageType *, unsigned int );
+
+  /**
+   */
+  RealImagePointer SmoothRegion( const InputImageType *, unsigned int, RealType );
 
   /**
    */
@@ -231,7 +258,11 @@ private:
    */
   void InvertDeformationField( const VectorImageType *, VectorImageType * );
 
-  unsigned int                                   m_MaximumNumberOfIterations;
+  /**
+   */
+  VectorImagePointer SmoothDeformationField( const VectorImageType *,
+    const RealType );
+
   RealType                                       m_ThicknessPriorEstimate;
   RealType                                       m_SmoothingSigma;
   RealType                                       m_GradientStep;
@@ -239,6 +270,11 @@ private:
 
   unsigned int                                   m_GrayMatterLabel;
   unsigned int                                   m_WhiteMatterLabel;
+
+  unsigned int                                   m_ElapsedIterations;
+  unsigned int                                   m_MaximumNumberOfIterations;
+  RealType                                       m_ConvergenceThreshold;
+  RealType                                       m_CurrentConvergenceMeasurement;
 };
 
 } // end namespace itk

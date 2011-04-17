@@ -177,8 +177,8 @@ target_link_libraries(CreateImageSource ${ITK_LIBRARIES} )
 #add_executable(CreateRidgeMap CreateRidgeMap.cxx )
 #target_link_libraries(CreateRidgeMap ${ITK_LIBRARIES})
 
-add_executable(CreateZeroImage CreateZeroImage.cxx )
-target_link_libraries(CreateZeroImage ${ITK_LIBRARIES})
+add_executable(CreateImage CreateImage.cxx )
+target_link_libraries(CreateImage ${ITK_LIBRARIES})
 
 add_executable(CreatePCAImageDecomposition CreatePCAImageDecomposition.cxx )
 target_link_libraries(CreatePCAImageDecomposition ${ITK_LIBRARIES})
