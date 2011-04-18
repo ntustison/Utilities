@@ -26,6 +26,7 @@
 #include "itkBinaryBallStructuringElement.h"
 #include "itkBinaryDilateImageFilter.h"
 #include "itkCastImageFilter.h"
+#include "itkComposeDiffeomorphismsImageFilter.h"
 #include "itkDiscreteGaussianImageFilter.h"
 #include "itkGaussianOperator.h"
 #include "itkGradientRecursiveGaussianImageFilter.h"
@@ -73,6 +74,17 @@ DiReCTImageFilter<TInputImage, TOutputImage>
 //   2. Calculate gradient of output of step 1.
 //   3.
 
+  // Convert all inputs to identities saving the original directions
+  // to put back at the end of filter processing.
+  typename InputImageType::DirectionType identity;
+  identity.SetIdentity();
+  typename InputImageType::DirectionType directions[this->GetNumberOfInputs()];
+  for( unsigned int d = 0; d < this->GetNumberOfInputs(); d++ )
+    {
+    directions[d] = this->GetInput( d )->GetDirection();
+    const_cast<InputImageType *>( this->GetInput( d ) )->SetDirection( identity );
+    }
+
   // Dilate the gray/white matters
 
   InputImagePointer grayMatter = this->ExtractRegion(
@@ -86,7 +98,7 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   adder->SetInput2( whiteMatter );
   adder->Update();
 
-  InputImagePointer thresholdedRegion = this->ThresholdRegion(
+  InputImagePointer thresholdedRegion = this->ExtractRegion(
     const_cast<const InputImageType *>( adder->GetOutput() ), 1 );
 
   typedef BinaryBallStructuringElement<InputPixelType, ImageDimension>
@@ -130,11 +142,6 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   corticalThicknessImage->SetRegions( this->GetInput()->GetRequestedRegion() );
   corticalThicknessImage->Allocate();
   corticalThicknessImage->FillBuffer( 0.0 );
-
-  VectorImagePointer eulerianField = VectorImageType::New();            // invfield
-  eulerianField->CopyInformation( this->GetInput() );
-  eulerianField->SetRegions( this->GetInput()->GetRequestedRegion() );
-  eulerianField->Allocate();
 
   VectorImagePointer forwardIncrementalField = VectorImageType::New(); // incrfield
   forwardIncrementalField->CopyInformation( this->GetInput() );
@@ -183,6 +190,46 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   velocityField->Allocate();
   velocityField->FillBuffer( zeroVector );
 
+  // Instantiate the iterators all in one place
+
+  ImageRegionIterator<RealImageType> ItCorticalThicknessImage(
+    corticalThicknessImage,
+    corticalThicknessImage->GetRequestedRegion() );
+  ImageRegionConstIterator<RealImageType> ItGrayMatterProbabilityMap(
+    this->GetGrayMatterProbabilityImage(),
+    this->GetGrayMatterProbabilityImage()->GetRequestedRegion() );
+  ImageRegionIterator<RealImageType> ItHitImage(
+    hitImage,
+    hitImage->GetRequestedRegion() );
+  ImageRegionIterator<VectorImageType> ItForwardIncrementalField(
+    forwardIncrementalField,
+    forwardIncrementalField->GetRequestedRegion() );
+  ImageRegionConstIterator<InputImageType> ItDilatedMatterContours(
+    dilatedMatterContours,
+    dilatedMatterContours->GetRequestedRegion() );
+  ImageRegionIterator<VectorImageType> ItIntegratedField(
+    integratedField,
+    integratedField->GetRequestedRegion() );
+  ImageRegionIterator<VectorImageType> ItInverseIncrementalField(
+    inverseIncrementalField,
+    inverseIncrementalField->GetRequestedRegion() );
+  ImageRegionConstIteratorWithIndex<InputImageType> ItSegmentationImage(
+    this->GetSegmentationImage(),
+    this->GetSegmentationImage()->GetRequestedRegion() );
+  ImageRegionIterator<RealImageType> ItSpeedImage(
+    speedImage,
+    speedImage->GetRequestedRegion() );
+  ImageRegionIterator<RealImageType> ItThicknessImage(
+    thicknessImage,
+    thicknessImage->GetRequestedRegion() );
+  ImageRegionIterator<RealImageType> ItTotalImage(
+    totalImage,
+    totalImage->GetRequestedRegion() );
+  ImageRegionConstIterator<RealImageType> ItWhiteMatterContours(
+    whiteMatterContours,
+    whiteMatterContours->GetRequestedRegion() );
+
+
   IterationReporter reporter( this, 0, 1 );
 
   this->m_ElapsedIterations = 0;
@@ -198,53 +245,21 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     totalImage->FillBuffer( 0.0 );
     thicknessImage->FillBuffer( 0.0 );
 
-    // Instantiate the iterators all in one place
-
-    ImageRegionIterator<RealImageType> ItCorticalThicknessImage(
-      corticalThicknessImage,
-      corticalThicknessImage->GetRequestedRegion() );
-    ImageRegionConstIterator<RealImageType> ItGrayMatterProbabilityMap(
-      this->GetGrayMatterProbabilityImage(),
-      this->GetGrayMatterProbabilityImage()->GetRequestedRegion() );
-    ImageRegionIterator<RealImageType> ItHitImage(
-      hitImage,
-      hitImage->GetRequestedRegion() );
-    ImageRegionIterator<VectorImageType> ItForwardIncrementalField(
-      forwardIncrementalField,
-      forwardIncrementalField->GetRequestedRegion() );
-    ImageRegionConstIterator<InputImageType> ItDilatedMatterContours(
-      dilatedMatterContours,
-      dilatedMatterContours->GetRequestedRegion() );
-    ImageRegionIterator<VectorImageType> ItIntegratedField(
-      integratedField,
-      integratedField->GetRequestedRegion() );
-    ImageRegionIterator<VectorImageType> ItInverseIncrementalField(
-      inverseIncrementalField,
-      inverseIncrementalField->GetRequestedRegion() );
-    ImageRegionConstIterator<InputImageType> ItSegmentationImage(
-      this->GetSegmentationImage(),
-      this->GetSegmentationImage()->GetRequestedRegion() );
-    ImageRegionIterator<RealImageType> ItSpeedImage(
-      speedImage,
-      speedImage->GetRequestedRegion() );
-    ImageRegionIterator<RealImageType> ItThicknessImage(
-      thicknessImage,
-      thicknessImage->GetRequestedRegion() );
-    ImageRegionIterator<RealImageType> ItTotalImage(
-      totalImage,
-      totalImage->GetRequestedRegion() );
     ImageRegionIterator<VectorImageType> ItVelocityField(
       velocityField,
       velocityField->GetRequestedRegion() );
-    ImageRegionConstIterator<RealImageType> ItWhiteMatterContours(
-      whiteMatterContours,
-      whiteMatterContours->GetRequestedRegion() );
 
     unsigned int integrationPoint = 0;
     while( integrationPoint++ < this->m_NumberOfIntegrationPoints )
       {
-      this->ComposeDiffeomorphisms( inverseIncrementalField,
-        inverseField, inverseField );
+      typedef ComposeDiffeomorphismsImageFilter<VectorImageType> ComposerType;
+      typename ComposerType::Pointer composer = ComposerType::New();
+      composer->SetDeformationField( inverseIncrementalField );
+      composer->SetWarpingField( inverseField );
+      composer->Update();
+
+      inverseField = composer->GetOutput();
+      inverseField->DisconnectPipeline();
 
    	  RealImagePointer warpedWhiteMatterProbabilityMap = this->WarpImage( // surfdef
    	    this->GetWhiteMatterProbabilityImage(), inverseField );
@@ -255,17 +270,19 @@ DiReCTImageFilter<TInputImage, TOutputImage>
 
       typedef GradientRecursiveGaussianImageFilter<RealImageType, VectorImageType>
         GradientImageFilterType;
-      typename GradientImageFilterType::Pointer gradient =
+      typename GradientImageFilterType::Pointer gradientFilter =
         GradientImageFilterType::New();
-      gradient->SetInput( warpedWhiteMatterProbabilityMap );
-      gradient->SetSigma( this->m_SmoothingSigma );
-      gradient->Update();                                               // lapgrad2
+      gradientFilter->SetInput( warpedWhiteMatterProbabilityMap );
+      gradientFilter->SetSigma( this->m_SmoothingSigma );
+      gradientFilter->Update();                                               // lapgrad2
+
+      VectorImagePointer gradientImage = gradientFilter->GetOutput();
 
       // Instantiate the iterators all in one place
 
       ImageRegionIterator<VectorImageType> ItGradientImage(
-        gradient->GetOutput(),
-        gradient->GetOutput()->GetRequestedRegion() );
+        gradientImage,
+        gradientImage->GetRequestedRegion() );
       ImageRegionIterator<VectorImageType> ItInverseField(
         inverseField,
         inverseField->GetRequestedRegion() );
@@ -331,26 +348,24 @@ DiReCTImageFilter<TInputImage, TOutputImage>
       ItDilatedMatterContours.GoToBegin();
       ItForwardIncrementalField.GoToBegin();
       ItGradientImage.GoToBegin();
-      ItHitImage.GoToBegin();
       ItIntegratedField.GoToBegin();
       ItInverseField.GoToBegin();
       ItInverseIncrementalField.GoToBegin();
       ItSegmentationImage.GoToBegin();
       ItSpeedImage.GoToBegin();
-      ItThicknessImage.GoToBegin();
-      ItTotalImage.GoToBegin();
       ItVelocityField.GoToBegin();
       ItWhiteMatterContours.GoToBegin();
-      ItWarpedThicknessImage.GoToBegin();
-      ItWarpedWhiteMatterContours.GoToBegin();
 
       while( !ItSegmentationImage.IsAtEnd() )
         {
-        ItForwardIncrementalField.Set( ItForwardIncrementalField.Get() +
-          ItGradientImage.Get() * ItSpeedImage.Get() );
-        if( ItSegmentationImage.Get() == 0 ||
+        typename InputImageType::IndexType index =
+          ItSegmentationImage.GetIndex();
+        typename InputImageType::PixelType segmentationValue =
+          ItSegmentationImage.Get();
+
+        if( segmentationValue == 0 ||
           ( ItDilatedMatterContours.Get() == 0 &&
-          ItWhiteMatterContours.Get() == 0 && ItSegmentationImage.Get() !=
+          ItWhiteMatterContours.Get() == 0 && segmentationValue !=
           this->m_GrayMatterLabel ) )
           {
           ItIntegratedField.Set( zeroVector );
@@ -358,47 +373,50 @@ DiReCTImageFilter<TInputImage, TOutputImage>
           ItVelocityField.Set( zeroVector );
           }
         ItInverseIncrementalField.Set( ItVelocityField.Get() );
+        ItForwardIncrementalField.Set( ItForwardIncrementalField.Get() +
+          ItGradientImage.Get() * ItSpeedImage.Get() );
 
-        if( integrationPoint == 1 )
+        if( segmentationValue == this->m_GrayMatterLabel ||
+          segmentationValue == this->m_WhiteMatterLabel )
           {
-          ItHitImage.Set( ItWhiteMatterContours.Get() );
+          if( integrationPoint == 1 )
+            {
+            typename InputImageType::PixelType whiteMatterContoursValue =
+              ItWhiteMatterContours.Get();
+            hitImage->SetPixel( index, whiteMatterContoursValue );
 
-          RealType weightedNorm = ( ItIntegratedField.Get() ).GetNorm() *
-            ItWhiteMatterContours.Get();
+            VectorType vector = integratedField->GetPixel( index );
+            RealType weightedNorm = vector.GetNorm() * whiteMatterContoursValue;
 
-          ItThicknessImage.Set( weightedNorm );
-          ItTotalImage.Set( weightedNorm );
-          }
-        else if( ItSegmentationImage.Get() == this->m_GrayMatterLabel )
-          {
-          ItHitImage.Set( ItHitImage.Get() +
-            ItWarpedWhiteMatterContours.Get() );
-          ItTotalImage.Set( ItTotalImage.Get() +
-            ItWarpedThicknessImage.Get() );
+            thicknessImage->SetPixel( index, weightedNorm );
+            totalImage->SetPixel( index, weightedNorm );
+            }
+          else if( segmentationValue == this->m_GrayMatterLabel )
+            {
+            hitImage->SetPixel( index, hitImage->GetPixel( index ) +
+              warpedWhiteMatterContours->GetPixel( index ) );
+            totalImage->SetPixel( index, totalImage->GetPixel( index ) +
+              warpedThicknessImage->GetPixel( index ) );
+            }
           }
 
         ++ItDilatedMatterContours;
         ++ItForwardIncrementalField;
         ++ItGradientImage;
-        ++ItHitImage;
         ++ItIntegratedField;
         ++ItInverseField;
         ++ItInverseIncrementalField;
         ++ItSegmentationImage;
         ++ItSpeedImage;
-        ++ItThicknessImage;
-        ++ItTotalImage;
         ++ItVelocityField;
         ++ItWhiteMatterContours;
-        ++ItWarpedThicknessImage;
-        ++ItWarpedWhiteMatterContours;
         }
       if( integrationPoint == 1 )
         {
         integratedField->FillBuffer( zeroVector );
         }
-      this->InvertDeformationField( inverseField, integratedField, eulerianField );
-      this->InvertDeformationField( integratedField, inverseField, eulerianField );
+      this->InvertDeformationField( inverseField, integratedField );
+      this->InvertDeformationField( integratedField, inverseField );
       }
     ItCorticalThicknessImage.GoToBegin();
     ItForwardIncrementalField.GoToBegin();
@@ -426,6 +444,7 @@ DiReCTImageFilter<TInputImage, TOutputImage>
             thicknessValue = this->m_ThicknessPriorEstimate;
             }
           }
+
         ItCorticalThicknessImage.Set( thicknessValue );
         }
 
@@ -443,12 +462,20 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     }
 
   this->SetNthOutput( 0, corticalThicknessImage );
+
+  // Replace direction matrices to the inputs.
+  for( unsigned int d = 0; d < this->GetNumberOfInputs(); d++ )
+    {
+    const_cast<InputImageType *>( this->GetInput( d ) )->
+      SetDirection( directions[d] );
+    }
+
 }
 
 template<class TInputImage, class TOutputImage>
 typename DiReCTImageFilter<TInputImage, TOutputImage>::InputImagePointer
 DiReCTImageFilter<TInputImage, TOutputImage>
-::ExtractRegion( InputImageType *segmentationImage,
+::ExtractRegion( const InputImageType *segmentationImage,
   unsigned int whichRegion )
 {
   typedef BinaryThresholdImageFilter<InputImageType, InputImageType>
@@ -474,7 +501,7 @@ DiReCTImageFilter<TInputImage, TOutputImage>
 ::ExtractRegionalContours( const InputImageType *segmentationImage,
   unsigned int whichRegion )
 {
-  InputImagePointer thresholdedRegion = this->ThresholdRegion(
+  InputImagePointer thresholdedRegion = this->ExtractRegion(
     segmentationImage, whichRegion );
 
   typedef BinaryContourImageFilter<InputImageType, InputImageType>
@@ -491,45 +518,6 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   contours->SetRegions( segmentationImage->GetRequestedRegion() );
 
   return contours;
-}
-
-template<class TInputImage, class TOutputImage>
-void
-DiReCTImageFilter<TInputImage, TOutputImage>
-::ComposeDiffeomorphisms( const VectorImageType *inputField,
-  const VectorImageType *warp, VectorImageType *outputField )
-{
-  VectorType zeroVector( 0.0 );
-
-  typedef VectorLinearInterpolateImageFunction<VectorImageType, RealType>
-    InterpolatorType;
-  typename InterpolatorType::Pointer interpolator = InterpolatorType::New();
-  interpolator->SetInputImage( inputField );
-
-  ImageRegionConstIteratorWithIndex<VectorImageType> ItW( warp,
-    warp->GetRequestedRegion() );
-  ImageRegionIterator<VectorImageType> ItF( outputField,
-    outputField->GetRequestedRegion() );
-  for( ItW.GoToBegin(), ItF.GoToBegin(); !ItW.IsAtEnd(); ++ItW, ++ItF )
-    {
-    typename VectorImageType::IndexType index = ItW.GetIndex();
-
-    PointType point1;
-    warp->TransformIndexToPhysicalPoint( index, point1 );
-
-    PointType point2 = point1 + ItW.Get();
-
-    typename InterpolatorType::OutputType displacement;
-    if( interpolator->IsInsideBuffer( point2 ) )
-      {
-      displacement = interpolator->Evaluate( point2 );
-      ItF.Set( ( point2 + displacement ) - point1 );
-      }
-    else
-      {
-      ItF.Set( zeroVector );
-      }
-    }
 }
 
 template<class TInputImage, class TOutputImage>
@@ -559,7 +547,7 @@ template<class TInputImage, class TOutputImage>
 void
 DiReCTImageFilter<TInputImage, TOutputImage>
 ::InvertDeformationField( const VectorImageType *deformationField,
-  VectorImageType *inverseField, VectorImageType *eulerianField )
+  VectorImageType *inverseField )
 {
   typename VectorImageType::SpacingType spacing =
     deformationField->GetSpacing();
@@ -572,8 +560,13 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     meanNorm = 0.0;
     maxNorm = 0.0;
 
-    this->ComposeDiffeomorphisms(
-      deformationField, inverseField, eulerianField );
+    typedef ComposeDiffeomorphismsImageFilter<VectorImageType> ComposerType;
+    typename ComposerType::Pointer composer = ComposerType::New();
+    composer->SetDeformationField( deformationField );
+    composer->SetWarpingField( inverseField );
+    composer->Update();
+
+    VectorImagePointer eulerianField = composer->GetOutput();
 
     ImageRegionIterator<VectorImageType> ItE( eulerianField,
       eulerianField->GetRequestedRegion() );
@@ -714,6 +707,10 @@ DiReCTImageFilter<TInputImage, TOutputImage>
 {
   Superclass::PrintSelf( os, indent );
 
+  std::cout << indent << "Gray matter label = "
+    << this->m_GrayMatterLabel << std::endl;
+  std::cout << indent << "White matter label = "
+    << this->m_WhiteMatterLabel << std::endl;
   std::cout << indent << "Maximum number of iterations = "
     << this->m_MaximumNumberOfIterations << std::endl;
   std::cout << indent << "Thickness prior estimate = "

@@ -230,7 +230,7 @@ private:
 
   /**
    */
-  InputImagePointer ThresholdRegion( const InputImageType *, unsigned int );
+  InputImagePointer ExtractRegion( const InputImageType *, unsigned int );
 
   /**
    */
@@ -238,17 +238,11 @@ private:
 
   /**
    */
-  void ComposeDiffeomorphisms( const VectorImageType *,
-    const VectorImageType *, VectorImageType * );
-
-  /**
-   */
   RealImagePointer WarpImage( const RealImageType *, const VectorImageType * );
 
   /**
    */
-  void InvertDeformationField( const VectorImageType *, VectorImageType *,
-    VectorImageType * );
+  void InvertDeformationField( const VectorImageType *, VectorImageType * );
 
   /**
    */
