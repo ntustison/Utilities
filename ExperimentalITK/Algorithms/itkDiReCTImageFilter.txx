@@ -21,6 +21,7 @@
 #include "itkDiReCTImageFilter.h"
 
 #include "itkAddImageFilter.h"
+#include "itkAndImageFilter.h"
 #include "itkBinaryContourImageFilter.h"
 #include "itkBinaryThresholdImageFilter.h"
 #include "itkBinaryBallStructuringElement.h"
@@ -36,9 +37,12 @@
 #include "itkIterationReporter.h"
 #include "itkMaximumImageFilter.h"
 #include "itkMultiplyByConstantImageFilter.h"
+#include "itkOrImageFilter.h"
 #include "itkVectorLinearInterpolateImageFunction.h"
 #include "itkVectorNeighborhoodOperatorImageFilter.h"
 #include "itkWarpImageFilter.h"
+
+#include "itkImageFileWriter.h"
 
 namespace itk
 {
@@ -131,6 +135,38 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   caster->Update();
   RealImagePointer whiteMatterContours = caster->GetOutput();
 
+  // Create mask image
+
+  typedef AndImageFilter<InputImageType, InputImageType, InputImageType>
+    AndFilterType;
+  typedef OrImageFilter<InputImageType, InputImageType, InputImageType>
+    OrFilterType;
+
+  typename OrFilterType::Pointer orFilter1 = OrFilterType::New();
+  orFilter1->SetInput1( dilatedMatterContours );
+  orFilter1->SetInput2( whiteMatterContoursTmp );
+
+  typename OrFilterType::Pointer orFilter2 = OrFilterType::New();
+  orFilter2->SetInput1( orFilter1->GetOutput() );
+  orFilter2->SetInput2( grayMatter );
+
+  typedef BinaryThresholdImageFilter<InputImageType, InputImageType>
+    ThresholderType;
+  typename ThresholderType::Pointer thresholder = ThresholderType::New();
+  thresholder->SetInput( this->GetSegmentationImage() );
+  thresholder->SetLowerThreshold( 0 );
+  thresholder->SetUpperThreshold( 0 );
+  thresholder->SetInsideValue( 0 );
+  thresholder->SetOutsideValue( 1 );
+  thresholder->Update();
+
+  typename AndFilterType::Pointer andFilter = AndFilterType::New();
+  andFilter->SetInput1( orFilter2->GetOutput() );
+  andFilter->SetInput2( thresholder->GetOutput() );
+  andFilter->Update();
+
+  InputImagePointer maskImage = andFilter->GetOutput();
+
   // Iterate
 
     // Initialize fields and images
@@ -213,6 +249,9 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   ImageRegionIterator<VectorImageType> ItInverseIncrementalField(
     inverseIncrementalField,
     inverseIncrementalField->GetRequestedRegion() );
+  ImageRegionConstIterator<InputImageType> ItMaskImage(
+    maskImage,
+    maskImage->GetRequestedRegion() );
   ImageRegionConstIteratorWithIndex<InputImageType> ItSegmentationImage(
     this->GetSegmentationImage(),
     this->GetSegmentationImage()->GetRequestedRegion() );
@@ -345,12 +384,12 @@ DiReCTImageFilter<TInputImage, TOutputImage>
 
       // Calculate objective function value
 
-      ItDilatedMatterContours.GoToBegin();
       ItForwardIncrementalField.GoToBegin();
       ItGradientImage.GoToBegin();
       ItIntegratedField.GoToBegin();
       ItInverseField.GoToBegin();
       ItInverseIncrementalField.GoToBegin();
+      ItMaskImage.GoToBegin();
       ItSegmentationImage.GoToBegin();
       ItSpeedImage.GoToBegin();
       ItVelocityField.GoToBegin();
@@ -363,10 +402,7 @@ DiReCTImageFilter<TInputImage, TOutputImage>
         typename InputImageType::PixelType segmentationValue =
           ItSegmentationImage.Get();
 
-        if( segmentationValue == 0 ||
-          ( ItDilatedMatterContours.Get() == 0 &&
-          ItWhiteMatterContours.Get() == 0 && segmentationValue !=
-          this->m_GrayMatterLabel ) )
+        if( !ItMaskImage.Get() )
           {
           ItIntegratedField.Set( zeroVector );
           ItInverseField.Set( zeroVector );
@@ -400,12 +436,12 @@ DiReCTImageFilter<TInputImage, TOutputImage>
             }
           }
 
-        ++ItDilatedMatterContours;
         ++ItForwardIncrementalField;
         ++ItGradientImage;
         ++ItIntegratedField;
         ++ItInverseField;
         ++ItInverseIncrementalField;
+        ++ItMaskImage;
         ++ItSegmentationImage;
         ++ItSpeedImage;
         ++ItVelocityField;
