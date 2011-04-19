@@ -283,15 +283,14 @@ void InitializeCommandLineOptions( itk::ants::CommandLineParser *parser )
 
   {
   std::string description =
-    std::string( "A segmentation image must be supplied labeling the " ) +
-    std::string( "cerebrospinal fluid (csf), grey matter (gm), and " ) +
-    std::string( "white matter (wm) with values of '1', '2', and '3'," ) +
-    std::string( "respectively." );
+    std::string( "A segmentation image must be supplied labeling the gray" ) +
+    std::string( "and white matters (default values = 2 and 3, respectively." );
 
   OptionType::Pointer option = OptionType::New();
   option->SetLongName( "segmentation-image" );
   option->SetShortName( 's' );
   option->SetUsageOption( 0, "imageFilename" );
+  option->SetUsageOption( 0, "[imageFilename,<grayMatterLabel=2>,<whiteMatterLabel=3>]" );
   option->SetDescription( description );
   parser->AddOption( option );
   }
@@ -301,7 +300,7 @@ void InitializeCommandLineOptions( itk::ants::CommandLineParser *parser )
     std::string( "In addition to the segmentation image, a grey matter " ) +
     std::string( "probability image can be used. If no such image is " ) +
     std::string( "supplied, one is created using the segmentation image " ) +
-    std::string( "and the specified sigma." );
+    std::string( "and a variance of 1.0 mm." );
 
   OptionType::Pointer option = OptionType::New();
   option->SetLongName( "grey-matter-probability-image" );
@@ -316,7 +315,7 @@ void InitializeCommandLineOptions( itk::ants::CommandLineParser *parser )
     std::string( "In addition to the segmentation image, a white matter " ) +
     std::string( "probability image can be used. If no such image is " ) +
     std::string( "supplied, one is created using the segmentation image " ) +
-    std::string( "and the specified sigma." );
+    std::string( "and a variance of 1.0 mm." );
 
   OptionType::Pointer option = OptionType::New();
   option->SetLongName( "white-matter-probability-image" );

@@ -37,9 +37,12 @@
 #include "itkIterationReporter.h"
 #include "itkMaximumImageFilter.h"
 #include "itkMultiplyByConstantImageFilter.h"
+#include "itkMultiplyByConstantVectorImageFilter.h"
 #include "itkOrImageFilter.h"
+#include "itkStatisticsImageFilter.h"
 #include "itkVectorLinearInterpolateImageFunction.h"
 #include "itkVectorNeighborhoodOperatorImageFilter.h"
+#include "itkVectorNormImageFilter.h"
 #include "itkWarpImageFilter.h"
 
 #include "itkImageFileWriter.h"
@@ -268,13 +271,19 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     whiteMatterContours,
     whiteMatterContours->GetRequestedRegion() );
 
-
   IterationReporter reporter( this, 0, 1 );
 
+  RealType previousEnergy = NumericTraits<RealType>::max();
+  RealType currentEnergy = NumericTraits<RealType>::max();
+  this->m_CurrentConvergenceMeasurement = NumericTraits<RealType>::max();
   this->m_ElapsedIterations = 0;
-  while( this->m_ElapsedIterations++ < this->m_MaximumNumberOfIterations ) // && badct < 4 )
+  while( this->m_ElapsedIterations++ < this->m_MaximumNumberOfIterations &&
+    vnl_math_abs( this->m_CurrentConvergenceMeasurement ) >=
+    this->m_ConvergenceThreshold ) // && badct < 4 )
     {
-    this->m_CurrentConvergenceMeasurement = 0.0;
+    previousEnergy = currentEnergy;
+    currentEnergy = 0.0;
+    RealType numberOfGrayMatterVoxels = 0.0;
 
     forwardIncrementalField->FillBuffer( zeroVector );
     inverseField->FillBuffer( zeroVector );
@@ -300,11 +309,11 @@ DiReCTImageFilter<TInputImage, TOutputImage>
       inverseField = composer->GetOutput();
       inverseField->DisconnectPipeline();
 
-   	  RealImagePointer warpedWhiteMatterProbabilityMap = this->WarpImage( // surfdef
+   	  RealImagePointer warpedWhiteMatterProbabilityMap = this->WarpImage(
    	    this->GetWhiteMatterProbabilityImage(), inverseField );
-   	  RealImagePointer warpedWhiteMatterContours = this->WarpImage(       // thindef
+   	  RealImagePointer warpedWhiteMatterContours = this->WarpImage(
    	    whiteMatterContours, inverseField );
-   	  RealImagePointer warpedThicknessImage = this->WarpImage(          // thkdef
+   	  RealImagePointer warpedThicknessImage = this->WarpImage(
    	    thicknessImage, inverseField );
 
       typedef GradientRecursiveGaussianImageFilter<RealImageType, VectorImageType>
@@ -313,7 +322,7 @@ DiReCTImageFilter<TInputImage, TOutputImage>
         GradientImageFilterType::New();
       gradientFilter->SetInput( warpedWhiteMatterProbabilityMap );
       gradientFilter->SetSigma( this->m_SmoothingSigma );
-      gradientFilter->Update();                                               // lapgrad2
+      gradientFilter->Update();
 
       VectorImagePointer gradientImage = gradientFilter->GetOutput();
 
@@ -345,7 +354,6 @@ DiReCTImageFilter<TInputImage, TOutputImage>
       ItSpeedImage.GoToBegin();
       ItWarpedWhiteMatterProbabilityMap.GoToBegin();
 
-      RealType numberOfGrayMatterVoxels = 0.0;
       while( !ItSegmentationImage.IsAtEnd() )
         {
         if( ItSegmentationImage.Get() == this->m_GrayMatterLabel )
@@ -362,7 +370,7 @@ DiReCTImageFilter<TInputImage, TOutputImage>
           RealType delta = ( ItWarpedWhiteMatterProbabilityMap.Get() -
             ItGrayMatterProbabilityMap.Get() );
 
-          this->m_CurrentConvergenceMeasurement += vnl_math_abs( delta );
+          currentEnergy += vnl_math_abs( delta );
           numberOfGrayMatterVoxels++;
 
           RealType speedValue = -1.0 * delta * ItGrayMatterProbabilityMap.Get() *
@@ -379,8 +387,6 @@ DiReCTImageFilter<TInputImage, TOutputImage>
         ++ItSpeedImage;
         ++ItWarpedWhiteMatterProbabilityMap;
         }
-
-      this->m_CurrentConvergenceMeasurement /= numberOfGrayMatterVoxels;
 
       // Calculate objective function value
 
@@ -494,6 +500,9 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     velocityField = this->SmoothDeformationField( velocityField,
       this->m_SmoothingSigma );
 
+    currentEnergy /= numberOfGrayMatterVoxels;
+    this->m_CurrentConvergenceMeasurement = previousEnergy - currentEnergy;
+
     reporter.CompletedStep();
     }
 
@@ -587,6 +596,11 @@ DiReCTImageFilter<TInputImage, TOutputImage>
 {
   typename VectorImageType::SpacingType spacing =
     deformationField->GetSpacing();
+  VectorType spacingFactor;
+  for( unsigned int d = 0; d < ImageDimension; d++ )
+    {
+    spacingFactor[d] = 1.0 / spacing[d];
+    }
 
   RealType maxNorm = 1.0;
   RealType meanNorm = 1.0;
@@ -600,28 +614,25 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     typename ComposerType::Pointer composer = ComposerType::New();
     composer->SetDeformationField( deformationField );
     composer->SetWarpingField( inverseField );
-    composer->Update();
 
-    VectorImagePointer eulerianField = composer->GetOutput();
+    typedef MultiplyByConstantVectorImageFilter<VectorImageType, VectorType,
+      VectorImageType> ConstantMultiplierType;
+    typename ConstantMultiplierType::Pointer constantMultiplier =
+      ConstantMultiplierType::New();
+    constantMultiplier->SetConstantVector( spacingFactor );
+    constantMultiplier->SetInput( composer->GetOutput() );
 
-    ImageRegionIterator<VectorImageType> ItE( eulerianField,
-      eulerianField->GetRequestedRegion() );
-    for( ItE.GoToBegin(); !ItE.IsAtEnd(); ++ItE )
-      {
-     	VectorType update = ItE.Get();
-     	for( unsigned d = 0; d < ImageDimension; d++ )
-     	  {
-     	  update[d] /= spacing[d];
-     	  }
-      RealType norm = update.GetNorm();
-     	meanNorm += norm;
-     	if( norm > maxNorm )
-     	  {
-     	  maxNorm = norm;
-     	  }
-      }
-    meanNorm /= static_cast<RealType>(
-      eulerianField->GetRequestedRegion().GetNumberOfPixels() );
+    typedef VectorNormImageFilter<VectorImageType, RealImageType> NormFilterType;
+    typename NormFilterType::Pointer normFilter = NormFilterType::New();
+    normFilter->SetInput( constantMultiplier->GetOutput() );
+
+    typedef StatisticsImageFilter<RealImageType> StatisticsType;
+    typename StatisticsType::Pointer statistics = StatisticsType::New();
+    statistics->SetInput( normFilter->GetOutput() );
+    statistics->Update();
+
+    meanNorm = statistics->GetMean();
+    maxNorm = statistics->GetMaximum();
 
     RealType epsilon = 0.5;
     if( iteration == 1 )
@@ -634,6 +645,8 @@ DiReCTImageFilter<TInputImage, TOutputImage>
       normFactor /= spacing[d];
       }
 
+    ImageRegionIterator<VectorImageType> ItE( composer->GetOutput(),
+      composer->GetOutput()->GetRequestedRegion() );
     ImageRegionIterator<VectorImageType> ItI( inverseField,
       inverseField->GetRequestedRegion() );
     for( ItI.GoToBegin(), ItE.GoToBegin(); !ItI.IsAtEnd(); ++ItI, ++ItE )
@@ -641,12 +654,11 @@ DiReCTImageFilter<TInputImage, TOutputImage>
       VectorType update = -ItE.Get();
       RealType updateNorm = update.GetNorm();
 
-      if( updateNorm * normFactor > epsilon * maxNorm )
+      if( updateNorm > epsilon * maxNorm / normFactor )
         {
         update *= ( epsilon * maxNorm / ( updateNorm * normFactor ) );
         }
       ItI.Set( ItI.Get() + update * epsilon );
-      ItE.Set( update );
       }
     }
 }
@@ -687,7 +699,7 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     outputField->DisconnectPipeline();
     }
 
-  // Ensure the boundary does not move
+  // Ensure zero motion on the boundary
 
   RealType weight1 = 1.0;
   if( variance < 0.5 )
@@ -696,37 +708,44 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     }
   RealType weight2 = 1.0 - weight1;
 
+  typedef MultiplyByConstantImageFilter<VectorImageType, RealType,
+    VectorImageType> MultiplierType;
+
+  typename MultiplierType::Pointer multiplier1 = MultiplierType::New();
+  multiplier1->SetConstant( weight1 );
+  multiplier1->SetInput( outputField );
+
+  typename MultiplierType::Pointer multiplier2 = MultiplierType::New();
+  multiplier2->SetConstant( weight2 );
+  multiplier2->SetInput( inputField );
+
+  typedef AddImageFilter<VectorImageType, VectorImageType, VectorImageType>
+    AdderType;
+  typename AdderType::Pointer adder = AdderType::New();
+  adder->SetInput1( multiplier1->GetOutput() );
+  adder->SetInput2( multiplier2->GetOutput() );
+
+  outputField = adder->GetOutput();
+  outputField->Update();
+  outputField->DisconnectPipeline();
+
   VectorType zeroVector( 0.0 );
 
-  typename VectorImageType::IndexType startIndex =
-    outputField->GetRequestedRegion().GetIndex();
-  typename VectorImageType::SizeType size =
-    outputField->GetRequestedRegion().GetSize();
-
-  ImageRegionConstIteratorWithIndex<VectorImageType> ItI( inputField,
-    inputField->GetRequestedRegion() );
-  ImageRegionIterator<VectorImageType> ItO( outputField,
+  ImageLinearIteratorWithIndex<VectorImageType> It( outputField,
     outputField->GetRequestedRegion() );
-  for( ItI.GoToBegin(), ItO.GoToBegin(); !ItI.IsAtEnd(); ++ItI, ++ItO )
+  for( unsigned int d = 0; d < ImageDimension; d++ )
     {
-    bool isOnBoundary = false;
-    typename VectorImageType::IndexType index = ItO.GetIndex();
-    for( unsigned int d = 0; d < ImageDimension; d++ )
+    It.SetDirection( d );
+    It.GoToBegin();
+    while( !It.IsAtEnd() )
       {
-      if( index[d] == startIndex[d] ||
-        index[d] == ( static_cast<int>( size[d] ) - 1 - startIndex[d] ) )
-        {
-        isOnBoundary = true;
-        break;
-        }
-      }
-    if( isOnBoundary )
-      {
-      ItO.Set( zeroVector );
-      }
-    else
-      {
-      ItO.Set( ItO.Get() * weight1 + ItI.Get() * weight2 );
+      It.GoToBeginOfLine();
+      It.Set( zeroVector );
+      It.GoToEndOfLine();
+      --It;
+      It.Set( zeroVector );
+
+      It.NextLine();
       }
     }
 
