@@ -39,10 +39,15 @@ public:
       << " (of "
       << filter->GetMaximumNumberOfIterations()
       << ").  ";
-    std::cout << "Current convergence value = "
-      << filter->GetCurrentConvergenceMeasurement()
-      << " (threshold = " << filter->GetConvergenceThreshold()
-      << ")" << std::endl;
+    std::cout << "Current energy = " << filter->GetCurrentEnergy() << ".  ";
+    if( filter->GetElapsedIterations() >= filter->GetConvergenceWindowSize() )
+      {
+      std::cout << "(convergence value = "
+        << filter->GetCurrentConvergenceMeasurement()
+        << ", threshold = " << filter->GetConvergenceThreshold()
+        << ")";
+      }
+    std::cout << std::endl;
     }
 };
 
@@ -55,7 +60,7 @@ int DiReCT( itk::ants::CommandLineParser *parser )
   typename LabelImageType::Pointer segmentationImage = NULL;
 
   typedef itk::Image<RealType, ImageDimension> ImageType;
-  typename ImageType::Pointer greyMatterProbabilityImage = NULL;
+  typename ImageType::Pointer grayMatterProbabilityImage = NULL;
   typename ImageType::Pointer whiteMatterProbabilityImage = NULL;
 
   typedef itk::DiReCTImageFilter<LabelImageType, ImageType> DiReCTFilterType;
@@ -68,15 +73,43 @@ int DiReCT( itk::ants::CommandLineParser *parser )
     segmentationImageOption = parser->GetOption( "segmentation-image" );
   if( segmentationImageOption )
     {
-    typedef itk::ImageFileReader<LabelImageType> LabelReaderType;
-    typename LabelReaderType::Pointer labelReader = LabelReaderType::New();
+    if( segmentationImageOption->GetNumberOfValues() > 0 )
+      {
+      if( segmentationImageOption->GetNumberOfParameters() == 0 )
+        {
+        typedef itk::ImageFileReader<LabelImageType> LabelReaderType;
+        typename LabelReaderType::Pointer labelReader = LabelReaderType::New();
 
-    std::string inputFile = segmentationImageOption->GetValue();
-    labelReader->SetFileName( inputFile.c_str() );
+        std::string inputFile = segmentationImageOption->GetValue();
+        labelReader->SetFileName( inputFile.c_str() );
 
-    segmentationImage = labelReader->GetOutput();
-    segmentationImage->Update();
-    segmentationImage->DisconnectPipeline();
+        segmentationImage = labelReader->GetOutput();
+        segmentationImage->Update();
+        segmentationImage->DisconnectPipeline();
+        }
+      else if( segmentationImageOption->GetNumberOfParameters() > 0 )
+        {
+        typedef itk::ImageFileReader<LabelImageType> LabelReaderType;
+        typename LabelReaderType::Pointer labelReader = LabelReaderType::New();
+
+        std::string inputFile = segmentationImageOption->GetParameter( 0 );
+        labelReader->SetFileName( inputFile.c_str() );
+
+        segmentationImage = labelReader->GetOutput();
+        segmentationImage->Update();
+        segmentationImage->DisconnectPipeline();
+        if( segmentationImageOption->GetNumberOfParameters() > 1 )
+          {
+          direct->SetGrayMatterLabel( parser->Convert<unsigned int>(
+            segmentationImageOption->GetParameter( 1 ) ) );
+          }
+        if( segmentationImageOption->GetNumberOfParameters() > 2 )
+          {
+          direct->SetWhiteMatterLabel( parser->Convert<unsigned int>(
+            segmentationImageOption->GetParameter( 2 ) ) );
+          }
+        }
+      }
     }
   else
     {
@@ -86,25 +119,25 @@ int DiReCT( itk::ants::CommandLineParser *parser )
   direct->SetSegmentationImage( segmentationImage );
 
   //
-  // grey matter probability image
+  // gray matter probability image
   //
   typename itk::ants::CommandLineParser::OptionType::Pointer
-    greyMatterOption = parser->GetOption( "grey-matter-probability-image" );
-  if( greyMatterOption )
+    grayMatterOption = parser->GetOption( "gray-matter-probability-image" );
+  if( grayMatterOption && grayMatterOption->GetNumberOfValues() > 0)
     {
     typedef itk::ImageFileReader<ImageType> ReaderType;
     typename ReaderType::Pointer gmReader = ReaderType::New();
 
-    std::string gmFile = greyMatterOption->GetValue();
+    std::string gmFile = grayMatterOption->GetValue();
     gmReader->SetFileName( gmFile.c_str() );
 
-    greyMatterProbabilityImage = gmReader->GetOutput();
-    greyMatterProbabilityImage->Update();
-    greyMatterProbabilityImage->DisconnectPipeline();
+    grayMatterProbabilityImage = gmReader->GetOutput();
+    grayMatterProbabilityImage->Update();
+    grayMatterProbabilityImage->DisconnectPipeline();
     }
   else
     {
-    std::cout << "Grey matter probability image not specified. "
+    std::cout << "  Grey matter probability image not specified. "
       << "Creating one from the segmentation image." << std::endl;
 
     typedef itk::BinaryThresholdImageFilter<LabelImageType, ImageType>
@@ -124,17 +157,17 @@ int DiReCT( itk::ants::CommandLineParser *parser )
     smoother->SetInput( thresholder->GetOutput() );
     smoother->Update();
 
-    greyMatterProbabilityImage = smoother->GetOutput();
-    greyMatterProbabilityImage->DisconnectPipeline();
+    grayMatterProbabilityImage = smoother->GetOutput();
+    grayMatterProbabilityImage->DisconnectPipeline();
     }
-  direct->SetGrayMatterProbabilityImage( greyMatterProbabilityImage );
+  direct->SetGrayMatterProbabilityImage( grayMatterProbabilityImage );
 
   //
   // white matter probability image
   //
   typename itk::ants::CommandLineParser::OptionType::Pointer
     whiteMatterOption = parser->GetOption( "white-matter-probability-image" );
-  if( whiteMatterOption )
+  if( whiteMatterOption && whiteMatterOption->GetNumberOfValues() > 0 )
     {
     typedef itk::ImageFileReader<ImageType> ReaderType;
     typename ReaderType::Pointer wmReader = ReaderType::New();
@@ -148,8 +181,8 @@ int DiReCT( itk::ants::CommandLineParser *parser )
     }
   else
     {
-    std::cout << "White matter probability image not specified. "
-      << "Creating one from the segmentation image." << std::endl;
+    std::cout << "  White matter probability image not specified. "
+      << "Creating one from the segmentation image." << std::endl << std::endl;
 
     typedef itk::BinaryThresholdImageFilter<LabelImageType, ImageType>
       ThresholderType;
@@ -189,6 +222,11 @@ int DiReCT( itk::ants::CommandLineParser *parser )
       {
       direct->SetConvergenceThreshold( parser->Convert<float>(
 					    convergenceOption->GetParameter( 1 ) ) );
+      }
+    if( convergenceOption->GetNumberOfParameters() > 2 )
+      {
+      direct->SetConvergenceWindowSize( parser->Convert<unsigned int>(
+					    convergenceOption->GetParameter( 2 ) ) );
       }
     }
 
@@ -290,20 +328,20 @@ void InitializeCommandLineOptions( itk::ants::CommandLineParser *parser )
   option->SetLongName( "segmentation-image" );
   option->SetShortName( 's' );
   option->SetUsageOption( 0, "imageFilename" );
-  option->SetUsageOption( 0, "[imageFilename,<grayMatterLabel=2>,<whiteMatterLabel=3>]" );
+  option->SetUsageOption( 1, "[imageFilename,<grayMatterLabel=2>,<whiteMatterLabel=3>]" );
   option->SetDescription( description );
   parser->AddOption( option );
   }
 
   {
   std::string description =
-    std::string( "In addition to the segmentation image, a grey matter " ) +
+    std::string( "In addition to the segmentation image, a gray matter " ) +
     std::string( "probability image can be used. If no such image is " ) +
     std::string( "supplied, one is created using the segmentation image " ) +
     std::string( "and a variance of 1.0 mm." );
 
   OptionType::Pointer option = OptionType::New();
-  option->SetLongName( "grey-matter-probability-image" );
+  option->SetLongName( "gray-matter-probability-image" );
   option->SetShortName( 'g' );
   option->SetUsageOption( 0, "imageFilename" );
   option->SetDescription( description );
@@ -332,7 +370,7 @@ void InitializeCommandLineOptions( itk::ants::CommandLineParser *parser )
   OptionType::Pointer option = OptionType::New();
   option->SetLongName( "convergence" );
   option->SetShortName( 'c' );
-  option->SetUsageOption( 0, "[<numberOfIterations=50>,<convergenceThreshold=0.001>]" );
+  option->SetUsageOption( 0, "[<numberOfIterations=50>,<convergenceThreshold=0.001>,<convergenceWindowSize=10>]" );
   option->SetDescription( description );
   parser->AddOption( option );
   }
@@ -355,7 +393,7 @@ void InitializeCommandLineOptions( itk::ants::CommandLineParser *parser )
 
   {
   std::string description =
-    std::string( "Gradient step size for the registration algorithm." );
+    std::string( "Gradient step size for the optimization." );
 
   OptionType::Pointer option = OptionType::New();
   option->SetLongName( "gradient-step" );
@@ -380,7 +418,7 @@ void InitializeCommandLineOptions( itk::ants::CommandLineParser *parser )
   {
   std::string description =
     std::string( "The output consists of a thickness map defined in the " ) +
-    std::string( "cortical gray matter. " );
+    std::string( "segmented gray matter. " );
 
   OptionType::Pointer option = OptionType::New();
   option->SetLongName( "output" );

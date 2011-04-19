@@ -157,6 +157,26 @@ public:
   itkGetConstMacro( MaximumNumberOfIterations, unsigned int );
 
   /**
+   * Set the gray matter label in the segmentation image.
+   */
+  itkSetMacro( GrayMatterLabel, unsigned int );
+
+  /**
+   * Get the gray matter label in the segmentation image.
+   */
+  itkGetConstMacro( GrayMatterLabel, unsigned int );
+
+  /**
+   * Set the white matter label in the segmentation image.
+   */
+  itkSetMacro( WhiteMatterLabel, unsigned int );
+
+  /**
+   * Get the white matter label in the segmentation image.
+   */
+  itkGetConstMacro( WhiteMatterLabel, unsigned int );
+
+  /**
    * Set the convergence threshold.  Convergence is determined by the
    */
   itkSetMacro( ConvergenceThreshold, RealType );
@@ -165,6 +185,16 @@ public:
    * Get the convergence threshold.  Convergence is determined by the
    */
   itkGetConstMacro( ConvergenceThreshold, RealType );
+
+  /**
+   * Set the convergence threshold.  Convergence is determined by the
+   */
+  itkSetMacro( ConvergenceWindowSize, unsigned int );
+
+  /**
+   * Get the convergence threshold.  Convergence is determined by the
+   */
+  itkGetConstMacro( ConvergenceWindowSize, unsigned int );
 
   /**
    * Set the thickness prior estimate---provides a constraint on the
@@ -209,6 +239,12 @@ public:
    * reporting observations.
    */
   itkGetConstMacro( ElapsedIterations, unsigned int );
+
+  /**
+   * Get the current energy.  This is a helper function for reporting
+   * observations.
+   */
+  itkGetConstMacro( CurrentEnergy, RealType );
 
   /**
    * Get the current convergence measurement.  This is a helper function for
@@ -259,8 +295,10 @@ private:
 
   unsigned int                                   m_ElapsedIterations;
   unsigned int                                   m_MaximumNumberOfIterations;
-  RealType                                       m_ConvergenceThreshold;
+  RealType                                       m_CurrentEnergy;
   RealType                                       m_CurrentConvergenceMeasurement;
+  RealType                                       m_ConvergenceThreshold;
+  unsigned int                                   m_ConvergenceWindowSize;
 };
 
 } // end namespace itk

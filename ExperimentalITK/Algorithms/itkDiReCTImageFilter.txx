@@ -26,6 +26,8 @@
 #include "itkBinaryThresholdImageFilter.h"
 #include "itkBinaryBallStructuringElement.h"
 #include "itkBinaryDilateImageFilter.h"
+#include "itkBSplineControlPointImageFunction.h"
+#include "itkBSplineScatteredDataPointSetToImageFilter.h"
 #include "itkCastImageFilter.h"
 #include "itkComposeDiffeomorphismsImageFilter.h"
 #include "itkDiscreteGaussianImageFilter.h"
@@ -39,13 +41,12 @@
 #include "itkMultiplyByConstantImageFilter.h"
 #include "itkMultiplyByConstantVectorImageFilter.h"
 #include "itkOrImageFilter.h"
+#include "itkPointSet.h"
 #include "itkStatisticsImageFilter.h"
 #include "itkVectorLinearInterpolateImageFunction.h"
 #include "itkVectorNeighborhoodOperatorImageFilter.h"
 #include "itkVectorNormImageFilter.h"
 #include "itkWarpImageFilter.h"
-
-#include "itkImageFileWriter.h"
 
 namespace itk
 {
@@ -60,7 +61,9 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   m_GrayMatterLabel( 2 ),
   m_WhiteMatterLabel( 3 ),
   m_MaximumNumberOfIterations( 50 ),
-  m_ConvergenceThreshold( 0.001 )
+  m_CurrentEnergy( NumericTraits<RealType>::max() ),
+  m_ConvergenceThreshold( 0.001 ),
+  m_ConvergenceWindowSize( 10 )
 {
   this->SetNumberOfRequiredInputs( 3 );
 }
@@ -76,13 +79,11 @@ void
 DiReCTImageFilter<TInputImage, TOutputImage>
 ::GenerateData()
 {
-// Estimation of cortical thickness involves the following steps:
-//   1. Diffuse the white matter region
-//   2. Calculate gradient of output of step 1.
-//   3.
+  // Convert all input direction matrices to identities saving the original
+  // directions to put back at the end of filter processing. We do this
+  // because the white and gray matters reside in the same space and the
+  // assumption simplifies the underlying registration code.
 
-  // Convert all inputs to identities saving the original directions
-  // to put back at the end of filter processing.
   typename InputImageType::DirectionType identity;
   identity.SetIdentity();
   typename InputImageType::DirectionType directions[this->GetNumberOfInputs()];
@@ -92,7 +93,8 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     const_cast<InputImageType *>( this->GetInput( d ) )->SetDirection( identity );
     }
 
-  // Dilate the gray/white matters
+  // Extract the gray and white matter segmentations and combine to form the
+  // gm/wm region.  Dilate the latter region by 1 voxel.
 
   InputImagePointer grayMatter = this->ExtractRegion(
     this->GetSegmentationImage(), this->m_GrayMatterLabel );
@@ -123,13 +125,13 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   dilator->SetDilateValue( 1 );
   dilator->Update();
 
-  InputImagePointer dilatedMatters = dilator->GetOutput();                  // gmgrow
+  InputImagePointer dilatedMatters = dilator->GetOutput();
 
-  // Extract the gray and white matter contours
+  // Extract the white and gm/wm matter contours
 
-  InputImagePointer dilatedMatterContours = this->ExtractRegionalContours(   // gmsurf
+  InputImagePointer dilatedMatterContours = this->ExtractRegionalContours(
     dilatedMatters, 1 );
-  InputImagePointer whiteMatterContoursTmp = this->ExtractRegionalContours(  // bsurf
+  InputImagePointer whiteMatterContoursTmp = this->ExtractRegionalContours(
     this->GetSegmentationImage(), this->m_WhiteMatterLabel );
 
   typedef CastImageFilter<InputImageType, RealImageType> CasterType;
@@ -138,7 +140,8 @@ DiReCTImageFilter<TInputImage, TOutputImage>
   caster->Update();
   RealImagePointer whiteMatterContours = caster->GetOutput();
 
-  // Create mask image
+  // Create mask image prior to the use of the boolean logic used in the code
+  // to avoid performing
 
   typedef AndImageFilter<InputImageType, InputImageType, InputImageType>
     AndFilterType;
@@ -170,66 +173,64 @@ DiReCTImageFilter<TInputImage, TOutputImage>
 
   InputImagePointer maskImage = andFilter->GetOutput();
 
-  // Iterate
-
-    // Initialize fields and images
+  // Initialize fields and images.
 
   VectorType zeroVector( 0.0 );
 
-  RealImagePointer corticalThicknessImage = RealImageType::New();      // finalthickimage
+  RealImagePointer corticalThicknessImage = RealImageType::New();
   corticalThicknessImage->CopyInformation( this->GetInput() );
   corticalThicknessImage->SetRegions( this->GetInput()->GetRequestedRegion() );
   corticalThicknessImage->Allocate();
   corticalThicknessImage->FillBuffer( 0.0 );
 
-  VectorImagePointer forwardIncrementalField = VectorImageType::New(); // incrfield
+  VectorImagePointer forwardIncrementalField = VectorImageType::New();
   forwardIncrementalField->CopyInformation( this->GetInput() );
   forwardIncrementalField->SetRegions( this->GetInput()->GetRequestedRegion() );
   forwardIncrementalField->Allocate();
 
-  RealImagePointer hitImage = RealImageType::New();                    // hitimage
+  RealImagePointer hitImage = RealImageType::New();
   hitImage->CopyInformation( this->GetInput() );
   hitImage->SetRegions( this->GetInput()->GetRequestedRegion() );
   hitImage->Allocate();
 
-  VectorImagePointer integratedField = VectorImageType::New();         // corrfield
+  VectorImagePointer integratedField = VectorImageType::New();
   integratedField->CopyInformation( this->GetInput() );
   integratedField->SetRegions( this->GetInput()->GetRequestedRegion() );
   integratedField->Allocate();
   integratedField->FillBuffer( zeroVector );
 
-  VectorImagePointer inverseField = VectorImageType::New();            // invfield
+  VectorImagePointer inverseField = VectorImageType::New();
   inverseField->CopyInformation( this->GetInput() );
   inverseField->SetRegions( this->GetInput()->GetRequestedRegion() );
   inverseField->Allocate();
 
-  VectorImagePointer inverseIncrementalField = VectorImageType::New(); // incrinvfield
+  VectorImagePointer inverseIncrementalField = VectorImageType::New();
   inverseIncrementalField->CopyInformation( this->GetInput() );
   inverseIncrementalField->SetRegions( this->GetInput()->GetRequestedRegion() );
   inverseIncrementalField->Allocate();
 
-  RealImagePointer speedImage = RealImageType::New();                  // speed_image
+  RealImagePointer speedImage = RealImageType::New();
   speedImage->CopyInformation( this->GetInput() );
   speedImage->SetRegions( this->GetInput()->GetRequestedRegion() );
   speedImage->Allocate();
 
-  RealImagePointer thicknessImage = RealImageType::New();                  // speed_image
+  RealImagePointer thicknessImage = RealImageType::New();
   thicknessImage->CopyInformation( this->GetInput() );
   thicknessImage->SetRegions( this->GetInput()->GetRequestedRegion() );
   thicknessImage->Allocate();
 
-  RealImagePointer totalImage = RealImageType::New();                  // totalImage
+  RealImagePointer totalImage = RealImageType::New();
   totalImage->CopyInformation( this->GetInput() );
   totalImage->SetRegions( this->GetInput()->GetRequestedRegion() );
   totalImage->Allocate();
 
-  VectorImagePointer velocityField = VectorImageType::New();           // velofield
+  VectorImagePointer velocityField = VectorImageType::New();
   velocityField->CopyInformation( this->GetInput() );
   velocityField->SetRegions( this->GetInput()->GetRequestedRegion() );
   velocityField->Allocate();
   velocityField->FillBuffer( zeroVector );
 
-  // Instantiate the iterators all in one place
+  // Instantiate most of the iterators all in one place
 
   ImageRegionIterator<RealImageType> ItCorticalThicknessImage(
     corticalThicknessImage,
@@ -271,18 +272,28 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     whiteMatterContours,
     whiteMatterContours->GetRequestedRegion() );
 
+  // Instantiate objects for profiling energy convergence
+
+  typedef Vector<RealType, 1>                     ProfilePointDataType;
+  typedef Image<ProfilePointDataType, 1>          CurveType;
+  typedef PointSet<ProfilePointDataType, 1>       EnergyProfileType;
+  typedef typename EnergyProfileType::PointType   ProfilePointType;
+
+  typename EnergyProfileType::Pointer energyProfile = EnergyProfileType::New();
+  energyProfile->Initialize();
+
+  // Instantiate the progress reporter
+
   IterationReporter reporter( this, 0, 1 );
 
-  RealType previousEnergy = NumericTraits<RealType>::max();
-  RealType currentEnergy = NumericTraits<RealType>::max();
+  bool isConverged = false;
   this->m_CurrentConvergenceMeasurement = NumericTraits<RealType>::max();
   this->m_ElapsedIterations = 0;
   while( this->m_ElapsedIterations++ < this->m_MaximumNumberOfIterations &&
-    vnl_math_abs( this->m_CurrentConvergenceMeasurement ) >=
-    this->m_ConvergenceThreshold ) // && badct < 4 )
+    isConverged == false )
     {
-    previousEnergy = currentEnergy;
-    currentEnergy = 0.0;
+    ProfilePointDataType currentEnergy;
+    currentEnergy[0] = 0.0;
     RealType numberOfGrayMatterVoxels = 0.0;
 
     forwardIncrementalField->FillBuffer( zeroVector );
@@ -370,7 +381,7 @@ DiReCTImageFilter<TInputImage, TOutputImage>
           RealType delta = ( ItWarpedWhiteMatterProbabilityMap.Get() -
             ItGrayMatterProbabilityMap.Get() );
 
-          currentEnergy += vnl_math_abs( delta );
+          currentEnergy[0] += vnl_math_abs( delta );
           numberOfGrayMatterVoxels++;
 
           RealType speedValue = -1.0 * delta * ItGrayMatterProbabilityMap.Get() *
@@ -460,6 +471,7 @@ DiReCTImageFilter<TInputImage, TOutputImage>
       this->InvertDeformationField( inverseField, integratedField );
       this->InvertDeformationField( integratedField, inverseField );
       }
+
     ItCorticalThicknessImage.GoToBegin();
     ItForwardIncrementalField.GoToBegin();
     ItHitImage.GoToBegin();
@@ -500,8 +512,94 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     velocityField = this->SmoothDeformationField( velocityField,
       this->m_SmoothingSigma );
 
-    currentEnergy /= numberOfGrayMatterVoxels;
-    this->m_CurrentConvergenceMeasurement = previousEnergy - currentEnergy;
+    // Calculate current energy and current convergence measurement
+
+    currentEnergy[0] /= numberOfGrayMatterVoxels;
+    this->m_CurrentEnergy = currentEnergy[0];
+
+    ProfilePointType point;
+    point[0] = this->m_ElapsedIterations - 1;
+
+    energyProfile->SetPoint( this->m_ElapsedIterations - 1, point );
+    energyProfile->SetPointData( this->m_ElapsedIterations - 1, currentEnergy );
+
+    if( this->m_ElapsedIterations >= this->m_ConvergenceWindowSize )
+      {
+      typename CurveType::PointType    origin;
+      typename CurveType::SizeType     size;
+      typename CurveType::SpacingType  spacing;
+
+      origin[0] = this->m_ElapsedIterations - this->m_ConvergenceWindowSize;
+      size[0] = this->m_ConvergenceWindowSize;
+      spacing[0] = 1.0;
+
+      typedef BSplineScatteredDataPointSetToImageFilter<EnergyProfileType,
+        CurveType> BSplinerType;
+      typename BSplinerType::Pointer bspliner = BSplinerType::New();
+
+      typename EnergyProfileType::Pointer energyProfileWindow =
+        EnergyProfileType::New();
+      energyProfileWindow->Initialize();
+
+      RealType totalEnergy = 0.0;
+
+      unsigned int startIndex = static_cast<unsigned int>( origin[0] );
+      for( unsigned int i = startIndex; i < this->m_ElapsedIterations; i++ )
+        {
+        ProfilePointType windowPoint;
+        windowPoint[0] =
+          static_cast<typename ProfilePointType::CoordRepType>( i );
+
+        ProfilePointDataType windowEnergy;
+        energyProfile->GetPointData( i, &windowEnergy );
+
+        totalEnergy += vnl_math_abs( windowEnergy[0] );
+        }
+
+      for( unsigned int i = startIndex; i < this->m_ElapsedIterations; i++ )
+        {
+        ProfilePointType windowPoint;
+        windowPoint[0] = static_cast<typename ProfilePointType::CoordRepType>( i );
+
+        ProfilePointDataType windowEnergy;
+        energyProfile->GetPointData( i, &windowEnergy );
+
+        energyProfileWindow->SetPoint( i - startIndex, windowPoint );
+        energyProfileWindow->SetPointData( i - startIndex,
+          windowEnergy / totalEnergy );
+        }
+
+      bspliner->SetInput( energyProfileWindow );
+      bspliner->SetOrigin( origin );
+      bspliner->SetSpacing( spacing );
+      bspliner->SetSize( size );
+      bspliner->SetNumberOfLevels( 1 );
+      bspliner->SetSplineOrder( 1 );
+      typename BSplinerType::ArrayType ncps;
+      ncps.Fill( bspliner->GetSplineOrder()[0] + 1 );
+      bspliner->SetNumberOfControlPoints( ncps );
+      bspliner->Update();
+
+      typedef BSplineControlPointImageFunction<CurveType> BSplinerFunctionType;
+      typename BSplinerFunctionType::Pointer bsplinerFunction =
+        BSplinerFunctionType::New();
+      bsplinerFunction->SetOrigin( origin );
+      bsplinerFunction->SetSpacing( spacing );
+      bsplinerFunction->SetSize( size );
+      bsplinerFunction->SetSplineOrder( bspliner->GetSplineOrder() );
+      bsplinerFunction->SetInputImage( bspliner->GetPhiLattice() );
+
+      ProfilePointType endPoint;
+      endPoint[0] = static_cast<RealType>( this->m_ElapsedIterations - 1 );
+      typename BSplinerFunctionType::GradientType gradient =
+        bsplinerFunction->EvaluateGradientAtParametricPoint( endPoint );
+   	  this->m_CurrentConvergenceMeasurement = -gradient[0][0];
+
+   	  if( this->m_CurrentConvergenceMeasurement < this->m_ConvergenceThreshold )
+   	    {
+   	    isConverged = true;
+   	    }
+   	  }
 
     reporter.CompletedStep();
     }
@@ -774,6 +872,10 @@ DiReCTImageFilter<TInputImage, TOutputImage>
     << this->m_SmoothingSigma << std::endl;
   std::cout << indent << "Gradient step = "
     << this->m_GradientStep << std::endl;
+  std::cout << indent << "Convergence threshold = "
+    << this->m_ConvergenceThreshold << std::endl;
+  std::cout << indent << "Convergence window size = "
+    << this->m_ConvergenceWindowSize << std::endl;
 }
 
 } // end namespace itk
