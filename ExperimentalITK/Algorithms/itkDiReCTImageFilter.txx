@@ -54,7 +54,7 @@ namespace itk
 template<class TInputImage, class TOutputImage>
 DiReCTImageFilter<TInputImage, TOutputImage>
 ::DiReCTImageFilter() :
-  m_ThicknessPriorEstimate( 6.0 ),
+  m_ThicknessPriorEstimate( 10.0 ),
   m_SmoothingSigma( 1.5 ),
   m_GradientStep( 0.5 ),
   m_NumberOfIntegrationPoints( 10 ),
