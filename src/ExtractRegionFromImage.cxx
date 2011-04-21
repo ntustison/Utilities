@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-template<class TValue> 
+template<class TValue>
 TValue Convert( std::string optionString )
 			{
 			TValue value;
@@ -25,7 +25,7 @@ std::vector<TValue> ConvertVector( std::string optionString )
 			{
 			std::vector<TValue> values;
 			std::string::size_type crosspos = optionString.find( 'x', 0 );
-			
+
 			if ( crosspos == std::string::npos )
 					{
 					values.push_back( Convert<TValue>( optionString ) );
@@ -36,7 +36,7 @@ std::vector<TValue> ConvertVector( std::string optionString )
 					TValue value;
 					std::istringstream iss( element );
 					iss >> value;
-					values.push_back( value );  
+					values.push_back( value );
 					while ( crosspos != std::string::npos )
 							{
 							std::string::size_type crossposfrom = crosspos;
@@ -51,17 +51,17 @@ std::vector<TValue> ConvertVector( std::string optionString )
 									}
 							std::istringstream iss( element );
 							iss >> value;
-							values.push_back( value );  
-							}           
-					}   
+							values.push_back( value );
+							}
+					}
 			return values;
 			}
 
 template <unsigned int ImageDimension>
 int ExtractRegionFromImage( int argc, char *argv[] )
 {
-  typedef float PixelType; 
- 
+  typedef float PixelType;
+
   typedef itk::Image<PixelType, ImageDimension> ImageType;
   typedef itk::ImageFileReader<ImageType> ReaderType;
   typename ReaderType::Pointer reader = ReaderType::New();
@@ -90,36 +90,37 @@ int ExtractRegionFromImage( int argc, char *argv[] )
     }
   else
     {
-    typedef itk::Image<unsigned short, ImageDimension> ShortImageType; 
+    typedef itk::Image<unsigned short, ImageDimension> ShortImageType;
     typedef itk::CastImageFilter<ImageType, ShortImageType> CasterType;
     typename CasterType::Pointer caster = CasterType::New();
     caster->SetInput( reader->GetOutput() );
     caster->Update();
-     
-    typedef itk::LabelStatisticsImageFilter<ShortImageType, ShortImageType> 
+
+    typedef itk::LabelStatisticsImageFilter<ShortImageType, ShortImageType>
       StatsFilterType;
-    typename StatsFilterType::Pointer stats = StatsFilterType::New();    
+    typename StatsFilterType::Pointer stats = StatsFilterType::New();
     stats->SetLabelInput( caster->GetOutput() );
     stats->SetInput( caster->GetOutput() );
     stats->Update();
-  
+
     region = stats->GetRegion( atoi( argv[4] ) );
-    }  
-    
-  std::cout << region << std::endl;  
+    }
+
+  std::cout << region << std::endl;
 
   typedef itk::ExtractImageFilter<ImageType, ImageType> CropperType;
   typename CropperType::Pointer cropper = CropperType::New();
   cropper->SetInput( reader->GetOutput() );
   cropper->SetExtractionRegion( region );
-  cropper->Update();  
-                  
+  cropper->SetDirectionCollapseToSubmatrix();
+  cropper->Update();
+
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetInput( cropper->GetOutput() );
-  writer->SetFileName( argv[3] );                                          
+  writer->SetFileName( argv[3] );
   writer->Update();
-  
+
   return 0;
 }
 
@@ -135,7 +136,7 @@ int main( int argc, char *argv[] )
     exit( 1 );
     }
 
-  switch( atoi( argv[1] ) ) 
+  switch( atoi( argv[1] ) )
    {
    case 2:
      ExtractRegionFromImage<2>( argc, argv );
