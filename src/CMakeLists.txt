@@ -141,8 +141,11 @@ target_link_libraries(ConvertScalarImageToRGB ${ITK_LIBRARIES})
 ADD_EXECUTABLE(ConvertImage ConvertImage.cxx )
 TARGET_link_libraries(ConvertImage ${ITK_LIBRARIES})
 
-#add_executable(ConvertImageToDICOM ConvertImageToDICOM.cxx )
-#target_link_libraries(ConvertImageToDICOM ${ITK_LIBRARIES})
+add_executable(ConvertImageToDicom ConvertImageToDicom.cxx )
+target_link_libraries(ConvertImageToDicom ${ITK_LIBRARIES})
+
+add_executable(GetDicomTagValue GetDicomTagValue.cxx )
+target_link_libraries(GetDicomTagValue ${ITK_LIBRARIES})
 
 add_executable(ConvertImageSeries ConvertImageSeries.cxx )
 target_link_libraries(ConvertImageSeries ${ITK_LIBRARIES})
