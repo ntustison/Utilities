@@ -52,14 +52,14 @@ int MultipleOperateImages( int argc, char * argv[] )
   if( op.compare( std::string( "mean" ) ) == 0 )
     {
     typename ReaderType::Pointer reader = ReaderType::New();
-    reader->SetFileName( argv[4] );
+    reader->SetFileName( argv[5] );
     reader->Update();
 
     typename ImageType::Pointer output = reader->GetOutput();
 
     float N = 1.0;
 
-    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 6; n < static_cast<unsigned int>( argc ); n++ )
       {
       typename ReaderType::Pointer reader = ReaderType::New();
       reader->SetFileName( argv[n] );
@@ -88,7 +88,7 @@ int MultipleOperateImages( int argc, char * argv[] )
   else if( op.compare( std::string( "var" ) ) == 0 )
     {
     typename ReaderType::Pointer reader = ReaderType::New();
-    reader->SetFileName( argv[4] );
+    reader->SetFileName( argv[5] );
     reader->Update();
 
     typename ImageType::Pointer meanImage = reader->GetOutput();
@@ -103,7 +103,7 @@ int MultipleOperateImages( int argc, char * argv[] )
     output->Allocate();
     output->FillBuffer( 0 );
 
-    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 6; n < static_cast<unsigned int>( argc ); n++ )
       {
       typename ReaderType::Pointer reader = ReaderType::New();
       reader->SetFileName( argv[n] );
