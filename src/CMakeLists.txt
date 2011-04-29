@@ -18,12 +18,12 @@ endif(USE_ITK_FILE)
 set( CMAKE_INCLUDE_DIRECTORIES_BEFORE ON )
 
 include_directories(
-  /Users/ntustison/Pkg/Utilities/ExperimentalITK/Algorithms/
-  /Users/ntustison/Pkg/Utilities/ExperimentalITK/BasicFilters/
-  /Users/ntustison/Pkg/Utilities/ExperimentalITK/Common/
-  /Users/ntustison/Pkg/Utilities/ExperimentalITK/IO/
-  /Users/ntustison/Pkg/Utilities/ExperimentalITK/Numerics/
-  /Users/ntustison/Pkg/Utilities/ExperimentalITK/Numerics/Statistics/
+  ${CMAKE_SRC_DIR}/../ExperimentalITK/Algorithms/
+  ${CMAKE_SRC_DIR}/../ExperimentalITK/BasicFilters/
+  ${CMAKE_SRC_DIR}/../ExperimentalITK/Common/
+  ${CMAKE_SRC_DIR}/../ExperimentalITK/IO/
+  ${CMAKE_SRC_DIR}/../ExperimentalITK/Numerics/
+  ${CMAKE_SRC_DIR}/../ExperimentalITK/Numerics/Statistics/
   )
 
 set(CMAKE_MODULE_PATH ${ITK_SOURCE_DIR}/CMake)
@@ -237,6 +237,9 @@ target_link_libraries(FloodFill ${ITK_LIBRARIES})
 
 add_executable(GetCaminoToPhysicalSpaceAffine GetCaminoToPhysicalSpaceAffine.cxx )
 target_link_libraries(GetCaminoToPhysicalSpaceAffine ${ITK_LIBRARIES})
+
+add_executable(GetPhysicalSpaceToParaviewAffine GetPhysicalSpaceToParaviewAffine.cxx )
+target_link_libraries(GetPhysicalSpaceToParaviewAffine ${ITK_LIBRARIES})
 
 add_executable(GetConnectedComponents GetConnectedComponents.cxx )
 target_link_libraries(GetConnectedComponents ${ITK_LIBRARIES})
