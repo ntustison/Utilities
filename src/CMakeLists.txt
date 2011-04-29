@@ -18,12 +18,12 @@ endif(USE_ITK_FILE)
 set( CMAKE_INCLUDE_DIRECTORIES_BEFORE ON )
 
 include_directories(
-  ${CMAKE_SRC_DIR}/../ExperimentalITK/Algorithms/
-  ${CMAKE_SRC_DIR}/../ExperimentalITK/BasicFilters/
-  ${CMAKE_SRC_DIR}/../ExperimentalITK/Common/
-  ${CMAKE_SRC_DIR}/../ExperimentalITK/IO/
-  ${CMAKE_SRC_DIR}/../ExperimentalITK/Numerics/
-  ${CMAKE_SRC_DIR}/../ExperimentalITK/Numerics/Statistics/
+  ${CMAKE_SOURCE_DIR}/../ExperimentalITK/Algorithms/
+  ${CMAKE_SOURCE_DIR}/../ExperimentalITK/BasicFilters/
+  ${CMAKE_SOURCE_DIR}/../ExperimentalITK/Common/
+  ${CMAKE_SOURCE_DIR}/../ExperimentalITK/IO/
+  ${CMAKE_SOURCE_DIR}/../ExperimentalITK/Numerics/
+  ${CMAKE_SOURCE_DIR}/../ExperimentalITK/Numerics/Statistics/
   )
 
 set(CMAKE_MODULE_PATH ${ITK_SOURCE_DIR}/CMake)
