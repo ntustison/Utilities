@@ -316,9 +316,6 @@ target_link_libraries(InvertImageIntensity ${ITK_LIBRARIES})
 #add_executable(JHCT JHCT.cxx)
 #target_link_libraries(JHCT ${ITK_LIBRARIES} )
 
-add_executable(KellyKapowski KellyKapowski.cxx ${UI_SOURCES})
-target_link_libraries(KellyKapowski ${ITK_LIBRARIES})
-
 # add_executable(EvaluatePointSetMetric EvaluatePointSetMetric.cxx)
 # target_link_libraries(EvaluatePointSetMetric ${ITK_LIBRARIES} )
 
