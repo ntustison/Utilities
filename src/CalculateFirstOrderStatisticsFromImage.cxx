@@ -106,6 +106,7 @@ int CalculateFirstOrderStatistics( int argc, char *argv[] )
   RealType variance;
   RealType skewness;
   RealType kurtosis;
+  RealType median;
   RealType entropy = 0;
 
   typedef itk::LabelStatisticsImageFilter<RealImageType, ImageType> HistogramGeneratorType;
@@ -123,6 +124,7 @@ int CalculateFirstOrderStatistics( int argc, char *argv[] )
   sum = stats->GetSum( 1 );
   sigma = stats->GetSigma( 1 );
   variance = sigma * sigma;
+  median = stats->GetMedian( 1 );
 
   kurtosis = 0.0;
   skewness = 0.0;
@@ -226,7 +228,8 @@ int CalculateFirstOrderStatistics( int argc, char *argv[] )
             << fifthPercentileMean << " "
             << ninetyFifthPercentileMean << " "
             << minValue << " "
-            << maxValue << std::endl;
+            << maxValue << " "
+            << median << std::endl;
 
 /*
   std::cout << "mean:        " << mean << std::endl;
@@ -241,6 +244,7 @@ int CalculateFirstOrderStatistics( int argc, char *argv[] )
   std::cout << "95th % mean: " << ninetyFifthPercentileMean << std::endl;
   std::cout << "Min value:   " << minValue << std::endl;
   std::cout << "Max value:   " << maxValue << std::endl;
+  std::cout << "Median:   " << median << std::endl;
 */
 
 
@@ -255,7 +259,7 @@ int main( int argc, char *argv[] )
               << "[labelImage] [label] [numberOfBins=100] [histogramFile]" << std::endl;
 
     std::cerr << "  Output:  mean sigma sum skewness kurtosis entropy 5th% "
-              << "95th% 5th%mean 95th%mean min max "<< std::endl;
+              << "95th% 5th%mean 95th%mean min max median"<< std::endl;
     exit( 1 );
     }
 

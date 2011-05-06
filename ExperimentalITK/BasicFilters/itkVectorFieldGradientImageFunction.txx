@@ -74,9 +74,13 @@ VectorFieldGradientImageFunction<TInputImage, TRealType, TOutputImage>
 
   for ( unsigned int i = 0; i < ImageDimension; i++ )
     {
-    typename InterpolatorType::PointType::VectorType delta;
+    typename PointType::VectorType delta;
     delta.Fill( 0.0 );
     delta[i] = spacing[i];
+
+    typename InterpolatorType::PointType::VectorType idelta;
+    idelta.Fill( 0.0 );
+    idelta[i] = spacing[i];
 
     typename InterpolatorType::OutputType xp1;
     typename InterpolatorType::OutputType xp2;
@@ -89,10 +93,10 @@ VectorFieldGradientImageFunction<TInputImage, TRealType, TOutputImage>
       }
     else
       {
-      xp1 = interpolator->Evaluate( ipoint + delta );
+      xp1 = interpolator->Evaluate( ipoint + idelta );
       if ( this->IsInsideBuffer( point + delta*2.0 ) )
         {
-        xp2 = interpolator->Evaluate( ipoint + delta*2.0 );
+        xp2 = interpolator->Evaluate( ipoint + idelta*2.0 );
         }
       else
         {
@@ -106,10 +110,10 @@ VectorFieldGradientImageFunction<TInputImage, TRealType, TOutputImage>
       }
     else
       {
-      xm1 = interpolator->Evaluate( ipoint - delta );
+      xm1 = interpolator->Evaluate( ipoint - idelta );
       if ( this->IsInsideBuffer( point - delta*2.0 ) )
         {
-        xm2 = interpolator->Evaluate( ipoint - delta*2.0 );
+        xm2 = interpolator->Evaluate( ipoint - idelta*2.0 );
         }
       else
         {
