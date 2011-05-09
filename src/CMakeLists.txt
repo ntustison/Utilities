@@ -44,9 +44,9 @@ link_directories(
   ${ITK_LIBRARY_PATH}
 )
 
-set(SOURCES "/Users/ntustison/Pkg/Utilities/ExperimentalITK/Common/itkCommandLineParser" "/Users/ntustison/Pkg/Utilities/ExperimentalITK/Common/itkCommandLineOption" )
+set(SOURCES "${CMAKE_SOURCE_DIR}/../ExperimentalITK/Common/itkCommandLineParser" "${CMAKE_SOURCE_DIR}/../ExperimentalITK/Common/itkCommandLineOption" )
 
-set(UI_SOURCES "../ExperimentalITK/Common/antsCommandLineParser" "../ExperimentalITK/Common/antsCommandLineOption" )
+set(UI_SOURCES "${CMAKE_SOURCE_DIR}/../ExperimentalITK/Common/antsCommandLineParser" "${CMAKE_SOURCE_DIR}/../ExperimentalITK/Common/antsCommandLineOption" )
 
 add_executable( itkTimeAndMemoryProbeTest itkTimeAndMemoryProbeTest.cxx )
 target_link_libraries( itkTimeAndMemoryProbeTest ${ITK_LIBRARIES})
