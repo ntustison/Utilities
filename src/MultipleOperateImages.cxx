@@ -429,18 +429,31 @@ int MultipleOperateImages( int argc, char * argv[] )
       images.push_back( reader->GetOutput() );
       }
 
-    std::ofstream str( argv[3] );
+    std::string sampleFilename = std::string( argv[3] ) +
+      std::string( "Samples.txt" );
+
+    std::string indexFilename = std::string( argv[3] ) +
+      std::string( "Indices.txt" );
+
+    std::ofstream str( sampleFilename.c_str() );
+    std::ofstream str2( indexFilename.c_str() );
+
     itk::ImageRegionIteratorWithIndex<ImageType> It( images[0],
       images[0]->GetLargestPossibleRegion() );
     for( It.GoToBegin(); !It.IsAtEnd(); ++It )
       {
       if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
         {
-        for( unsigned int n = 0; n < images.size(); n++ )
+        for( unsigned int d = 0; d < ImageDimension-1; d++ )
           {
-          str << images[n]->GetPixel( It.GetIndex() ) << " ";
+          str2 << It.GetIndex()[d] << ",";
           }
-        str << std::endl;
+        str2 << It.GetIndex()[ImageDimension-1] << std::endl;
+        for( unsigned int n = 0; n < images.size()-1; n++ )
+          {
+          str << images[n]->GetPixel( It.GetIndex() ) << ",";
+          }
+        str << images[images.size()-1]->GetPixel( It.GetIndex() ) << std::endl;
         }
       }
     }
@@ -465,7 +478,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    var:    Create variance image" << std::endl;
     std::cerr << "    w:      create probabilistic weight image from label probability images" << std::endl;
     std::cerr << "    ex:     Create expected ventilation from posterior prob. images" << std::endl;
-    std::cerr << "    sample: Print samples to output text file (specified in place of outputImage)" << std::endl;
+    std::cerr << "    sample: Print samples to output text/index files (prefix specified in place of outputImage)" << std::endl;
     return EXIT_FAILURE;
     }
 
