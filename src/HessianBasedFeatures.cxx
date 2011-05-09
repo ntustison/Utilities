@@ -147,7 +147,7 @@ int main( int argc, char *argv[] )
     std::cerr << "Usage: " << argv[0]
               << " imageDimension inputImage outputImage type [sigmaMin] [sigmaMax]"
               << " [numberOfSigmaSteps]"
-              << "  [brightObject] [alpha] [beta] [gamma]" << std::endl;
+              << "  [brightObject] [alpha=0.5] [beta=0.5] [gamma]" << std::endl;
     std::cerr << "   Type:  0. sphere" << std::endl;
     std::cerr << "          1. line" << std::endl;
     std::cerr << "          2. plane" << std::endl;

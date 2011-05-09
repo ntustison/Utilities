@@ -28,9 +28,11 @@
 #include "itkImageSeriesWriter.h"
 #include "itkMetaDataObject.h"
 
-#include <vector>
-#include <itksys/SystemTools.hxx>
+#include "gdcmUIDGenerator.h"
 
+#include <vector>
+#include <string>
+#include <itksys/SystemTools.hxx>
 
 
 int main( int argc, char* argv[] )
@@ -55,6 +57,8 @@ int main( int argc, char* argv[] )
     std::cerr << "    0008|1030 -> StudyDescription " << std::endl;
     std::cerr << "    0010|0010 -> PatientName " << std::endl;
     std::cerr << "    0010|0020 -> PatientID " << std::endl;
+    std::cerr << "    0020|000d -> StudyID " << std::endl;
+    std::cerr << "    0008|0016 -> sopClassUID " << std::endl;
 
 
     return EXIT_FAILURE;
@@ -67,7 +71,6 @@ int main( int argc, char* argv[] )
   typedef itk::ImageFileReader< ImageType >       ReaderType;
 
   ReaderType::Pointer reader = ReaderType::New();
-
   reader->SetFileName( argv[1] );
 
   try
@@ -85,6 +88,7 @@ int main( int argc, char* argv[] )
   typedef itk::NumericSeriesFileNames             NamesGeneratorType;
 
   ImageIOType::Pointer gdcmIO = ImageIOType::New();
+  gdcmIO->SetKeepOriginalUID( false );
 
   const char * outputDirectory = argv[2];
 
@@ -98,26 +102,9 @@ int main( int argc, char* argv[] )
 
   typedef itk::ImageSeriesWriter<
                          ImageType, Image2DType >  SeriesWriterType;
+  SeriesWriterType::DictionaryArrayType dictionaryArray;
 
   NamesGeneratorType::Pointer namesGenerator = NamesGeneratorType::New();
-
-  itk::MetaDataDictionary & dict = gdcmIO->GetMetaDataDictionary();
-  std::string tagkey, value;
-
-  std::cout << "adding the following tags,value pairs: " << std::endl;
-  for( int n = 4; n < argc; n++ )
-    {
-    std::cout << argv[n] << std::endl;
-
-    std::string pair = std::string( argv[n] );
- 			std::string::size_type crosspos = pair.find( ',', 0 );
-
- 			tagkey = pair.substr( 0, crosspos );
-    value = pair.substr( crosspos + 1, pair.length() );
-
-    std::cout << tagkey << " " << value << std::endl;
-    itk::EncapsulateMetaData<std::string>(dict, tagkey, value );
-    }
 
 //  tagkey = "0008|0060"; // Modality
 //  value = "MR";
@@ -129,17 +116,80 @@ int main( int argc, char* argv[] )
 //  value = "DV";
 //  itk::EncapsulateMetaData<std::string>(dict, tagkey, value);
 
-
-  SeriesWriterType::Pointer seriesWriter = SeriesWriterType::New();
-
-  seriesWriter->SetInput( reader->GetOutput() );
-  seriesWriter->SetImageIO( gdcmIO );
+  gdcm::UIDGenerator suid;
+  std::string seriesUID = suid.Generate();
+  gdcm::UIDGenerator fuid;
+  std::string frameOfReferenceUID = fuid.Generate();
 
   ImageType::RegionType region =
      reader->GetOutput()->GetLargestPossibleRegion();
 
   ImageType::IndexType start = region.GetIndex();
   ImageType::SizeType  size  = region.GetSize();
+
+  for( unsigned int s = 0; s < size[2]; s++ )
+    {
+    SeriesWriterType::DictionaryRawPointer dict = new SeriesWriterType::DictionaryType;
+
+    std::string tagkey, value;
+
+    for( int n = 4; n < argc; n++ )
+      {
+      std::cout << argv[n] << std::endl;
+
+      std::string pair = std::string( argv[n] );
+      std::string::size_type crosspos = pair.find( ',', 0 );
+
+      tagkey = pair.substr( 0, crosspos );
+      value = pair.substr( crosspos + 1, pair.length() );
+
+      itk::EncapsulateMetaData<std::string>( *dict, tagkey, value );
+      }
+
+    itk::EncapsulateMetaData<std::string>( *dict,"0020|000e", seriesUID );
+    itk::EncapsulateMetaData<std::string>( *dict,"0020|0052", frameOfReferenceUID );
+
+    gdcm::UIDGenerator sopuid;
+    std::string sopInstanceUID = sopuid.Generate();
+    itk::EncapsulateMetaData<std::string>( *dict, "0008|0018", sopInstanceUID );
+    itk::EncapsulateMetaData<std::string>( *dict, "0002|0003", sopInstanceUID );
+
+    // Slice number
+    itksys_ios::ostringstream value2;
+    value2.str( "" );
+    value2 << s + 1;
+    itk::EncapsulateMetaData<std::string>( *dict, "0020|0013", value2.str() );
+
+   // Image Position Patient: This is calculated by computing the
+    // physical coordinate of the first pixel in each slice.
+    ImageType::PointType position;
+    ImageType::IndexType index;
+    index[0] = 0;
+    index[1] = 0;
+    index[2] = s;
+    reader->GetOutput()->TransformIndexToPhysicalPoint( index, position );
+
+    value2.str("");
+    value2 << position[0] << "\\" << position[1] << "\\" << position[2];
+    itk::EncapsulateMetaData<std::string>( *dict,"0020|0032", value2.str() );
+    // Slice Location: For now, we store the z component of the Image
+    // Position Patient.
+    value2.str( "" );
+    value2 << position[2];
+
+    itk::EncapsulateMetaData<std::string>( *dict,"0020|1041", value2.str() );
+
+    dictionaryArray.push_back( dict );
+    }
+
+  SeriesWriterType::Pointer seriesWriter = SeriesWriterType::New();
+
+  seriesWriter->SetInput( reader->GetOutput() );
+  seriesWriter->SetImageIO( gdcmIO );
+  seriesWriter->SetMetaDataDictionaryArray( &dictionaryArray );
+
+
+
 
   std::string format = std::string( argv[2] )
     + std::string( "/" ) + std::string( argv[3] )
