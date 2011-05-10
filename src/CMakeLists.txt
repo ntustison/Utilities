@@ -292,8 +292,8 @@ target_link_libraries(GetJointSamples ${ITK_LIBRARIES})
 add_executable(GetPhysicalToImageAffineTransform GetPhysicalToImageAffineTransform.cxx )
 target_link_libraries(GetPhysicalToImageAffineTransform ${ITK_LIBRARIES})
 
-add_executable(GradientAnisotropicDiffusionImageFilter GradientAnisotropicDiffusionImageFilter.cxx )
-target_link_libraries(GradientAnisotropicDiffusionImageFilter ${ITK_LIBRARIES})
+#add_executable(GradientAnisotropicDiffusionImageFilter GradientAnisotropicDiffusionImageFilter.cxx )
+#target_link_libraries(GradientAnisotropicDiffusionImageFilter ${ITK_LIBRARIES})
 
 add_executable(GradientMagnitudeImageFilter GradientMagnitudeImageFilter.cxx )
 target_link_libraries(GradientMagnitudeImageFilter ${ITK_LIBRARIES})
