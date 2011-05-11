@@ -107,7 +107,7 @@ int GenerateCooccurrenceMeasures( int argc, char *argv[] )
     names->Begin();
 
 
-  std::cout << "energy, entropy, inverse difference moment, inertia, cluster shade, cluster prominence" << std::endl;
+  std::cout << "Energy,Entropy,InverseDifferenceMoment,Inertia,ClusterShade,ClusterProminence" << std::endl;
   while( mIt != means->End() )
     {
 //    std::cout << nIt.Value() << ": " << mIt.Value() << std::endl;

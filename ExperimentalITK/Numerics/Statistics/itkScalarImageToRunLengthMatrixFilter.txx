@@ -52,6 +52,9 @@ ScalarImageToRunLengthMatrixFilter<TImageType, THistogramFrequencyContainer>
   this->m_Min = NumericTraits<PixelType>::NonpositiveMin();
   this->m_Max = NumericTraits<PixelType>::max();
 
+  this->m_MinDistance = NumericTraits<PixelType>::NonpositiveMin();
+  this->m_MaxDistance = NumericTraits<PixelType>::max();
+
   //mask inside pixel value
   this->m_InsidePixelValue = NumericTraits<PixelType>::One;
 
@@ -189,7 +192,8 @@ GenerateData( void )
   // Next, find the minimum radius that encloses all the offsets.
   unsigned int minRadius = 0;
   typename OffsetVector::ConstIterator offsets;
-  for( offsets = this->m_Offsets->Begin(); offsets != this->m_Offsets->End(); offsets++ )
+  for( offsets = this->m_Offsets->Begin(); offsets != this->m_Offsets->End();
+    offsets++ )
     {
     for( unsigned int i = 0; i < offsets.Value().GetOffsetDimension(); i++ )
       {
@@ -310,7 +314,7 @@ FillHistogramWithMask( RadiusType radius, RegionType region, const ImageType *ma
       if ( run[1] >= this->m_MinDistance &&
            run[1] <= this->m_MaxDistance )
         {
-        output->IncreaseFrequency( run, 1 );
+        output->IncreaseFrequencyOfMeasurement( run, 1 );
         }
       }
     }
@@ -396,7 +400,7 @@ FillHistogram( RadiusType radius, RegionType region )
       if ( run[1] >= this->m_MinDistance &&
            run[1] <= this->m_MaxDistance )
         {
-        output->IncreaseFrequency( run, 1 );
+        output->IncreaseFrequencyOfMeasurement( run, 1 );
         }
       }
     }
@@ -439,8 +443,12 @@ PrintSelf(std::ostream& os, Indent indent) const
   os << indent << "Offsets: " << this->GetOffsets() << std::endl;
   os << indent << "Min: " << this->GetMin() << std::endl;
   os << indent << "Max: " << this->GetMax() << std::endl;
-  os << indent << "NumberOfBinsPerAxis: " << this->GetNumberOfBinsPerAxis() << std::endl;
-  os << indent << "InsidePixelValue: " << this->GetInsidePixelValue() << std::endl;
+  os << indent << "MinDistance: " << this->GetMinDistance() << std::endl;
+  os << indent << "MaxDistance: " << this->GetMaxDistance() << std::endl;
+  os << indent << "NumberOfBinsPerAxis: "
+     << this->GetNumberOfBinsPerAxis() << std::endl;
+  os << indent << "InsidePixelValue: "
+     << this->GetInsidePixelValue() << std::endl;
 }
 
 } // end of namespace Statistics

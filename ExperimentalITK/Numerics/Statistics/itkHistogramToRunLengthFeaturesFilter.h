@@ -55,9 +55,6 @@ public:
   typedef typename HistogramType::
     TotalAbsoluteFrequencyType                            FrequencyType;
 
-  /** Triggers the Computation of the histogram */
-  void Compute( void );
-
   /** Method to Set/Get the input Histogram */
   void SetInput ( const HistogramType * histogram );
   const HistogramType * GetInput() const;
@@ -110,6 +107,7 @@ public:
 
   itkGetMacro( TotalNumberOfRuns, unsigned long );
 
+  /** Run-length feature types */
   typedef enum
     {
     ShortRunEmphasis,
@@ -135,9 +133,7 @@ protected:
   /** Make a DataObject to be used for output output. */
   virtual DataObjectPointer MakeOutput( unsigned int );
 
-
   void GenerateData();
-
 
 private:
   HistogramToRunLengthFeaturesFilter(const Self&); //purposely not implemented

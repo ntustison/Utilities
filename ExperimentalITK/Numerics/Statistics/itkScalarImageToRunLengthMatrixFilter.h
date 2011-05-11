@@ -120,7 +120,7 @@ public:
 protected:
   ScalarImageToRunLengthMatrixFilter();
   virtual ~ScalarImageToRunLengthMatrixFilter() {};
-  void PrintSelf(std::ostream& os, Indent indent) const;
+  void PrintSelf( std::ostream& os, Indent indent ) const;
   virtual void FillHistogram( RadiusType radius, RegionType region );
   virtual void FillHistogramWithMask( RadiusType radius, RegionType region,
     const ImageType * maskImage );
