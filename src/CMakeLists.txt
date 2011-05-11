@@ -250,8 +250,8 @@ target_link_libraries(GenerateAttenuationMask ${ITK_LIBRARIES})
 add_executable(GeneralToBSplineDeformationField GeneralToBSplineDeformationField.cxx )
 target_link_libraries(GeneralToBSplineDeformationField ${ITK_LIBRARIES})
 
-#add_executable(GenerateCooccurrenceMeasures GenerateCooccurrenceMeasures.cxx )
-#target_link_libraries(GenerateCooccurrenceMeasures ${ITK_LIBRARIES})
+add_executable(GenerateCooccurrenceMeasures GenerateCooccurrenceMeasures.cxx )
+target_link_libraries(GenerateCooccurrenceMeasures ${ITK_LIBRARIES})
 
 add_executable(GenerateDeformationFieldMagnitudeImage GenerateDeformationFieldMagnitudeImage.cxx )
 target_link_libraries(GenerateDeformationFieldMagnitudeImage ${ITK_LIBRARIES})
@@ -277,8 +277,8 @@ target_link_libraries(GenerateVectorFieldFromControlPointLattice ${ITK_LIBRARIES
 add_executable(GeneratePercentileAttenuationMask GeneratePercentileAttenuationMask.cxx )
 target_link_libraries(GeneratePercentileAttenuationMask ${ITK_LIBRARIES})
 
-#add_executable(GenerateRunLengthMeasures GenerateRunLengthMeasures.cxx )
-#target_link_libraries(GenerateRunLengthMeasures ${ITK_LIBRARIES})
+add_executable(GenerateRunLengthMeasures GenerateRunLengthMeasures.cxx )
+target_link_libraries(GenerateRunLengthMeasures ${ITK_LIBRARIES})
 
 add_executable(GenerateStatisticsFromImage GenerateStatisticsFromImage.cxx )
 target_link_libraries(GenerateStatisticsFromImage ${ITK_LIBRARIES})
