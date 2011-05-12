@@ -30,7 +30,7 @@ namespace Statistics
 /** \class ScalarImageToRunLengthFeaturesFilter
  *  \brief This class computes run length descriptions from an image.
  *
- * By default, texure features are computed for each spatial
+ * By default, run length features are computed for each spatial
  * direction and then averaged afterward, so it is possible to access the standard
  * deviations of the texture features. These values give a clue as to texture
  * anisotropy. However, doing this is much more work, because it involved computing
@@ -53,15 +53,15 @@ namespace Statistics
  * -# The pixel value that defines the "inside" of the mask. (Optional, defaults
  *    to 1 if a mask is set.)
  * -# The set of features to be calculated. These features are defined
- *    in the GreyLevelRunLengthMatrixRunLengthCoefficientsCalculator class. (Optional,
- *    defaults to {Energy, Entropy, InverseDifferenceMoment, Inertia, ClusterShade,
- *    ClusterProminence}, as in Conners, Trivedi and Harlow.)
+ *    in the HistogramToRunLengthFeaturesFilter class.
  * -# The number of intensity bins. (Optional, defaults to 256.)
  * -# The set of directions (offsets) to average across. (Optional, defaults to
  *    {(-1, 0), (-1, -1), (0, -1), (1, -1)} for 2D images and scales analogously for ND
  *    images.)
  * -# The pixel intensity range over which the features will be calculated.
  *    (Optional, defaults to the full dynamic range of the pixel type.)
+ * -# The distance range over which the features will be calculated.
+ *    (Optional, defaults to the full dynamic range of double type.)
  *
  * In general, the default parameter values should be sufficient.
  *
@@ -69,24 +69,17 @@ namespace Statistics
  * (1) The average value of each feature.
  * (2) The standard deviation in the values of each feature.
  *
- * Web references:
- * http://www.cssip.uq.edu.au/meastex/www/algs/algs/algs.html
- * http://www.ucalgary.ca/~mhallbey/texture/texture_tutorial.html
- *
  * Print references:
- * Haralick, R.M., K. Shanmugam and I. Dinstein. 1973.  Textural Features for
- * Image Classification. IEEE Transactions on Systems, Man and Cybernetics.
- * SMC-3(6):610-620.
+ * M. M. Galloway. Texture analysis using gray level run lengths. Computer
+ * Graphics and Image Processing, 4:172-179, 1975.
  *
- * Haralick, R.M. 1979. Statistical and Structural Approaches to RunLength.
- * Proceedings of the IEEE, 67:786-804.
+ * A. Chu, C. M. Sehgal, and J. F. Greenleaf. Use of gray value distribution of
+ * run lengths for texture analysis.  Pattern Recognition Letters, 11:415-420,
+ * 1990.
  *
- * R.W. Conners and C.A. Harlow. A Theoretical Comaprison of RunLength Algorithms.
- * IEEE Transactions on Pattern Analysis and Machine Intelligence,  2:204-222, 1980.
- *
- * R.W. Conners, M.M. Trivedi, and C.A. Harlow. Segmentation of a High-Resolution
- * Urban Scene using RunLength  Operators. Computer Vision, Graphics and Image
- * Processing, 25:273-310,  1984.
+ * B. R. Dasarathy and E. B. Holder. Image characterizations based on joint
+ * gray-level run-length distributions. Pattern Recognition Letters, 12:490-502,
+ * 1991.
  *
  * \sa ScalarImageToRunLengthMatrixFilter
  * \sa HistogramToRunLengthFeaturesFilter

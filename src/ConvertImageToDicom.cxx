@@ -27,6 +27,7 @@
 #include "itkImageFileReader.h"
 #include "itkImageSeriesWriter.h"
 #include "itkMetaDataObject.h"
+#include "itkShiftScaleImageFilter.h"
 
 #include "gdcmUIDGenerator.h"
 
@@ -182,9 +183,31 @@ int main( int argc, char* argv[] )
     dictionaryArray.push_back( dict );
     }
 
+////////////////////////////////////////////////
+// 4) Shift data to undo the effect of a rescale intercept by the
+//    DICOM reader
+  std::string interceptTag("0028|1052");
+  typedef itk::MetaDataObject< std::string > MetaDataStringType;
+  itk::MetaDataObjectBase::Pointer entry = (reader->GetOutput()->GetMetaDataDictionary())[interceptTag];
+
+  MetaDataStringType::ConstPointer interceptValue =
+    dynamic_cast<const MetaDataStringType *>( entry.GetPointer() ) ;
+
+  int interceptShift = 0;
+  if( interceptValue )
+    {
+    std::string tagValue = interceptValue->GetMetaDataObjectValue();
+    interceptShift = -atoi ( tagValue.c_str() );
+    }
+
+  typedef itk::ShiftScaleImageFilter<ImageType, ImageType> ShiftScaleType;
+  ShiftScaleType::Pointer shiftScale = ShiftScaleType::New();
+  shiftScale->SetInput( reader->GetOutput());
+  shiftScale->SetShift( interceptShift );
+
   SeriesWriterType::Pointer seriesWriter = SeriesWriterType::New();
 
-  seriesWriter->SetInput( reader->GetOutput() );
+  seriesWriter->SetInput( shiftScale->GetOutput() );
   seriesWriter->SetImageIO( gdcmIO );
   seriesWriter->SetMetaDataDictionaryArray( &dictionaryArray );
 
