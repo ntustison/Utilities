@@ -42,10 +42,11 @@ int main( int argc, char* argv[] )
   if( argc < 4 )
     {
     std::cerr << "Usage: " << argv[0];
-    std::cerr << " inputImage outputDicomDirectory outputPrefix";
+    std::cerr << " inputImage outputDicomDirectory outputPrefix <uidPrefix>";
     std::cerr << " <TagID_1,Value_1> ... <TagID_1,Value_1> " << std::endl;
     std::cerr << "  Note:  instead of tags being specified 0008|0020, ";
     std::cerr << "  one needs to put 0008\\|00020." << std::endl;
+    std::cerr << "  Set uid prefix to  0 if one is to be generated in its entirety. "<< std::endl;
     std::cerr << "  ALso some common tagID,value pairs: "<< std::endl;
     std::cerr << "    0008|0008 -> ImageType (DERIVED\\SECONDARY)" << std::endl;
     std::cerr << "    0008|0020 -> StudyDate " << std::endl;
@@ -59,7 +60,6 @@ int main( int argc, char* argv[] )
     std::cerr << "    0010|0010 -> PatientName " << std::endl;
     std::cerr << "    0010|0020 -> PatientID " << std::endl;
     std::cerr << "    0020|000d -> StudyID " << std::endl;
-    std::cerr << "    0008|0016 -> sopClassUID " << std::endl;
 
 
     return EXIT_FAILURE;
@@ -118,7 +118,12 @@ int main( int argc, char* argv[] )
 //  itk::EncapsulateMetaData<std::string>(dict, tagkey, value);
 
   gdcm::UIDGenerator suid;
-  std::string seriesUID = suid.Generate();
+  if( argc > 4 && atoi( argv[4] ) == '0' )
+    {
+    suid.SetRoot( argv[4] );
+    }
+  std::string seriesUID= suid.Generate();
+
   gdcm::UIDGenerator fuid;
   std::string frameOfReferenceUID = fuid.Generate();
 
@@ -134,7 +139,7 @@ int main( int argc, char* argv[] )
 
     std::string tagkey, value;
 
-    for( int n = 4; n < argc; n++ )
+    for( int n = 5; n < argc; n++ )
       {
       std::cout << argv[n] << std::endl;
 
