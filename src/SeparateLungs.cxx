@@ -541,7 +541,7 @@ int main( int argc, char *argv[] )
     LabelExtracterType::Pointer labelExtracter = LabelExtracterType::New();
     labelExtracter->SetInput( output );
     labelExtracter->SetExtractionRegion( region );
-    labelExtracter->SetDirectionCollapseToIdentity()
+    labelExtracter->SetDirectionCollapseToIdentity();
     labelExtracter->Update();
 
     typedef itk::BinaryThresholdImageFilter<LabelSliceType, LabelSliceType> BinaryFilterType;
