@@ -365,6 +365,7 @@ int main( int argc, char *argv[] )
         ExtracterType::Pointer extracter = ExtracterType::New();
         extracter->SetInput( reader->GetOutput() );
         extracter->SetExtractionRegion( region );
+        extracter->SetDirectionCollapseToIdentity();
         extracter->Update();
 
         typedef itk::LiveWireImageFunction<SliceType> LiveWireType;
