@@ -245,6 +245,7 @@ int SegmentHeliumLungs3D( int argc, char *argv[] )
     typename ExtracterType::Pointer extracter = ExtracterType::New();
     extracter->SetInput( relabeler->GetOutput() );
     extracter->SetExtractionRegion( region );
+    extracter->SetDirectionCollapseToIdentity();
     extracter->Update();
 
 
