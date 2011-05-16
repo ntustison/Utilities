@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-template<class TValue> 
+template<class TValue>
 TValue Convert( std::string optionString )
 			{
 			TValue value;
@@ -24,7 +24,7 @@ std::vector<TValue> ConvertVector( std::string optionString )
 			{
 			std::vector<TValue> values;
 			std::string::size_type crosspos = optionString.find( 'x', 0 );
-			
+
 			if ( crosspos == std::string::npos )
 					{
 					values.push_back( Convert<TValue>( optionString ) );
@@ -35,7 +35,7 @@ std::vector<TValue> ConvertVector( std::string optionString )
 					TValue value;
 					std::istringstream iss( element );
 					iss >> value;
-					values.push_back( value );  
+					values.push_back( value );
 					while ( crosspos != std::string::npos )
 							{
 							std::string::size_type crossposfrom = crosspos;
@@ -50,9 +50,9 @@ std::vector<TValue> ConvertVector( std::string optionString )
 									}
 							std::istringstream iss( element );
 							iss >> value;
-							values.push_back( value );  
-							}           
-					}   
+							values.push_back( value );
+							}
+					}
 			return values;
 			}
 
@@ -67,7 +67,7 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
   typename ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName( argv[2] );
   reader->Update();
-  
+
   typename ImageType::Pointer output = ImageType::New();
   output->SetOrigin( reader->GetOutput()->GetOrigin() );
   output->SetSpacing( reader->GetOutput()->GetSpacing() );
@@ -75,21 +75,21 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
   output->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
   output->Allocate();
   output->FillBuffer( 0 );
-  
+
   typename SliceType::SizeType sobelSize;
   typename SliceType::IndexType sobelIndex;
   typename SliceType::RegionType sobelRegion;
-  
+
   sobelSize.Fill( 3 );
   sobelIndex.Fill( 0 );
   sobelRegion.SetSize( sobelSize );
   sobelRegion.SetIndex( sobelIndex );
-    
+
   typename SliceType::Pointer sobelX = SliceType::New();
   sobelX->SetRegions( sobelRegion );
   sobelX->Allocate();
-  sobelX->FillBuffer( 0 );  
-  
+  sobelX->FillBuffer( 0 );
+
   sobelIndex[0] = 0; sobelIndex[1] = 0; sobelX->SetPixel( sobelIndex, -1 );
   sobelIndex[0] = 1; sobelIndex[1] = 0; sobelX->SetPixel( sobelIndex,  0 );
   sobelIndex[0] = 2; sobelIndex[1] = 0; sobelX->SetPixel( sobelIndex,  1 );
@@ -103,8 +103,8 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
   typename SliceType::Pointer sobelY = SliceType::New();
   sobelY->SetRegions( sobelRegion );
   sobelY->Allocate();
-  sobelY->FillBuffer( 0 );  
-  
+  sobelY->FillBuffer( 0 );
+
   sobelIndex[0] = 0; sobelIndex[1] = 0; sobelY->SetPixel( sobelIndex, -1 );
   sobelIndex[0] = 1; sobelIndex[1] = 0; sobelY->SetPixel( sobelIndex, -2 );
   sobelIndex[0] = 2; sobelIndex[1] = 0; sobelY->SetPixel( sobelIndex, -1 );
@@ -118,18 +118,18 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
   typename SliceType::SizeType ridgeSize;
   typename SliceType::IndexType ridgeIndex;
   typename SliceType::RegionType ridgeRegion;
-  
+
   ridgeSize[0] = 3;
   ridgeSize[1] = 7;
   ridgeIndex.Fill( 0 );
   ridgeRegion.SetSize( ridgeSize );
   ridgeRegion.SetIndex( ridgeIndex );
-  
+
   typename SliceType::Pointer ridgeX = SliceType::New();
   ridgeX->SetRegions( ridgeRegion );
   ridgeX->Allocate();
-  ridgeX->FillBuffer( 0 );  
-  
+  ridgeX->FillBuffer( 0 );
+
   ridgeIndex[0] = 0; ridgeIndex[1] = 0; ridgeX->SetPixel( ridgeIndex,  1 );
   ridgeIndex[0] = 1; ridgeIndex[1] = 0; ridgeX->SetPixel( ridgeIndex,  1 );
   ridgeIndex[0] = 2; ridgeIndex[1] = 0; ridgeX->SetPixel( ridgeIndex,  1 );
@@ -151,16 +151,16 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
   ridgeIndex[0] = 4; ridgeIndex[1] = 2; ridgeX->SetPixel( ridgeIndex, -1 );
   ridgeIndex[0] = 5; ridgeIndex[1] = 2; ridgeX->SetPixel( ridgeIndex, -1 );
   ridgeIndex[0] = 6; ridgeIndex[1] = 2; ridgeX->SetPixel( ridgeIndex, -1 );
-  
+
   ridgeSize[0] = 7;
   ridgeSize[1] = 3;
   ridgeRegion.SetSize( ridgeSize );
-  
+
   typename SliceType::Pointer ridgeY = SliceType::New();
   ridgeY->SetRegions( ridgeRegion );
   ridgeY->Allocate();
-  ridgeY->FillBuffer( 0 );  
-  
+  ridgeY->FillBuffer( 0 );
+
   ridgeIndex[0] = 0; ridgeIndex[1] = 0; ridgeY->SetPixel( ridgeIndex,  1 );
   ridgeIndex[0] = 1; ridgeIndex[1] = 0; ridgeY->SetPixel( ridgeIndex,  2 );
   ridgeIndex[0] = 2; ridgeIndex[1] = 0; ridgeY->SetPixel( ridgeIndex,  1 );
@@ -182,50 +182,51 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
   ridgeIndex[0] = 0; ridgeIndex[1] = 6; ridgeY->SetPixel( ridgeIndex, -1 );
   ridgeIndex[0] = 1; ridgeIndex[1] = 6; ridgeY->SetPixel( ridgeIndex, -2 );
   ridgeIndex[0] = 2; ridgeIndex[1] = 6; ridgeY->SetPixel( ridgeIndex, -1 );
-  
+
   unsigned int direction = ( argc > 5 ? atoi( argv[5] ) : 1 );
 
   typename ImageType::RegionType region;
-  typename ImageType::SizeType size 
+  typename ImageType::SizeType size
     = output->GetLargestPossibleRegion().GetSize();
   typename ImageType::IndexType index
     = output->GetLargestPossibleRegion().GetIndex();
   size[2] = 0;
   region.SetSize( size );
-  
-  for ( int s = output->GetLargestPossibleRegion().GetSize()[2] - 1; 
+
+  for ( int s = output->GetLargestPossibleRegion().GetSize()[2] - 1;
           s >= 0; s-- )
     {
     index[2] = s + output->GetLargestPossibleRegion().GetIndex()[2];
     region.SetIndex( index );
-  
+
     typedef itk::ExtractImageFilter<ImageType, SliceType> ExtracterType;
     typename ExtracterType::Pointer extracter = ExtracterType::New();
     extracter->SetInput( reader->GetOutput() );
     extracter->SetExtractionRegion( region );
+    extracter->SetDirectionCollapseToIdentity();
     extracter->Update();
-  
+
     typedef itk::DiscreteGaussianImageFilter<SliceType, SliceType> GaussianType;
     typename GaussianType::Pointer gaussian = GaussianType::New();
     gaussian->SetInput( extracter->GetOutput() );
     gaussian->SetUseImageSpacing( true );
-    gaussian->SetVariance( ( argc > 4 ? vcl_sqrt( atof( argv[4] ) ) : 1.0 ) );  
+    gaussian->SetVariance( ( argc > 4 ? vcl_sqrt( atof( argv[4] ) ) : 1.0 ) );
     gaussian->Update();
-    
+
     /**
      * Create the signed gradient map
-     */    
-    
+     */
+
     typedef itk::ConvolutionImageFilter<SliceType, SliceType> ConvolverType;
 
     typename ConvolverType::Pointer convolverSX = ConvolverType::New();
     convolverSX->SetInput( gaussian->GetOutput() );
-    convolverSX->SetImageKernel( sobelX );  
+    convolverSX->SetImageKernel( sobelX );
     convolverSX->Update();
 
     typename ConvolverType::Pointer convolverSY = ConvolverType::New();
     convolverSY->SetInput( gaussian->GetOutput() );
-    convolverSY->SetImageKernel( sobelY );  
+    convolverSY->SetImageKernel( sobelY );
     convolverSY->Update();
 
     typename SliceType::Pointer gradientMap = SliceType::New();
@@ -242,7 +243,7 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
       convolverSX->GetOutput()->GetLargestPossibleRegion() );
     itk::ImageRegionIterator<SliceType> ItSY( convolverSY->GetOutput(),
       convolverSY->GetOutput()->GetLargestPossibleRegion() );
-    
+
     ItG.GoToBegin();
     ItSX.GoToBegin();
     ItSY.GoToBegin();
@@ -250,7 +251,7 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
       {
       float sobelSum = vnl_math_abs( ItSX.Get() )
         + vnl_math_abs( ItSY.Get() );
-      float sign = 1.0; 
+      float sign = 1.0;
       if( direction == 0 )
         {
         sign = ( ItSX.Get() > 0 ? 1.0 : -1.0 );
@@ -258,28 +259,28 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
       else
         {
         sign = ( ItSY.Get() > 0 ? 1.0 : -1.0 );
-        }    
+        }
       ItG.Set( sign * sobelSum );
 
-      ++ItG; 
-      ++ItSX; 
-      ++ItSY; 
-      }  
+      ++ItG;
+      ++ItSX;
+      ++ItSY;
+      }
 
     /**
      * Create the signed ridge map
-     */    
+     */
 
     typename ConvolverType::Pointer convolverRX = ConvolverType::New();
     convolverRX->SetInput( gradientMap );
-    convolverRX->SetImageKernel( ridgeX );  
+    convolverRX->SetImageKernel( ridgeX );
     convolverRX->Update();
-  
+
     typename ConvolverType::Pointer convolverRY = ConvolverType::New();
     convolverRY->SetInput( gradientMap );
-    convolverRY->SetImageKernel( ridgeY );  
+    convolverRY->SetImageKernel( ridgeY );
     convolverRY->Update();
-    
+
     itk::ImageRegionIteratorWithIndex<SliceType> ItRX( convolverRX->GetOutput(),
       convolverRX->GetOutput()->GetLargestPossibleRegion() );
     itk::ImageRegionIteratorWithIndex<SliceType> ItRY( convolverRY->GetOutput(),
@@ -299,22 +300,22 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
       else
         {
         sign = ( ItRY.Get() > 0 ? 1.0 : -1.0 );
-        }    
+        }
       typename ImageType::IndexType outputIndex;
       outputIndex[0] = ItRX.GetIndex()[0];
       outputIndex[1] = ItRX.GetIndex()[1];
       outputIndex[2] = index[2];
-   
+
       output->SetPixel( outputIndex, sign * ridgeSum );
 
-      ++ItRX; 
-      ++ItRY; 
-      }  
+      ++ItRX;
+      ++ItRY;
+      }
     }
-    
-    
-  
-  
+
+
+
+
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( argv[3] );
@@ -335,7 +336,7 @@ int CreateRidgeMap2D( unsigned int argc, char *argv[] )
   typename ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName( argv[2] );
   reader->Update();
-  
+
   typename ImageType::Pointer output = ImageType::New();
   output->SetOrigin( reader->GetOutput()->GetOrigin() );
   output->SetSpacing( reader->GetOutput()->GetSpacing() );
@@ -343,20 +344,20 @@ int CreateRidgeMap2D( unsigned int argc, char *argv[] )
   output->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
   output->Allocate();
   output->FillBuffer( 0 );
-  
+
   typename SliceType::SizeType sobelSize;
   typename SliceType::IndexType sobelIndex;
   typename SliceType::RegionType sobelRegion;
-  
+
   sobelSize.Fill( 3 );
   sobelIndex.Fill( 0 );
   sobelRegion.SetSize( sobelSize );
   sobelRegion.SetIndex( sobelIndex );
-    
+
   typename SliceType::Pointer sobelX = SliceType::New();
   sobelX->SetRegions( sobelRegion );
   sobelX->Allocate();
-  sobelX->FillBuffer( 0 );  
+  sobelX->FillBuffer( 0 );
 
   sobelIndex[0] = 0; sobelIndex[1] = 0; sobelX->SetPixel( sobelIndex, -1 );
   sobelIndex[0] = 1; sobelIndex[1] = 0; sobelX->SetPixel( sobelIndex,  0 );
@@ -371,8 +372,8 @@ int CreateRidgeMap2D( unsigned int argc, char *argv[] )
   typename SliceType::Pointer sobelY = SliceType::New();
   sobelY->SetRegions( sobelRegion );
   sobelY->Allocate();
-  sobelY->FillBuffer( 0 );  
-  
+  sobelY->FillBuffer( 0 );
+
   sobelIndex[0] = 0; sobelIndex[1] = 0; sobelY->SetPixel( sobelIndex, -1 );
   sobelIndex[0] = 1; sobelIndex[1] = 0; sobelY->SetPixel( sobelIndex, -2 );
   sobelIndex[0] = 2; sobelIndex[1] = 0; sobelY->SetPixel( sobelIndex, -1 );
@@ -386,18 +387,18 @@ int CreateRidgeMap2D( unsigned int argc, char *argv[] )
   typename SliceType::SizeType ridgeSize;
   typename SliceType::IndexType ridgeIndex;
   typename SliceType::RegionType ridgeRegion;
-  
+
   ridgeSize[0] = 3;
   ridgeSize[1] = 7;
   ridgeIndex.Fill( 0 );
   ridgeRegion.SetSize( ridgeSize );
   ridgeRegion.SetIndex( ridgeIndex );
-  
+
   typename SliceType::Pointer ridgeX = SliceType::New();
   ridgeX->SetRegions( ridgeRegion );
   ridgeX->Allocate();
-  ridgeX->FillBuffer( 0 );  
-  
+  ridgeX->FillBuffer( 0 );
+
   ridgeIndex[0] = 0; ridgeIndex[1] = 0; ridgeX->SetPixel( ridgeIndex,  1 );
   ridgeIndex[0] = 1; ridgeIndex[1] = 0; ridgeX->SetPixel( ridgeIndex,  1 );
   ridgeIndex[0] = 2; ridgeIndex[1] = 0; ridgeX->SetPixel( ridgeIndex,  1 );
@@ -419,18 +420,18 @@ int CreateRidgeMap2D( unsigned int argc, char *argv[] )
   ridgeIndex[0] = 4; ridgeIndex[1] = 2; ridgeX->SetPixel( ridgeIndex, -1 );
   ridgeIndex[0] = 5; ridgeIndex[1] = 2; ridgeX->SetPixel( ridgeIndex, -1 );
   ridgeIndex[0] = 6; ridgeIndex[1] = 2; ridgeX->SetPixel( ridgeIndex, -1 );
-  
+
   ridgeSize[0] = 7;
   ridgeSize[1] = 3;
   ridgeIndex.Fill( 0 );
   ridgeRegion.SetSize( ridgeSize );
   ridgeRegion.SetIndex( ridgeIndex );
-  
+
   typename SliceType::Pointer ridgeY = SliceType::New();
   ridgeY->SetRegions( ridgeRegion );
   ridgeY->Allocate();
-  ridgeY->FillBuffer( 0 );  
-  
+  ridgeY->FillBuffer( 0 );
+
   ridgeIndex[0] = 0; ridgeIndex[1] = 0; ridgeY->SetPixel( ridgeIndex,  1 );
   ridgeIndex[0] = 1; ridgeIndex[1] = 0; ridgeY->SetPixel( ridgeIndex,  2 );
   ridgeIndex[0] = 2; ridgeIndex[1] = 0; ridgeY->SetPixel( ridgeIndex,  1 );
@@ -452,30 +453,30 @@ int CreateRidgeMap2D( unsigned int argc, char *argv[] )
   ridgeIndex[0] = 0; ridgeIndex[1] = 6; ridgeY->SetPixel( ridgeIndex, -1 );
   ridgeIndex[0] = 1; ridgeIndex[1] = 6; ridgeY->SetPixel( ridgeIndex, -2 );
   ridgeIndex[0] = 2; ridgeIndex[1] = 6; ridgeY->SetPixel( ridgeIndex, -1 );
-  
+
   unsigned short direction = ( argc > 5 ? atoi( argv[5] ) : 1 );
 
   typedef itk::DiscreteGaussianImageFilter<SliceType, SliceType> GaussianType;
   typename GaussianType::Pointer gaussian = GaussianType::New();
   gaussian->SetInput( reader->GetOutput() );
   gaussian->SetUseImageSpacing( true );
-  gaussian->SetVariance( ( argc > 4 ? vnl_math_sqr( atof( argv[4] ) ) : 1.0 ) );  
+  gaussian->SetVariance( ( argc > 4 ? vnl_math_sqr( atof( argv[4] ) ) : 1.0 ) );
   gaussian->Update();
-  
+
   /**
     * Create the signed gradient map
-    */    
-  
+    */
+
   typedef itk::ConvolutionImageFilter<SliceType, SliceType> ConvolverType;
 
   typename ConvolverType::Pointer convolverSX = ConvolverType::New();
   convolverSX->SetInput( gaussian->GetOutput() );
-  convolverSX->SetImageKernel( sobelX );  
+  convolverSX->SetImageKernel( sobelX );
   convolverSX->Update();
 
   typename ConvolverType::Pointer convolverSY = ConvolverType::New();
   convolverSY->SetInput( gaussian->GetOutput() );
-  convolverSY->SetImageKernel( sobelY );  
+  convolverSY->SetImageKernel( sobelY );
   convolverSY->Update();
 
   typename SliceType::Pointer gradientMap = SliceType::New();
@@ -492,7 +493,7 @@ int CreateRidgeMap2D( unsigned int argc, char *argv[] )
     convolverSX->GetOutput()->GetLargestPossibleRegion() );
   itk::ImageRegionIterator<SliceType> ItSY( convolverSY->GetOutput(),
     convolverSY->GetOutput()->GetLargestPossibleRegion() );
-  
+
   ItG.GoToBegin();
   ItSX.GoToBegin();
   ItSY.GoToBegin();
@@ -508,28 +509,28 @@ int CreateRidgeMap2D( unsigned int argc, char *argv[] )
     else
       {
       sign = ( ItSY.Get() > 0 ? 1.0 : -1.0 );
-      }    
+      }
     ItG.Set( sign * sobelSum );
 
-    ++ItG; 
-    ++ItSX; 
-    ++ItSY; 
-    }  
+    ++ItG;
+    ++ItSX;
+    ++ItSY;
+    }
 
   /**
     * Create the signed ridge map
-    */    
+    */
 
   typename ConvolverType::Pointer convolverRX = ConvolverType::New();
   convolverRX->SetInput( gradientMap );
-  convolverRX->SetImageKernel( ridgeX );  
+  convolverRX->SetImageKernel( ridgeX );
   convolverRX->Update();
 
   typename ConvolverType::Pointer convolverRY = ConvolverType::New();
   convolverRY->SetInput( gradientMap );
-  convolverRY->SetImageKernel( ridgeY );  
+  convolverRY->SetImageKernel( ridgeY );
   convolverRY->Update();
-  
+
   itk::ImageRegionIteratorWithIndex<SliceType> ItRX( convolverRX->GetOutput(),
     convolverRX->GetOutput()->GetLargestPossibleRegion() );
   itk::ImageRegionIteratorWithIndex<SliceType> ItRY( convolverRY->GetOutput(),
@@ -549,21 +550,21 @@ int CreateRidgeMap2D( unsigned int argc, char *argv[] )
     else
       {
       sign = ( ItRY.Get() > 0 ? 1.0 : -1.0 );
-      }    
+      }
     typename ImageType::IndexType outputIndex;
     outputIndex[0] = ItRX.GetIndex()[0];
     outputIndex[1] = ItRX.GetIndex()[1];
-  
+
     output->SetPixel( outputIndex, sign * ridgeSum );
     output->SetPixel( outputIndex, gradientMap->GetPixel( outputIndex ) );
 
-    ++ItRX; 
-    ++ItRY; 
-    }  
-    
-    
-  
-  
+    ++ItRX;
+    ++ItRY;
+    }
+
+
+
+
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( argv[3] );
@@ -578,12 +579,12 @@ int main( int argc, char *argv[] )
 {
   if ( argc < 4 )
     {
-    std::cout << argv[0] << " imageDimension inputImage outputImage [sigma] [direction]" 
+    std::cout << argv[0] << " imageDimension inputImage outputImage [sigma] [direction]"
       << std::endl;
     exit( 1 );
     }
 
-  switch( atoi( argv[1] ) ) 
+  switch( atoi( argv[1] ) )
    {
    case 2:
      CreateRidgeMap2D<2>( argc, argv );

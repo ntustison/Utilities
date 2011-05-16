@@ -31,7 +31,7 @@ int ExtractSliceFromImage( int argc, char *argv[] )
   typename ExtracterType::Pointer extracter = ExtracterType::New();
   extracter->SetInput( reader->GetOutput() );
   extracter->SetExtractionRegion( region );
-  extracter->SetDirectionCollapseToIdentity();
+  extracter->SetDirectionCollapseToSubmatrix();
   extracter->Update();
 
   typedef itk::ImageFileWriter<SliceType> WriterType;
