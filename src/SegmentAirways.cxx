@@ -121,7 +121,7 @@ int main( int argc, char *argv[] )
     typedef itk::ExtractImageFilter<LabelImageType, LabelSliceType> LabelExtracterType;
     LabelExtracterType::Pointer labelextracter = LabelExtracterType::New();
     labelextracter->SetInput( labelImage );
-    labelExtracter->SetDirectionCollapseToIdentity();
+    labelextracter->SetDirectionCollapseToIdentity();
     labelextracter->SetExtractionRegion( region );
     labelextracter->Update();
 
