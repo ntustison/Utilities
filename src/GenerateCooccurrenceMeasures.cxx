@@ -5,6 +5,7 @@
 #include "itkImageFileWriter.h"
 #include "itkImageRegionIteratorWithIndex.h"
 
+#include "itkRescaleIntensityImageFilter.h"
 #include "itkScalarImageToTextureFeaturesFilter.h"
 #include "itkDenseFrequencyContainer2.h"
 
@@ -24,12 +25,23 @@ int GenerateCooccurrenceMeasures( int argc, char *argv[] )
   imageReader->SetFileName( argv[2] );
   imageReader->Update();
 
+  // we have to rescale the input image since the cooccurrence filter
+  // adds 1 to the upper bound of the joint histogram and small ranges
+  // will be greatly affected by this.
+
+  typedef itk::RescaleIntensityImageFilter<ImageType, ImageType> RescalerType;
+  typename RescalerType::Pointer rescaler = RescalerType::New();
+  rescaler->SetInput( imageReader->GetOutput() );
+  rescaler->SetOutputMinimum( 0 );
+  rescaler->SetOutputMaximum( 10000 );
+  rescaler->Update();
+
   typedef itk::Statistics::DenseFrequencyContainer2 HistogramFrequencyContainerType;
 
   typedef itk::Statistics::ScalarImageToTextureFeaturesFilter
     <RealImageType, HistogramFrequencyContainerType> TextureFilterType;
   typename TextureFilterType::Pointer textureFilter = TextureFilterType::New();
-  textureFilter->SetInput( imageReader->GetOutput() );
+  textureFilter->SetInput( rescaler->GetOutput() );
 
   typename ImageType::Pointer mask = NULL;
   PixelType label = itk::NumericTraits<PixelType>::One;
@@ -57,8 +69,8 @@ int GenerateCooccurrenceMeasures( int argc, char *argv[] )
   textureFilter->SetNumberOfBinsPerAxis( numberOfBins );
 
 
-  itk::ImageRegionIteratorWithIndex<ImageType> ItI( imageReader->GetOutput(),
-    imageReader->GetOutput()->GetLargestPossibleRegion() );
+  itk::ImageRegionIteratorWithIndex<ImageType> ItI( rescaler->GetOutput(),
+    rescaler->GetOutput()->GetLargestPossibleRegion() );
 
   PixelType maxValue = itk::NumericTraits<PixelType>::NonpositiveMin();
   PixelType minValue = itk::NumericTraits<PixelType>::max();
