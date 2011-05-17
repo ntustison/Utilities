@@ -39,7 +39,7 @@ int GenerateCooccurrenceMeasures( int argc, char *argv[] )
     labelImageReader->SetFileName( argv[4] );
     labelImageReader->Update();
     mask = labelImageReader->GetOutput();
-    textureFilter->SetInput( mask );
+    textureFilter->SetMaskImage( mask );
 
     if ( argc > 5 )
       {
@@ -77,6 +77,7 @@ int GenerateCooccurrenceMeasures( int argc, char *argv[] )
         }
       }
     }
+
   textureFilter->SetPixelValueMinMax( minValue, maxValue );
   textureFilter->SetNumberOfBinsPerAxis( numberOfBins );
   textureFilter->FastCalculationsOff();
