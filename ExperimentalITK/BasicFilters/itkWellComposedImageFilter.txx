@@ -14,7 +14,7 @@ WellComposedImageFilter<TImage>
 ::WellComposedImageFilter()
 {
   this->m_TotalNumberOfLabels = 2;
- 
+
   if ( ImageDimension == 2 )
     {
     this->m_FullInvariance = true;
@@ -41,15 +41,15 @@ void
 WellComposedImageFilter<TImage>
 ::GenerateData()
 {
-  this->AllocateOutputs();  
-  
+  this->AllocateOutputs();
+
   // Pad the boundary to eliminate boundary effects
   typedef ConstantPadImageFilter<ImageType, ImageType> PadderType;
   typename PadderType::Pointer padder = PadderType::New();
   padder->SetInput( this->GetOutput() );
   padder->SetConstant( 0 );
-  unsigned long upperfactors[ImageDimension]; 
-  unsigned long lowerfactors[ImageDimension]; 
+  unsigned long upperfactors[ImageDimension];
+  unsigned long lowerfactors[ImageDimension];
   for ( unsigned int i = 0; i < ImageDimension; i++ )
     {
     upperfactors[i] = 1;
@@ -58,9 +58,9 @@ WellComposedImageFilter<TImage>
   padder->SetPadUpperBound( upperfactors );
   padder->SetPadLowerBound( lowerfactors );
   padder->Update();
-  
+
   this->GraftOutput( padder->GetOutput() );
-  
+
   if ( ImageDimension == 2 )
     {
     this->MakeImageWellComposed2D();
@@ -69,7 +69,7 @@ WellComposedImageFilter<TImage>
     {
     this->MakeImageWellComposed3D();
     }
-  
+
   // Extract the output image region to match input image region
   typedef itk::ExtractImageFilter<ImageType, ImageType> CropperType;
   typename CropperType::Pointer cropper = CropperType::New();
@@ -78,8 +78,9 @@ WellComposedImageFilter<TImage>
   region.SetIndex( this->GetInput()->GetRequestedRegion().GetIndex() );
   cropper->SetInput( this->GetOutput() );
   cropper->SetExtractionRegion( region );
-  cropper->Update();  
-  
+  cropper->SetDirectionCollapseToSubmatrix();
+  cropper->Update();
+
   this->GraftOutput( cropper->GetOutput() );
 }
 
@@ -108,36 +109,36 @@ WellComposedImageFilter<TImage>
     if ( !It.InBounds() )
       {
       continue;
-      } 
+      }
 
-    PixelType currentLabel = NumericTraits<PixelType>::Zero;  
+    PixelType currentLabel = NumericTraits<PixelType>::Zero;
 
-    while ( currentLabel < 
-      static_cast<PixelType>( this->m_TotalNumberOfLabels ) )  
+    while ( currentLabel <
+      static_cast<PixelType>( this->m_TotalNumberOfLabels ) )
       {
       // Check for critical configurations: 4 90-degree rotations
       for ( unsigned int i = 0; i < 4; i++ )
         {
         for ( unsigned int j = 0; j < 9; j++ )
           {
-          neighborhoodPixels[j] = 
+          neighborhoodPixels[j] =
             ( It.GetPixel( this->m_RotationIndices[i][j] ) == currentLabel );
           }
-          
+
         if ( this->IsCriticalC1Configuration2D( neighborhoodPixels ) )
           {
           NumberOfC1Configurations2D++;
           for ( int k = currentLabel; k >= 0; k-- )
             {
-            if ( this->IsChangeSafe2D( k, 
+            if ( this->IsChangeSafe2D( k,
                    It.GetIndex( this->m_RotationIndices[i][4] ) ) )
               {
-              It.SetPixel( this->m_RotationIndices[i][4], 
+              It.SetPixel( this->m_RotationIndices[i][4],
                 static_cast<PixelType>( k ) );
               currentLabel = k;
               break;
               }
-            }      
+            }
           break;
           }
         else if ( this->IsCriticalC2Configuration2D( neighborhoodPixels ) )
@@ -145,43 +146,43 @@ WellComposedImageFilter<TImage>
           NumberOfC2Configurations2D++;
           for ( int k = currentLabel; k >= 0; k-- )
             {
-            if ( this->IsChangeSafe2D( k, 
+            if ( this->IsChangeSafe2D( k,
                    It.GetIndex( this->m_RotationIndices[i][4] ) ) )
               {
-              It.SetPixel( this->m_RotationIndices[i][4], 
+              It.SetPixel( this->m_RotationIndices[i][4],
                 static_cast<PixelType>( k ) );
               currentLabel = k;
               break;
               }
-            }    
+            }
           break;
           }
         else if ( this->IsCriticalC3Configuration2D( neighborhoodPixels ) )
           {
           NumberOfC3Configurations2D++;
-          int k4; 
+          int k4;
           for ( k4 = currentLabel; k4 >= 0; k4-- )
             {
-            if ( this->IsChangeSafe2D( k4, 
+            if ( this->IsChangeSafe2D( k4,
                    It.GetIndex( this->m_RotationIndices[i][4] ) ) )
               {
-              It.SetPixel( this->m_RotationIndices[i][4], 
+              It.SetPixel( this->m_RotationIndices[i][4],
                 static_cast<PixelType>( k4 ) );
               break;
               }
             }
-          int k7;  
+          int k7;
           for ( k7 = currentLabel; k7 >= 0; k7-- )
             {
-            if ( this->IsChangeSafe2D( k7, 
+            if ( this->IsChangeSafe2D( k7,
                    It.GetIndex( this->m_RotationIndices[i][7] ) ) )
               {
-              It.SetPixel( this->m_RotationIndices[i][7], 
+              It.SetPixel( this->m_RotationIndices[i][7],
                 static_cast<PixelType>( k7 ) );
               break;
               }
             }
-          currentLabel = vnl_math_min( static_cast<PixelType>( k4 ), 
+          currentLabel = vnl_math_min( static_cast<PixelType>( k4 ),
                                        static_cast<PixelType>( k7 ) );
           break;
           }
@@ -193,10 +194,10 @@ WellComposedImageFilter<TImage>
           int k4;
           for ( k4 = currentLabel; k4 >= 0; k4-- )
             {
-            if ( this->IsChangeSafe2D( k4, 
+            if ( this->IsChangeSafe2D( k4,
                    It.GetIndex( this->m_RotationIndices[i][4] ) ) )
               {
-              It.SetPixel( this->m_RotationIndices[i][4], 
+              It.SetPixel( this->m_RotationIndices[i][4],
                 static_cast<PixelType>( k4 ) );
               break;
               }
@@ -204,37 +205,37 @@ WellComposedImageFilter<TImage>
           int k7;
           for ( k7 = currentLabel; k7 >= 0; k7-- )
             {
-            if ( this->IsChangeSafe2D( k7, 
+            if ( this->IsChangeSafe2D( k7,
                    It.GetIndex( this->m_RotationIndices[i][7] ) ) )
               {
-              It.SetPixel( this->m_RotationIndices[i][7], 
+              It.SetPixel( this->m_RotationIndices[i][7],
                 static_cast<PixelType>( k7 ) );
               break;
               }
             }
-          int k6 = currentLabel;  
-          if ( this->IsSpecialCaseOfC4Configuration2D( currentLabel, 
-                 It.GetIndex(), It.GetIndex( this->m_RotationIndices[i][6] ), 
+          int k6 = currentLabel;
+          if ( this->IsSpecialCaseOfC4Configuration2D( currentLabel,
+                 It.GetIndex(), It.GetIndex( this->m_RotationIndices[i][6] ),
                  It.GetIndex( this->m_RotationIndices[i][7] ) ) )
             {
             for ( k6 = currentLabel; k6 >= 0; k6-- )
               {
-              if ( this->IsChangeSafe2D( k6, 
+              if ( this->IsChangeSafe2D( k6,
                      It.GetIndex( this->m_RotationIndices[i][6] ) ) )
                 {
-                It.SetPixel( this->m_RotationIndices[i][6], 
+                It.SetPixel( this->m_RotationIndices[i][6],
                   static_cast<PixelType>( k6 ) );
                 break;
                 }
-              }    
+              }
             }
-          currentLabel = vnl_math_min( static_cast<PixelType>( k4 ), 
+          currentLabel = vnl_math_min( static_cast<PixelType>( k4 ),
                                        static_cast<PixelType>( k7 ) );
-          currentLabel = vnl_math_min( currentLabel, 
-                                       static_cast<PixelType>( k6 ) );   
-                                          
+          currentLabel = vnl_math_min( currentLabel,
+                                       static_cast<PixelType>( k6 ) );
+
           break;
-          }          
+          }
         if ( !this->m_FullInvariance )
           {
           break;
@@ -242,78 +243,78 @@ WellComposedImageFilter<TImage>
         }
 
       // Check for critical configurations: 2 reflections
-      //  Note that the reflections for the C1 and C2 cases 
-      //  are covered by the rotation cases above (except 
+      //  Note that the reflections for the C1 and C2 cases
+      //  are covered by the rotation cases above (except
       //  in the case of FullInvariance == false.
 
       for ( unsigned int i = 0; i < 2; i++ )
         {
         for ( unsigned int j = 0; j < 9; j++ )
           {
-          neighborhoodPixels[j] = 
+          neighborhoodPixels[j] =
             ( It.GetPixel( this->m_ReflectionIndices[i][j] ) == currentLabel );
           }
 
-        if ( !this->m_FullInvariance 
+        if ( !this->m_FullInvariance
              && this->IsCriticalC1Configuration2D( neighborhoodPixels ) )
           {
           NumberOfC1Configurations2D++;
           for ( int k = currentLabel; k >= 0; k-- )
             {
-            if ( this->IsChangeSafe2D( k, 
+            if ( this->IsChangeSafe2D( k,
                    It.GetIndex( this->m_ReflectionIndices[i][4] ) ) )
               {
-              It.SetPixel( this->m_ReflectionIndices[i][4], 
+              It.SetPixel( this->m_ReflectionIndices[i][4],
                 static_cast<PixelType>( k ) );
               currentLabel = k;
               break;
               }
-            }    
+            }
           break;
           }
-        else if ( !this->m_FullInvariance 
+        else if ( !this->m_FullInvariance
                   && this->IsCriticalC2Configuration2D( neighborhoodPixels ) )
           {
           NumberOfC2Configurations2D++;
           for ( int k = currentLabel; k >= 0; k-- )
             {
-            if ( this->IsChangeSafe2D( k, 
+            if ( this->IsChangeSafe2D( k,
                    It.GetIndex( this->m_ReflectionIndices[i][4] ) ) )
               {
-              It.SetPixel( this->m_ReflectionIndices[i][4], 
+              It.SetPixel( this->m_ReflectionIndices[i][4],
                 static_cast<PixelType>( k ) );
               currentLabel = k;
               break;
               }
-            }    
+            }
           break;
           }
         else if ( this->IsCriticalC3Configuration2D( neighborhoodPixels ) )
           {
           NumberOfC3Configurations2D++;
-          int k4; 
+          int k4;
           for ( k4 = currentLabel; k4 >= 0; k4-- )
             {
-            if ( this->IsChangeSafe2D( k4, 
+            if ( this->IsChangeSafe2D( k4,
                    It.GetIndex( this->m_ReflectionIndices[i][4] ) ) )
               {
-              It.SetPixel( this->m_ReflectionIndices[i][4], 
+              It.SetPixel( this->m_ReflectionIndices[i][4],
                 static_cast<PixelType>( k4 ) );
               break;
               }
             }
-          int k7;  
+          int k7;
           for ( k7 = currentLabel; k7 >= 0; k7-- )
             {
-            if ( this->IsChangeSafe2D( k7, 
+            if ( this->IsChangeSafe2D( k7,
                    It.GetIndex( this->m_ReflectionIndices[i][7] ) ) )
               {
-              It.SetPixel( this->m_ReflectionIndices[i][7], 
+              It.SetPixel( this->m_ReflectionIndices[i][7],
                 static_cast<PixelType>( k7 ) );
               break;
               }
             }
-          currentLabel = vnl_math_min( static_cast<PixelType>( k4 ), 
+          currentLabel = vnl_math_min( static_cast<PixelType>( k4 ),
                                        static_cast<PixelType>( k7 ) );
           break;
           }
@@ -324,10 +325,10 @@ WellComposedImageFilter<TImage>
           int k4;
           for ( k4 = currentLabel; k4 >= 0; k4-- )
             {
-            if ( this->IsChangeSafe2D( k4, 
+            if ( this->IsChangeSafe2D( k4,
                    It.GetIndex( this->m_ReflectionIndices[i][4] ) ) )
               {
-              It.SetPixel( this->m_ReflectionIndices[i][4], 
+              It.SetPixel( this->m_ReflectionIndices[i][4],
                 static_cast<PixelType>( k4 ) );
               break;
               }
@@ -335,35 +336,35 @@ WellComposedImageFilter<TImage>
           int k7;
           for ( k7 = currentLabel; k7 >= 0; k7-- )
             {
-            if ( this->IsChangeSafe2D( k7, 
+            if ( this->IsChangeSafe2D( k7,
                    It.GetIndex( this->m_ReflectionIndices[i][7] ) ) )
               {
-              It.SetPixel( this->m_ReflectionIndices[i][7], 
+              It.SetPixel( this->m_ReflectionIndices[i][7],
                 static_cast<PixelType>( k7 ) );
               break;
               }
             }
-          int k6 = currentLabel;  
-          if ( this->IsSpecialCaseOfC4Configuration2D( currentLabel, 
-                 It.GetIndex(), It.GetIndex( this->m_ReflectionIndices[i][6] ), 
+          int k6 = currentLabel;
+          if ( this->IsSpecialCaseOfC4Configuration2D( currentLabel,
+                 It.GetIndex(), It.GetIndex( this->m_ReflectionIndices[i][6] ),
                  It.GetIndex( this->m_ReflectionIndices[i][7] ) ) )
             {
             for ( k6 = currentLabel; k6 >= 0; k6-- )
               {
-              if ( this->IsChangeSafe2D( k6, 
+              if ( this->IsChangeSafe2D( k6,
                      It.GetIndex( this->m_ReflectionIndices[i][6] ) ) )
                 {
-                It.SetPixel( this->m_ReflectionIndices[i][6], 
+                It.SetPixel( this->m_ReflectionIndices[i][6],
                   static_cast<PixelType>( k6 ) );
                 break;
                 }
-              }    
+              }
             }
-          currentLabel = vnl_math_min( static_cast<PixelType>( k4 ), 
+          currentLabel = vnl_math_min( static_cast<PixelType>( k4 ),
                                        static_cast<PixelType>( k7 ) );
-          currentLabel = vnl_math_min( currentLabel, 
-                                       static_cast<PixelType>( k6 ) );   
-                                          
+          currentLabel = vnl_math_min( currentLabel,
+                                       static_cast<PixelType>( k6 ) );
+
           break;
           }
         if ( !this->m_FullInvariance )
@@ -373,16 +374,16 @@ WellComposedImageFilter<TImage>
         }
       currentLabel++;
       }
-    }  
-    
-  itkDebugMacro( << NumberOfC1Configurations2D 
-                 << " C1 configurations were located and repaired." ); 
-  itkDebugMacro( << NumberOfC2Configurations2D 
-                 << " C2 configurations were located and repaired." ); 
-  itkDebugMacro( << NumberOfC3Configurations2D 
-                 << " C3 configurations were located and repaired." ); 
-  itkDebugMacro( << NumberOfC4Configurations2D 
-                 << " C4 configurations were located and repaired." ); 
+    }
+
+  itkDebugMacro( << NumberOfC1Configurations2D
+                 << " C1 configurations were located and repaired." );
+  itkDebugMacro( << NumberOfC2Configurations2D
+                 << " C2 configurations were located and repaired." );
+  itkDebugMacro( << NumberOfC3Configurations2D
+                 << " C3 configurations were located and repaired." );
+  itkDebugMacro( << NumberOfC4Configurations2D
+                 << " C4 configurations were located and repaired." );
 }
 
 /*
@@ -405,7 +406,7 @@ WellComposedImageFilter<TImage>
     {
     for ( unsigned int j = 0; j < 9; j++ )
       {
-      neighborhoodPixels[j] = 
+      neighborhoodPixels[j] =
         ( It.GetPixel( this->m_RotationIndices[i][j] ) == label );
       if ( this->m_RotationIndices[i][j] == 4 )
         {
@@ -417,15 +418,15 @@ WellComposedImageFilter<TImage>
          this->IsCriticalC3Configuration2D( neighborhoodPixels ) ||
          this->IsCriticalC4Configuration2D( neighborhoodPixels ) )
       {
-      return false; 
+      return false;
       }
-    }  
-  
+    }
+
   for ( unsigned int i = 0; i < 2; i++ )
     {
     for ( unsigned int j = 0; j < 9; j++ )
       {
-      neighborhoodPixels[j] = 
+      neighborhoodPixels[j] =
         ( It.GetPixel( this->m_ReflectionIndices[i][j] ) == label );
       if ( this->m_ReflectionIndices[i][j] == 4 )
         {
@@ -437,7 +438,7 @@ WellComposedImageFilter<TImage>
       {
       return false;
       }
-    }  
+    }
   return true;
 }
 
@@ -503,8 +504,8 @@ template<class TImage>
 bool
 WellComposedImageFilter<TImage>
 ::IsSpecialCaseOfC4Configuration2D( PixelType label,
-                                    IndexType idx, 
-                                    IndexType idx6, 
+                                    IndexType idx,
+                                    IndexType idx6,
                                     IndexType idx7 )
 {
   IndexType idxa;
@@ -542,7 +543,7 @@ WellComposedImageFilter<TImage>
   this->m_RotationIndices[0][6] = 6;
   this->m_RotationIndices[0][7] = 7;
   this->m_RotationIndices[0][8] = 8;
-  
+
   this->m_RotationIndices[1][0] = 2;
   this->m_RotationIndices[1][1] = 5;
   this->m_RotationIndices[1][2] = 8;
@@ -552,7 +553,7 @@ WellComposedImageFilter<TImage>
   this->m_RotationIndices[1][6] = 0;
   this->m_RotationIndices[1][7] = 3;
   this->m_RotationIndices[1][8] = 6;
-  
+
   this->m_RotationIndices[2][0] = 8;
   this->m_RotationIndices[2][1] = 7;
   this->m_RotationIndices[2][2] = 6;
@@ -562,7 +563,7 @@ WellComposedImageFilter<TImage>
   this->m_RotationIndices[2][6] = 2;
   this->m_RotationIndices[2][7] = 1;
   this->m_RotationIndices[2][8] = 0;
-  
+
   this->m_RotationIndices[3][0] = 6;
   this->m_RotationIndices[3][1] = 3;
   this->m_RotationIndices[3][2] = 0;
@@ -572,7 +573,7 @@ WellComposedImageFilter<TImage>
   this->m_RotationIndices[3][6] = 8;
   this->m_RotationIndices[3][7] = 5;
   this->m_RotationIndices[3][8] = 2;
-  
+
   this->m_ReflectionIndices[0].SetSize( 9 );
   this->m_ReflectionIndices[1].SetSize( 9 );
 
@@ -585,7 +586,7 @@ WellComposedImageFilter<TImage>
   this->m_ReflectionIndices[0][6] = 0;
   this->m_ReflectionIndices[0][7] = 1;
   this->m_ReflectionIndices[0][8] = 2;
-  
+
   this->m_ReflectionIndices[1][0] = 2;
   this->m_ReflectionIndices[1][1] = 1;
   this->m_ReflectionIndices[1][2] = 0;
@@ -651,7 +652,7 @@ WellComposedImageFilter<TImage>
 
       It.SetLocation( this->m_CriticalConfigurationIndices[label].front() );
       this->m_CriticalConfigurationIndices[label].pop_front();
-      
+
       Array<char> neighborhoodPixels( 8 );
       bool removedCriticalConfiguration = false;
       /**
@@ -666,7 +667,7 @@ WellComposedImageFilter<TImage>
         if ( this->IsCriticalC1Configuration3D( neighborhoodPixels ) )
           {
           this->RemoveCriticalC1Configuration3D( i, label, It.GetIndex() );
-          removedCriticalConfiguration = true;  
+          removedCriticalConfiguration = true;
           }
         }
 
@@ -674,24 +675,24 @@ WellComposedImageFilter<TImage>
        * Deal with the C2 configurations
        */
       if ( !removedCriticalConfiguration )
-        { 
+        {
         for ( unsigned int j = 0; j < 8; j++ )
           {
-          neighborhoodPixels[j] 
+          neighborhoodPixels[j]
             = ( It.GetPixel( this->m_C2Indices[0][j] ) == label );
           }
         if ( this->IsCriticalC2Configuration3D( neighborhoodPixels ) )
           {
           this->RemoveCriticalC2Configuration3D( 0, label, It.GetIndex() );
           }
-        }       
-      } 
+        }
+      }
     }
   if ( this->GetDebug() )
     {
     this->CountCriticalConfigurations3D();
     }
-}    
+}
 
 /*
  * 3-D
@@ -719,11 +720,11 @@ WellComposedImageFilter<TImage>
       {
       continue;
       }
-    
+
     /**
      * Check for C1 critical configurations
      */
-    bool foundC1 = false; 
+    bool foundC1 = false;
     for ( unsigned int i = 0; i < 3; i++ )
       {
       for ( unsigned int j = 0; j < 4; j++ )
@@ -741,10 +742,10 @@ WellComposedImageFilter<TImage>
       this->m_CriticalConfigurationIndices[label].push_back( It.GetIndex() );
       }
 
-    /** 
+    /**
      * Check for C2 critical configurations
      */
-    else 
+    else
       {
       for ( unsigned int j = 0; j < 8; j++ )
         {
@@ -753,12 +754,12 @@ WellComposedImageFilter<TImage>
       if ( this->IsCriticalC2Configuration3D( neighborhoodPixels ) )
         {
         this->m_CriticalConfigurationIndices[label].push_back( It.GetIndex() );
-        countC2++;  
+        countC2++;
         }
       }
-    }  
+    }
   itkDebugMacro( << "Label " << label << ": " << countC1 << " C1 and " << countC2
-                 << " C2 critical configurations." ); 
+                 << " C2 critical configurations." );
 }
 
 template<class TImage>
@@ -777,45 +778,45 @@ WellComposedImageFilter<TImage>
 
   if ( It.GetPixel( this->m_C1Indices[which][0] ) == label )
     {
-    if ( It.GetPixel( this->m_C1Indices[which][2] ) < label  )         
+    if ( It.GetPixel( this->m_C1Indices[which][2] ) < label  )
       {
-      indices.push_back( It.GetIndex( this->m_C1Indices[which][2] ) ); 
+      indices.push_back( It.GetIndex( this->m_C1Indices[which][2] ) );
       }
-    if ( It.GetPixel( this->m_C1Indices[which][3] ) < label  )         
+    if ( It.GetPixel( this->m_C1Indices[which][3] ) < label  )
       {
-      indices.push_back( It.GetIndex( this->m_C1Indices[which][3] ) ); 
+      indices.push_back( It.GetIndex( this->m_C1Indices[which][3] ) );
       }
 
     if ( indices.empty() )
       {
-      newLabel = vnl_math_max( 
+      newLabel = vnl_math_max(
         It.GetPixel( this->m_C1Indices[which][2] ),
         It.GetPixel( this->m_C1Indices[which][3] ) );
-      indices.push_back( It.GetIndex( this->m_C1Indices[which][0] ) ); 
-      indices.push_back( It.GetIndex( this->m_C1Indices[which][1] ) ); 
+      indices.push_back( It.GetIndex( this->m_C1Indices[which][0] ) );
+      indices.push_back( It.GetIndex( this->m_C1Indices[which][1] ) );
       }
     }
   else
     {
-    if ( It.GetPixel( this->m_C1Indices[which][0] ) < label  )         
+    if ( It.GetPixel( this->m_C1Indices[which][0] ) < label  )
       {
-      indices.push_back( It.GetIndex( this->m_C1Indices[which][0] ) ); 
+      indices.push_back( It.GetIndex( this->m_C1Indices[which][0] ) );
       }
-    if ( It.GetPixel( this->m_C1Indices[which][1] ) < label  )         
+    if ( It.GetPixel( this->m_C1Indices[which][1] ) < label  )
       {
-      indices.push_back( It.GetIndex( this->m_C1Indices[which][1] ) ); 
+      indices.push_back( It.GetIndex( this->m_C1Indices[which][1] ) );
       }
 
     if ( indices.empty() )
       {
-      newLabel = vnl_math_max( 
+      newLabel = vnl_math_max(
         It.GetPixel( this->m_C1Indices[which][0] ),
         It.GetPixel( this->m_C1Indices[which][1] ) );
-      indices.push_back( It.GetIndex( this->m_C1Indices[which][2] ) ); 
+      indices.push_back( It.GetIndex( this->m_C1Indices[which][2] ) );
       indices.push_back( It.GetIndex( this->m_C1Indices[which][3] ) );
       }
-    }    
-    
+    }
+
   IndexContainerType unsafeIndices;
   typename IndexContainerType::const_iterator it;
   for ( it = indices.begin(); it != indices.end(); ++it )
@@ -823,10 +824,10 @@ WellComposedImageFilter<TImage>
     if ( this->IsChangeSafe3D( label, *it ) )
       {
       unsafeIndices.push_back( *it );
-      }          
+      }
     }
   typedef typename Statistics
-     ::MersenneTwisterRandomVariateGenerator GeneratorType; 
+     ::MersenneTwisterRandomVariateGenerator GeneratorType;
   typename GeneratorType::Pointer generator = GeneratorType::New();
   generator->SetSeed();
 
@@ -841,7 +842,7 @@ WellComposedImageFilter<TImage>
     else
       {
       this->InsertCriticalConfiguration3D( newLabel, unsafeIndices[n] );
-      } 
+      }
     this->GetOutput()->SetPixel( unsafeIndices[n], newLabel );
     }
   else
@@ -850,17 +851,17 @@ WellComposedImageFilter<TImage>
     this->InsertCriticalConfiguration3D( label, indices[n] );
     if ( newLabel == label )
       {
-      this->InsertCriticalConfiguration3D( 
+      this->InsertCriticalConfiguration3D(
         this->GetOutput()->GetPixel( indices[n] ), indices[n] );
       }
     else
       {
       this->InsertCriticalConfiguration3D( newLabel, indices[n] );
-      }        
+      }
     this->GetOutput()->SetPixel( indices[n], newLabel );
-    }    
-}        
-        
+    }
+}
+
 template<class TImage>
 void
 WellComposedImageFilter<TImage>
@@ -882,7 +883,7 @@ WellComposedImageFilter<TImage>
       indices.push_back( It.GetIndex( this->m_C2Indices[which][i] ) );
       }
     }
- 
+
   if ( indices.empty() )
     {
     newLabel = NumericTraits<PixelType>::Zero;
@@ -896,7 +897,7 @@ WellComposedImageFilter<TImage>
       else if ( pix > newLabel )
         {
         newLabel = pix;
-        }    
+        }
       }
     }
 
@@ -907,10 +908,10 @@ WellComposedImageFilter<TImage>
     if ( this->IsChangeSafe3D( label, *it ) )
       {
       unsafeIndices.push_back( *it );
-      }          
+      }
     }
   typedef typename Statistics
-     ::MersenneTwisterRandomVariateGenerator GeneratorType; 
+     ::MersenneTwisterRandomVariateGenerator GeneratorType;
   typename GeneratorType::Pointer generator = GeneratorType::New();
   generator->SetSeed();
 
@@ -925,7 +926,7 @@ WellComposedImageFilter<TImage>
     else
       {
       this->InsertCriticalConfiguration3D( newLabel, unsafeIndices[n] );
-      } 
+      }
     this->GetOutput()->SetPixel( unsafeIndices[n], newLabel );
     }
   else
@@ -934,16 +935,16 @@ WellComposedImageFilter<TImage>
     this->InsertCriticalConfiguration3D( label, indices[n] );
     if ( newLabel == label )
       {
-      this->InsertCriticalConfiguration3D( 
+      this->InsertCriticalConfiguration3D(
         this->GetOutput()->GetPixel( indices[n] ), indices[n] );
       }
     else
       {
       this->InsertCriticalConfiguration3D( newLabel, indices[n] );
-      }        
+      }
     this->GetOutput()->SetPixel( indices[n], newLabel );
-    }    
-}        
+    }
+}
 
 /*
  * 3-D
@@ -976,8 +977,8 @@ WellComposedImageFilter<TImage>
       {
       return false;
       }
-    }  
-    
+    }
+
   // Check for C2 critical configurations
   for ( unsigned int i = 0; i < 8; i++ )
     {
@@ -993,7 +994,7 @@ WellComposedImageFilter<TImage>
       {
       return false;
       }
-    }  
+    }
   return true;
 }
 
@@ -1003,7 +1004,7 @@ WellComposedImageFilter<TImage>
 template<class TImage>
 void
 WellComposedImageFilter<TImage>
-::InsertCriticalConfiguration3D( PixelType label, 
+::InsertCriticalConfiguration3D( PixelType label,
                                  IndexType idx )
 {
   Array<char> neighborhoodPixels( 8 );
@@ -1013,7 +1014,7 @@ WellComposedImageFilter<TImage>
   NeighborhoodIteratorType It( radius, this->GetOutput(),
         this->GetOutput()->GetLargestPossibleRegion() );
   It.SetLocation( idx );
-      
+
   // C1 configurations
   for ( unsigned int i = 0; i < 12; i++ )
     {
@@ -1027,11 +1028,11 @@ WellComposedImageFilter<TImage>
       }
     if ( this->IsCriticalC1Configuration3D( neighborhoodPixels ) )
       {
-      this->m_CriticalConfigurationIndices[label].push_back( 
-        It.GetIndex( this->m_C1Indices[i][0] ) ); 
+      this->m_CriticalConfigurationIndices[label].push_back(
+        It.GetIndex( this->m_C1Indices[i][0] ) );
       }
-    }  
-    
+    }
+
   // C2 configurations
   for ( unsigned int i = 0; i < 8; i++ )
     {
@@ -1045,8 +1046,8 @@ WellComposedImageFilter<TImage>
       }
     if ( this->IsCriticalC2Configuration3D( neighborhoodPixels ) )
       {
-      this->m_CriticalConfigurationIndices[label].push_back( 
-        It.GetIndex( this->m_C2Indices[i][0] ) ); 
+      this->m_CriticalConfigurationIndices[label].push_back(
+        It.GetIndex( this->m_C2Indices[i][0] ) );
       }
     }
 }
@@ -1062,7 +1063,7 @@ WellComposedImageFilter<TImage>
   return ( (  neighborhood[0] &&  neighborhood[1] &&
              !neighborhood[2] && !neighborhood[3] ) ||
            ( !neighborhood[0] && !neighborhood[1] &&
-              neighborhood[2] &&  neighborhood[3] ) );  
+              neighborhood[2] &&  neighborhood[3] ) );
 }
 
 /*
@@ -1082,7 +1083,7 @@ WellComposedImageFilter<TImage>
       isC2 = true;
       for ( unsigned int j = 0; j < 8; j++ )
         {
-        if ( neighborhood[j] == neighborhood[2*i] && 
+        if ( neighborhood[j] == neighborhood[2*i] &&
                j != 2*i && j != 2*i+1 )
           {
           isC2 = false;
@@ -1098,11 +1099,11 @@ WellComposedImageFilter<TImage>
       else
         {
         return 2;
-        }  
+        }
       }
     }
-    
-  return 0;        
+
+  return 0;
 }
 
 /*
@@ -1126,7 +1127,7 @@ WellComposedImageFilter<TImage>
   this->m_C1Indices[0][1] = 23;
   this->m_C1Indices[0][2] = 14;
   this->m_C1Indices[0][3] = 22;
-  
+
   this->m_C1Indices[1][0] = 13;
   this->m_C1Indices[1][1] = 17;
   this->m_C1Indices[1][2] = 14;
@@ -1157,11 +1158,11 @@ WellComposedImageFilter<TImage>
   this->m_C1Indices[6][2] = 10;
   this->m_C1Indices[6][3] = 12;
 
-  this->m_C1Indices[7][0] = 3;  
-  this->m_C1Indices[7][1] = 13;  
-  this->m_C1Indices[7][2] = 4;  
-  this->m_C1Indices[7][3] = 12;  
-  
+  this->m_C1Indices[7][0] = 3;
+  this->m_C1Indices[7][1] = 13;
+  this->m_C1Indices[7][2] = 4;
+  this->m_C1Indices[7][3] = 12;
+
   this->m_C1Indices[8][0] = 10;
   this->m_C1Indices[8][1] = 22;
   this->m_C1Indices[8][2] = 13;
@@ -1171,7 +1172,7 @@ WellComposedImageFilter<TImage>
   this->m_C1Indices[9][1] = 16;
   this->m_C1Indices[9][2] = 13;
   this->m_C1Indices[9][3] = 15;
-  
+
   this->m_C1Indices[10][0] = 4;
   this->m_C1Indices[10][1] = 16;
   this->m_C1Indices[10][2] = 7;
@@ -1181,7 +1182,7 @@ WellComposedImageFilter<TImage>
   this->m_C1Indices[11][1] = 14;
   this->m_C1Indices[11][2] = 11;
   this->m_C1Indices[11][3] = 13;
-  
+
   this->m_C2Indices[0][0] = 13;
   this->m_C2Indices[0][1] = 26;
   this->m_C2Indices[0][2] = 14;
@@ -1214,8 +1215,8 @@ WellComposedImageFilter<TImage>
       }
     for ( unsigned int j = 0; j < 8; j++ )
       {
-      this->m_C2Indices[i  ][j] = this->m_C2Indices[i-1][j] - subtrahend; 
-      this->m_C2Indices[i+4][j] = this->m_C2Indices[i+3][j] - subtrahend; 
+      this->m_C2Indices[i  ][j] = this->m_C2Indices[i-1][j] - subtrahend;
+      this->m_C2Indices[i+4][j] = this->m_C2Indices[i+3][j] - subtrahend;
       }
     }
 }
@@ -1245,46 +1246,46 @@ WellComposedImageFilter<TImage>
 ::IsCriticalC2Configuration3D( Array<PixelType> neighborhood )
 {
   // Check for Subtype 1 of C.C. Type 2
-  if ( ( ( neighborhood[0] == neighborhood[1] ) && ( neighborhood[0] != neighborhood[2] ) && 
-         ( neighborhood[0] != neighborhood[5] ) && ( neighborhood[0] != neighborhood[7] ) && 
-         ( neighborhood[0] != neighborhood[4] ) && ( neighborhood[0] != neighborhood[6] ) && 
+  if ( ( ( neighborhood[0] == neighborhood[1] ) && ( neighborhood[0] != neighborhood[2] ) &&
+         ( neighborhood[0] != neighborhood[5] ) && ( neighborhood[0] != neighborhood[7] ) &&
+         ( neighborhood[0] != neighborhood[4] ) && ( neighborhood[0] != neighborhood[6] ) &&
          ( neighborhood[0] != neighborhood[3] ) ) ||
-       ( ( neighborhood[5] == neighborhood[4] ) && ( neighborhood[5] != neighborhood[0] ) && 
+       ( ( neighborhood[5] == neighborhood[4] ) && ( neighborhood[5] != neighborhood[0] ) &&
          ( neighborhood[5] != neighborhood[2] ) && ( neighborhood[5] != neighborhood[7] ) &&
-         ( neighborhood[5] != neighborhood[6] ) && ( neighborhood[5] != neighborhood[1] ) && 
+         ( neighborhood[5] != neighborhood[6] ) && ( neighborhood[5] != neighborhood[1] ) &&
          ( neighborhood[5] != neighborhood[3] ) ) ||
-       ( ( neighborhood[2] == neighborhood[3] ) && ( neighborhood[2] != neighborhood[0] ) && 
-         ( neighborhood[2] != neighborhood[5] ) && ( neighborhood[2] != neighborhood[7] ) && 
-         ( neighborhood[2] != neighborhood[4] ) && ( neighborhood[2] != neighborhood[6] ) && 
+       ( ( neighborhood[2] == neighborhood[3] ) && ( neighborhood[2] != neighborhood[0] ) &&
+         ( neighborhood[2] != neighborhood[5] ) && ( neighborhood[2] != neighborhood[7] ) &&
+         ( neighborhood[2] != neighborhood[4] ) && ( neighborhood[2] != neighborhood[6] ) &&
          ( neighborhood[2] != neighborhood[1] ) ) ||
-       ( ( neighborhood[7] == neighborhood[6] ) && ( neighborhood[7] != neighborhood[0] ) && 
-         ( neighborhood[7] != neighborhood[2] ) && ( neighborhood[7] != neighborhood[5] ) && 
-         ( neighborhood[7] != neighborhood[4] ) && ( neighborhood[7] != neighborhood[1] ) && 
+       ( ( neighborhood[7] == neighborhood[6] ) && ( neighborhood[7] != neighborhood[0] ) &&
+         ( neighborhood[7] != neighborhood[2] ) && ( neighborhood[7] != neighborhood[5] ) &&
+         ( neighborhood[7] != neighborhood[4] ) && ( neighborhood[7] != neighborhood[1] ) &&
          ( neighborhood[7] != neighborhood[3] ) ) )
     {
     return 1;
     }
   // Check for Subtype 2 of C.C. Type 2
-  if ( ( ( neighborhood[2] == neighborhood[5] ) && ( neighborhood[2] == neighborhood[7] ) && 
-         ( neighborhood[2] == neighborhood[4] ) && ( neighborhood[2] == neighborhood[6] ) && 
-         ( neighborhood[2] == neighborhood[3] ) && ( neighborhood[0] != neighborhood[2] ) && 
+  if ( ( ( neighborhood[2] == neighborhood[5] ) && ( neighborhood[2] == neighborhood[7] ) &&
+         ( neighborhood[2] == neighborhood[4] ) && ( neighborhood[2] == neighborhood[6] ) &&
+         ( neighborhood[2] == neighborhood[3] ) && ( neighborhood[0] != neighborhood[2] ) &&
          ( neighborhood[5] != neighborhood[2] ) ) ||
-       ( ( neighborhood[0] == neighborhood[2] ) && ( neighborhood[0] == neighborhood[7] ) && 
-         ( neighborhood[0] == neighborhood[6] ) && ( neighborhood[0] == neighborhood[1] ) && 
-         ( neighborhood[0] == neighborhood[3] ) && ( neighborhood[0] != neighborhood[5] ) && 
+       ( ( neighborhood[0] == neighborhood[2] ) && ( neighborhood[0] == neighborhood[7] ) &&
+         ( neighborhood[0] == neighborhood[6] ) && ( neighborhood[0] == neighborhood[1] ) &&
+         ( neighborhood[0] == neighborhood[3] ) && ( neighborhood[0] != neighborhood[5] ) &&
          ( neighborhood[0] != neighborhood[4] ) ) ||
-       ( ( neighborhood[0] == neighborhood[5] ) && ( neighborhood[0] == neighborhood[7] ) && 
-         ( neighborhood[0] == neighborhood[4] ) && ( neighborhood[0] == neighborhood[6] ) && 
-         ( neighborhood[0] == neighborhood[1] ) && ( neighborhood[0] != neighborhood[2] ) && 
+       ( ( neighborhood[0] == neighborhood[5] ) && ( neighborhood[0] == neighborhood[7] ) &&
+         ( neighborhood[0] == neighborhood[4] ) && ( neighborhood[0] == neighborhood[6] ) &&
+         ( neighborhood[0] == neighborhood[1] ) && ( neighborhood[0] != neighborhood[2] ) &&
          ( neighborhood[0] != neighborhood[3] ) ) ||
-       ( ( neighborhood[0] == neighborhood[2] ) && ( neighborhood[0] == neighborhood[5] ) && 
-         ( neighborhood[0] == neighborhood[4] ) && ( neighborhood[0] == neighborhood[1] ) && 
-         ( neighborhood[0] == neighborhood[3] ) && ( neighborhood[0] != neighborhood[7] ) && 
+       ( ( neighborhood[0] == neighborhood[2] ) && ( neighborhood[0] == neighborhood[5] ) &&
+         ( neighborhood[0] == neighborhood[4] ) && ( neighborhood[0] == neighborhood[1] ) &&
+         ( neighborhood[0] == neighborhood[3] ) && ( neighborhood[0] != neighborhood[7] ) &&
          ( neighborhood[0] != neighborhood[6] ) ) )
     {
     return 2;
     }
-  return 0;      
+  return 0;
 }
 
 /*
@@ -1299,23 +1300,23 @@ WellComposedImageFilter<TImage>
   radius.Fill( 1 );
   NeighborhoodIteratorType It( radius, this->GetOutput(),
     this->GetOutput()->GetLargestPossibleRegion() );
-    
+
   Array<PixelType> neighborhoodPixels( 8 );
 
   int countC1 = 0;
   int countC2 = 0;
-  
+
   for ( It.GoToBegin(); !It.IsAtEnd(); ++It )
     {
     if ( !It.InBounds() )
       {
       continue;
-      }      
-    
+      }
+
     /**
      * Check for C1 critical configurations
      */
-    bool foundC1 = false; 
+    bool foundC1 = false;
     for ( unsigned int i = 0; i < 3; i++ )
       {
       for ( unsigned int j = 0; j < 4; j++ )
@@ -1328,10 +1329,10 @@ WellComposedImageFilter<TImage>
         countC1++;
         }
       }
-    /** 
+    /**
      * Check for C2 critical configurations
      */
-    if ( !foundC1 ) 
+    if ( !foundC1 )
       {
       for ( unsigned int j = 0; j < 8; j++ )
         {
@@ -1339,25 +1340,25 @@ WellComposedImageFilter<TImage>
         }
       if ( this->IsCriticalC2Configuration3D( neighborhoodPixels ) )
         {
-        countC2++;  
+        countC2++;
         }
-      } 
+      }
     }
   itkDebugMacro( << "There are a total of " << countC1 << " C1 and " << countC2
-                 << " C2 critical configurations." ); 
+                 << " C2 critical configurations." );
   std::cout << "There are a total of " << countC1 << " C1 and " << countC2
-                 << " C2 critical configurations." << std::endl; 
+                 << " C2 critical configurations." << std::endl;
 }
 
 template <class TImage>
 void
 WellComposedImageFilter<TImage>
 ::PrintSelf(
-  std::ostream& os, 
+  std::ostream& os,
   Indent indent) const
 {
   Superclass::PrintSelf( os, indent );
-  os << indent << "Total number of labels: " 
+  os << indent << "Total number of labels: "
      << this->m_TotalNumberOfLabels << std::endl;
 }
 
