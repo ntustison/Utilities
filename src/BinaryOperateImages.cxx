@@ -103,6 +103,14 @@ int BinaryOperateImages( int argc, char * argv[] )
       {
       It.SetCenterPixel( vnl_math_max( It1.GetCenterPixel(), It2.GetCenterPixel() ) );
       }
+    else if( op.compare( "isgreatherthan" ) == 0 )
+      {
+      It.SetCenterPixel( ( It1.GetCenterPixel() > It2.GetCenterPixel() ) ? 1 : 0 );
+      }
+    else if( op.compare( "islessthan" ) == 0 )
+      {
+      It.SetCenterPixel( ( It1.GetCenterPixel() < It2.GetCenterPixel() ) ? 1 : 0 );
+      }
     else if( op.compare( "min" ) == 0 )
       {
       It.SetCenterPixel( vnl_math_min( It1.GetCenterPixel(), It2.GetCenterPixel() ) );
@@ -165,6 +173,8 @@ int main( int argc, char *argv[] )
     std::cerr << "    /:   Divide" << std::endl;
     std::cerr << "    min: voxel-wise minimum" << std::endl;
     std::cerr << "    max: voxel-wise maximum'" << std::endl;
+    std::cerr << "    isgreaterthan: mask (1 if image 1 is greather than image 2, 0 o.w.)" << std::endl;
+    std::cerr << "    islessthan: mask (1 if image 1 is greather than image 2, 0 o.w.)" << std::endl;
     std::cerr << "    or:  logical \'or\'" << std::endl;
     std::cerr << "    xor: logical \'xor\'" << std::endl;
     std::cerr << "    and: logical \'and\'" << std::endl;
