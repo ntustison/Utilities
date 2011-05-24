@@ -201,22 +201,25 @@ int UnaryOperateImage( int argc, char * argv[] )
       }
     }
 
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-  typename WriterType::Pointer writer = WriterType::New();
-  writer->SetInput( reader->GetOutput() );
-  writer->SetFileName( argv[5] );
-  writer->Update();
+  if( argc > 5 )
+    {
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( reader->GetOutput() );
+    writer->SetFileName( argv[5] );
+    writer->Update();
+    }
 
   return EXIT_SUCCESS;
 }
 
 int main( int argc, char *argv[] )
 {
-  if( argc < 6 )
+  if( argc < 5 )
     {
     std::cerr << "Usage: " << std::endl;
     std::cerr << argv[0] << " imageDimension inputImage "
-              << "operation constant outputImage" << std::endl;
+              << "operation constant [outputImage]" << std::endl;
     std::cerr << "  operation: " << std::endl;
     std::cerr << "    +:   Add" << std::endl;
     std::cerr << "    -:   Subtract" << std::endl;
