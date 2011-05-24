@@ -2,6 +2,7 @@
 #include "itkImageFileReader.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageFileWriter.h"
+#include "itkGaussianInterpolateImageFunction.h"
 
 
 #include <string>
@@ -78,6 +79,40 @@ int UnaryOperateImage( int argc, char * argv[] )
         index[d] = idx[d];
         }
       reader->GetOutput()->SetPixel( index, constant );
+      }
+    }
+  else if( argv[3][0] == 'g' )
+    {
+    typedef itk::GaussianInterpolateImageFunction<ImageType, double>
+      GaussianInterpolatorType;
+    typename GaussianInterpolatorType::Pointer g_interpolator
+      = GaussianInterpolatorType::New();
+    g_interpolator->SetInputImage( reader->GetOutput() );
+
+    double sigma[ImageDimension];
+    for( unsigned int d = 0; d < ImageDimension; d++ )
+      {
+      sigma[d] = reader->GetOutput()->GetSpacing()[d];
+      }
+    double alpha = 1.0;
+    g_interpolator->SetParameters( sigma, alpha );
+
+    typename GaussianInterpolatorType::PointType point;
+    point.Fill( 0.0 );
+
+    std::vector<double> pt = ConvertVector<double>( std::string( argv[4] ) );
+    for( unsigned int d = 0; d < ImageDimension; d++ )
+      {
+      point[d] = pt[d];
+      }
+
+    if( g_interpolator->IsInsideBuffer( point ) )
+      {
+      std::cout << g_interpolator->Evaluate( point ) << std::endl;
+      }
+    else
+      {
+      std::cout << "outside image buffer" << std::endl;
       }
     }
   else
@@ -189,6 +224,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    /:   Divide" << std::endl;
     std::cerr << "    ^:   pow" << std::endl;
     std::cerr << "    p:   set pixel to constant value [index1] [index2] ... index[n]" <<  std::endl;
+    std::cerr << "    g:   get pixel value at physical point (gaussian interpolation)" << std::endl;
     std::cerr << "  The following operations ignore the \'constant\' argument." << std::endl;
     std::cerr << "    e:   exp" << std::endl;
     std::cerr << "    l:   ln" << std::endl;
