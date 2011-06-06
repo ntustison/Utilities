@@ -51,6 +51,9 @@ set(UI_SOURCES "${CMAKE_SOURCE_DIR}/../ExperimentalITK/Common/antsCommandLinePar
 add_executable( itkTimeAndMemoryProbeTest itkTimeAndMemoryProbeTest.cxx )
 target_link_libraries( itkTimeAndMemoryProbeTest ${ITK_LIBRARIES})
 
+#add_executable( BSplineTest BSplineTest.cxx )
+#target_link_libraries( BSplineTest ${ITK_LIBRARIES})
+
 add_executable(AdaptiveHistogramEqualizeImage AdaptiveHistogramEqualizeImage.cxx )
 target_link_libraries(AdaptiveHistogramEqualizeImage ${ITK_LIBRARIES})
 
