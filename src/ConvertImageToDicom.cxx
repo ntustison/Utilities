@@ -118,7 +118,7 @@ int main( int argc, char* argv[] )
 //  itk::EncapsulateMetaData<std::string>(dict, tagkey, value);
 
   gdcm::UIDGenerator suid;
-  if( argc > 4 && atoi( argv[4] ) != '0' )
+  if( argc > 4 && atoi( argv[4] ) != 0 )
     {
     suid.SetRoot( argv[4] );
     }
