@@ -4,7 +4,7 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 
-#include "itkMultiplyByConstantImageFilter.h"
+#include "itkMultiplyImageFilter.h"
 #include "itkNumericSeriesFileNames.h"
 
 #include <string>
@@ -19,7 +19,7 @@ int CreatePCAImageDecomposition( int argc, char* argv[] )
   std::string format = std::string( argv[2] );
 
   // Get the filenames from the directory
-  itk::NumericSeriesFileNames::Pointer names 
+  itk::NumericSeriesFileNames::Pointer names
     = itk::NumericSeriesFileNames::New();
   names->SetSeriesFormat( format.c_str() );
   names->SetStartIndex( atoi( argv[3] ) );
@@ -58,7 +58,7 @@ int CreatePCAImageDecomposition( int argc, char* argv[] )
   std::string outputFormat = std::string( argv[5] );
 
   // Get the filenames from the directory
-  itk::NumericSeriesFileNames::Pointer outputNames 
+  itk::NumericSeriesFileNames::Pointer outputNames
     = itk::NumericSeriesFileNames::New();
   outputNames->SetSeriesFormat( outputFormat.c_str() );
   outputNames->SetStartIndex( 0 );
@@ -77,7 +77,7 @@ int CreatePCAImageDecomposition( int argc, char* argv[] )
   unsigned int numberOfOutputs = pca->GetNumberOfOutputs();
   if( argc > 6 && atof( argv[6] ) < 1.0 )
     {
-    double runningTotal = 0.0; 
+    double runningTotal = 0.0;
     double eigenValueTotal = eigenValues.sum();
     for( unsigned int n = 0; n < eigenValues.size(); n++ )
       {
@@ -94,22 +94,22 @@ int CreatePCAImageDecomposition( int argc, char* argv[] )
     numberOfOutputs = atoi( argv[6] );
     }
 
-  double runningTotal = 0.0; 
+  double runningTotal = 0.0;
   double eigenValueTotal = eigenValues.sum();
   for( unsigned int n = 1; n < numberOfOutputs; n++ )
     {
     runningTotal += eigenValues[n-1];
-    std::cout << "Eigen " << n << ": " 
-              << 100 * runningTotal / eigenValueTotal 
-              << "% (lambda = " << eigenValues[n-1] << ")" << std::endl; 
-     
-    typedef itk::MultiplyByConstantImageFilter
-      <ImageType,double,ImageType> MultiplierType;
+    std::cout << "Eigen " << n << ": "
+              << 100 * runningTotal / eigenValueTotal
+              << "% (lambda = " << eigenValues[n-1] << ")" << std::endl;
+
+    typedef itk::MultiplyImageFilter
+      <ImageType,ImageType,ImageType> MultiplierType;
     typename MultiplierType::Pointer multiplier = MultiplierType::New();
-    multiplier->SetInput( pca->GetOutput( n ) );
-    multiplier->SetConstant( vcl_sqrt( pca->GetEigenValues()[n-1] ) );   
-    multiplier->Update(); 
-     
+    multiplier->SetInput1( pca->GetOutput( n ) );
+    multiplier->SetConstant2( vcl_sqrt( pca->GetEigenValues()[n-1] ) );
+    multiplier->Update();
+
     typedef itk::ImageFileWriter<ImageType> WriterType;
     typename WriterType::Pointer writer = WriterType::New();
     writer->SetInput( multiplier->GetOutput() );
@@ -125,13 +125,13 @@ int main( int argc, char *argv[] )
 {
   if ( argc < 6 )
     {
-    std::cout << argv[0] 
+    std::cout << argv[0]
       << " imageDimension inputImageSeriesFormat startIndex endIndex "
       << " outputImageSeriesFormat [numberOfPrincipalComponents or percentage<1]" << std::endl;
     exit( 1 );
     }
 
-  switch( atoi( argv[1] ) ) 
+  switch( atoi( argv[1] ) )
    {
    case 2:
      CreatePCAImageDecomposition<2>( argc, argv );

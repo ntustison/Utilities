@@ -108,10 +108,10 @@ int main( int argc, char *argv[] )
 
   unsigned int seedSliceIndex = image->GetLargestPossibleRegion().GetSize()[2] - 1;
 
-  unsigned int voxelMinRadius 
-    = static_cast<unsigned int>( 2.0 / reader->GetOutput()->GetSpacing()[0] ); 
-  unsigned int voxelMaxRadius 
-    = static_cast<unsigned int>( 15.0 / reader->GetOutput()->GetSpacing()[0] ); 
+  unsigned int voxelMinRadius
+    = static_cast<unsigned int>( 2.0 / reader->GetOutput()->GetSpacing()[0] );
+  unsigned int voxelMaxRadius
+    = static_cast<unsigned int>( 15.0 / reader->GetOutput()->GetSpacing()[0] );
 
   for ( int n = seedSliceIndex; n >= 0; n-- )
     {
@@ -121,6 +121,7 @@ int main( int argc, char *argv[] )
     typedef itk::ExtractImageFilter<LabelImageType, LabelSliceType> LabelExtracterType;
     LabelExtracterType::Pointer labelextracter = LabelExtracterType::New();
     labelextracter->SetInput( labelImage );
+    labelextracter->SetDirectionCollapseToIdentity();
     labelextracter->SetExtractionRegion( region );
     labelextracter->Update();
 
@@ -132,7 +133,7 @@ int main( int argc, char *argv[] )
       if( It.Get() == 2 )
         {
         numberOfAirwayVoxels++;
-        } 
+        }
       }
 
     if( vcl_sqrt( static_cast<float>( numberOfAirwayVoxels ) / vnl_math::pi ) >=
@@ -141,6 +142,7 @@ int main( int argc, char *argv[] )
       typedef itk::ExtractImageFilter<ImageType, SliceType> ExtracterType;
       ExtracterType::Pointer extracter = ExtracterType::New();
       extracter->SetInput( image );
+      extracter->SetDirectionCollapseToIdentity();
       extracter->SetExtractionRegion( region );
       extracter->Update();
 
@@ -148,7 +150,7 @@ int main( int argc, char *argv[] )
       seedSliceIndex = index[2];
       break;
       }
-      
+
     for( It.GoToBegin(); !It.IsAtEnd(); ++It )
       {
       if( It.Get() == 2 )
@@ -158,7 +160,7 @@ int main( int argc, char *argv[] )
         idx[1] = It.GetIndex()[1];
         idx[2] = index[2];
         labelImage->SetPixel( idx, 1 );
-        } 
+        }
       }
     }
 
@@ -175,12 +177,14 @@ int main( int argc, char *argv[] )
   portion.SetIndex( portionIndex );
   sliceExtracter->SetInput( slice );
   sliceExtracter->SetExtractionRegion( portion );
+  sliceExtracter->SetDirectionCollapseToIdentity();
   sliceExtracter->Update();
 
   typedef itk::ExtractImageFilter<LabelImageType, LabelSliceType> LabelExtracterType;
   LabelExtracterType::Pointer labelExtracter = LabelExtracterType::New();
   labelExtracter->SetInput( labelImage );
   labelExtracter->SetExtractionRegion( region );
+  labelExtracter->SetDirectionCollapseToIdentity();
   labelExtracter->Update();
 
   typedef itk::GradientMagnitudeRecursiveGaussianImageFilter<RealSliceType, RealSliceType> GradientFilterType;
@@ -228,35 +232,35 @@ int main( int argc, char *argv[] )
 
     bool tracheaFound = false;
 
-    LabelSliceType::PixelType centerValue 
+    LabelSliceType::PixelType centerValue
       = labelExtracter->GetOutput()->GetPixel( index );
     if( centerValue == static_cast<LabelSliceType::PixelType>( 2 ) )
       {
-      tracheaFound = true; 
-      }  
+      tracheaFound = true;
+      }
     if( !tracheaFound )
       {
-      LabelSliceType::IndexType localIndex; 
-      for ( int i = -static_cast<int>( (*iter)->GetRadius()[0] ); 
+      LabelSliceType::IndexType localIndex;
+      for ( int i = -static_cast<int>( (*iter)->GetRadius()[0] );
         i <= static_cast<int>( (*iter)->GetRadius()[0] ); i++ )
         {
         localIndex[0] = static_cast<int>( centerX ) + i;
-        for ( int j = -static_cast<int>( (*iter)->GetRadius()[0] ); 
+        for ( int j = -static_cast<int>( (*iter)->GetRadius()[0] );
           j <= static_cast<int>( (*iter)->GetRadius()[0] ); j++ )
           {
           localIndex[1] = static_cast<int>( centerY ) + j;
-          if( labelExtracter->GetOutput()->GetPixel( localIndex ) == 
+          if( labelExtracter->GetOutput()->GetPixel( localIndex ) ==
             static_cast<LabelSliceType::PixelType>( 2 ) )
             {
             tracheaFound = true;
-            break; 
+            break;
             }
           }
         if( tracheaFound )
           {
-          break; 
-          }  
-        }  
+          break;
+          }
+        }
       }
 
     if ( distance  < minDistance && tracheaFound )
@@ -267,10 +271,10 @@ int main( int argc, char *argv[] )
       minCenterY = centerY;
       }
     }
-  
+
   if( minRadius > 1e10 )
     {
-    std::cerr << "Radius not found." << std::endl; 
+    std::cerr << "Radius not found." << std::endl;
     return EXIT_FAILURE;
     }
 
@@ -354,7 +358,7 @@ int main( int argc, char *argv[] )
   RealType N = 0;
   RealType var = 0.0;
   RealType meanArea = 0.0;
- 
+
   seedSlice = dilater->GetOutput();
 
   typedef itk::LabelStatisticsImageFilter<LabelSliceType, LabelSliceType> StatsFilterType;
@@ -384,6 +388,7 @@ int main( int argc, char *argv[] )
     typedef itk::ExtractImageFilter<LabelImageType, LabelSliceType> LabelExtracterType;
     LabelExtracterType::Pointer labelExtracter = LabelExtracterType::New();
     labelExtracter->SetInput( labelImage );
+    labelExtracter->SetDirectionCollapseToIdentity();
     labelExtracter->SetExtractionRegion( region );
     labelExtracter->Update();
 
@@ -481,6 +486,7 @@ int main( int argc, char *argv[] )
       typedef itk::ExtractImageFilter<LabelImageType, LabelSliceType> LabelExtracterType;
       LabelExtracterType::Pointer labelExtracter = LabelExtracterType::New();
       labelExtracter->SetInput( labelImage );
+      labelExtracter->SetDirectionCollapseToIdentity();
       labelExtracter->SetExtractionRegion( region );
       labelExtracter->Update();
 

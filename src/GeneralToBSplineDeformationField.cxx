@@ -94,25 +94,25 @@ int GeneralToBSplineDeformationField( int argc, char *argv[] )
     std::cerr << "Invalid ncps format." << std::endl;
     }
 
-  if( argc > 7 && atoi( argv[7] ) )
+  typedef itk::PointSet<VectorType, ImageDimension> DeformationFieldPointSetType;
+  typename DeformationFieldPointSetType::Pointer fieldPoints =
+    DeformationFieldPointSetType::New();
+  unsigned long count = 0;
+
+  itk::ImageRegionIteratorWithIndex<DeformationFieldType>
+    It( reader->GetOutput(), reader->GetOutput()->GetLargestPossibleRegion() );
+  for ( It.GoToBegin(); !It.IsAtEnd(); ++It )
     {
-    typedef itk::PointSet<VectorType, ImageDimension> DeformationFieldPointSetType;
-    typename DeformationFieldPointSetType::Pointer fieldPoints =
-      DeformationFieldPointSetType::New();
-    unsigned long count = 0;
-
-    itk::ImageRegionIteratorWithIndex<DeformationFieldType>
-      It( reader->GetOutput(), reader->GetOutput()->GetLargestPossibleRegion() );
-    for ( It.GoToBegin(); !It.IsAtEnd(); ++It )
+    VectorType vector = It.Get();
+    if( vector.GetSquaredNorm() == 0 )
       {
-      VectorType vector = It.Get();
-      if( vector.GetSquaredNorm() == 0 )
-        {
-        continue;
-        }
-      typename DeformationFieldType::PointType point;
-      reader->GetOutput()->TransformIndexToPhysicalPoint( It.GetIndex(), point );
+      continue;
+      }
+    typename DeformationFieldType::PointType point;
+    reader->GetOutput()->TransformIndexToPhysicalPoint( It.GetIndex(), point );
 
+    if( argc > 7 && atoi( argv[7] ) )
+      {
       point += vector;
       itk::ContinuousIndex<double, ImageDimension> cidx;
       reader->GetOutput()->TransformPhysicalPointToContinuousIndex( point, cidx );
@@ -121,56 +121,51 @@ int GeneralToBSplineDeformationField( int argc, char *argv[] )
         {
         continue;
         }
-
-      typename DeformationFieldPointSetType::PointType fieldPoint;
-      for ( unsigned int i = 0; i < ImageDimension; i++ )
-        {
-        fieldPoint[i] = point[i];
-        }
-      fieldPoints->SetPoint( count, fieldPoint );
-      fieldPoints->SetPointData( count, -vector );
-      count++;
       }
 
-    typedef itk::BSplineScatteredDataPointSetToImageFilter
-      <DeformationFieldPointSetType, DeformationFieldType> BSplineFilterType;
-    typename BSplineFilterType::Pointer bspliner = BSplineFilterType::New();
-
-    //bspliner->DebugOn();
-    bspliner->SetOrigin( reader->GetOutput()->GetOrigin() );
-    bspliner->SetSpacing( reader->GetOutput()->GetSpacing() );
-    bspliner->SetSize( reader->GetOutput()->GetLargestPossibleRegion().GetSize() );
-    bspliner->SetGenerateOutputImage( true );
-    bspliner->SetNumberOfLevels( numberOfLevels );
-    bspliner->SetSplineOrder( splineOrder );
-    bspliner->SetNumberOfControlPoints( ncps );
-    bspliner->SetInput( fieldPoints );
-
-    typedef itk::ImageFileWriter<DeformationFieldType> WriterType;
-    typename WriterType::Pointer writer = WriterType::New();
-    writer->SetFileName( argv[3] );
-    writer->SetInput( bspliner->GetOutput() );
-    writer->Update();
+    typename DeformationFieldPointSetType::PointType fieldPoint;
+    for ( unsigned int i = 0; i < ImageDimension; i++ )
+      {
+      fieldPoint[i] = point[i];
+      }
+    fieldPoints->SetPoint( count, fieldPoint );
+    if( argc > 7 && atoi( argv[7] ) )
+      {
+      fieldPoints->SetPointData( count, -vector );
+      }
+    else
+      {
+      fieldPoints->SetPointData( count, vector );
+      }
+    count++;
     }
-  else
-    {
-    VectorType zeroVector;
-    zeroVector.Fill( 0 );
 
-    typename FilterType::Pointer bspliner = FilterType::New();
-    bspliner->SetInput( reader->GetOutput() );
-    bspliner->SetNumberOfLevels( numberOfLevels );
-    bspliner->SetSplineOrder( splineOrder );
-    bspliner->SetNumberOfControlPoints( ncps );
-    bspliner->SetIgnorePixelValue( zeroVector );
-    bspliner->Update();
+  typedef itk::BSplineScatteredDataPointSetToImageFilter
+    <DeformationFieldPointSetType, DeformationFieldType> BSplineFilterType;
+  typename BSplineFilterType::Pointer bspliner = BSplineFilterType::New();
 
-    typedef itk::ImageFileWriter<DeformationFieldType> WriterType;
-    typename WriterType::Pointer writer = WriterType::New();
-    writer->SetFileName( argv[3] );
-    writer->SetInput( bspliner->GetOutput() );
-    writer->Update();
-    }
+  //bspliner->DebugOn();
+  bspliner->SetOrigin( reader->GetOutput()->GetOrigin() );
+  bspliner->SetSpacing( reader->GetOutput()->GetSpacing() );
+  bspliner->SetSize( reader->GetOutput()->GetLargestPossibleRegion().GetSize() );
+  bspliner->SetDirection( reader->GetOutput()->GetDirection() );
+  bspliner->SetGenerateOutputImage( true );
+  bspliner->SetNumberOfLevels( numberOfLevels );
+  bspliner->SetSplineOrder( splineOrder );
+  bspliner->SetNumberOfControlPoints( ncps );
+  bspliner->SetInput( fieldPoints );
+  bspliner->Update();
+
+  typedef itk::ImageFileWriter<DeformationFieldType> WriterType;
+  typename WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName( argv[3] );
+  writer->SetInput( bspliner->GetOutput() );
+  writer->Update();
+
+  typename WriterType::Pointer writer2 = WriterType::New();
+  writer2->SetFileName( "controlPoints.nii.gz" );
+  writer2->SetInput( bspliner->GetPhiLattice() );
+  writer2->Update();
 
   return EXIT_SUCCESS;
 }

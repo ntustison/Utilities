@@ -245,6 +245,7 @@ int SegmentHeliumLungs3D( int argc, char *argv[] )
     typename ExtracterType::Pointer extracter = ExtracterType::New();
     extracter->SetInput( relabeler->GetOutput() );
     extracter->SetExtractionRegion( region );
+    extracter->SetDirectionCollapseToIdentity();
     extracter->Update();
 
 
@@ -323,13 +324,13 @@ int SegmentHeliumLungs3D( int argc, char *argv[] )
       }
     }
 
-//  {
-//  typedef itk::ImageFileWriter<ImageType> WriterType;
-//  typename WriterType::Pointer writer = WriterType::New();
-//  writer->SetInput( labelImage );
-//  writer->SetFileName( "slicePoints.nii.gz" );
-//  writer->Update();
-//  }
+  {
+  typedef itk::ImageFileWriter<ImageType> WriterType;
+  typename WriterType::Pointer writer = WriterType::New();
+  writer->SetInput( labelImage );
+  writer->SetFileName( "slicePoints.nii.gz" );
+  writer->Update();
+  }
 
   //
   // Smooth the results by creating a B-spline surface spanning

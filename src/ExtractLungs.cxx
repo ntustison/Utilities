@@ -18,18 +18,18 @@
 
 int main( int argc, char *argv[] )
 {
-  itk::MultiThreader::SetGlobalDefaultNumberOfThreads( 1 ); 
+  itk::MultiThreader::SetGlobalDefaultNumberOfThreads( 1 );
 
   if ( argc < 3 )
     {
-    std::cout << "Usage: " << argv[0] << " inputImageFile outputImageFile [maskImage]" << std::endl;     
+    std::cout << "Usage: " << argv[0] << " inputImageFile outputImageFile [maskImage]" << std::endl;
     exit( 0 );
-    }   
+    }
 
   /**
    * This routine implements the first step of the lung segmentation algorithm discussed in
    * Hu, et al., "Automatic Lung Segmentation for Accurate Quantitation of Volumetric
-   * X-Ray CT Images", IEEE-TMI 20(6):490-498, 2001.  
+   * X-Ray CT Images", IEEE-TMI 20(6):490-498, 2001.
    *
    * Input:  one CT image of the lung.  The assumptions on the input are as follows:
    *    1. Background has the largest volume
@@ -47,11 +47,11 @@ int main( int argc, char *argv[] )
    * The steps we employ are as follows:
    *    1. An optimal threshold value is obtained on this anisotropic diffusion image
    *       using an Otsu threshold filter (which takes half the time as the iterative
-   *       procedure of Hu et al. 
-   *  
+   *       procedure of Hu et al.
+   *
    * This routine is meant to be used in the pipeline
    *
-   * inputImage --> LungExtraction --> SegmentAirways --> SeparateLungs --> initialLabeling    
+   * inputImage --> LungExtraction --> SegmentAirways --> SeparateLungs --> initialLabeling
    *
    */
 
@@ -68,10 +68,10 @@ int main( int argc, char *argv[] )
   ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName( argv[1] );
   reader->Update();
-  
-  
+
+
   LabelImageType::Pointer otsuOutput = NULL;
-  
+
   typedef itk::Image<int, ImageDimension> MaskImageType;
   MaskImageType::Pointer maskImage = NULL;
   if ( argc > 3 )
@@ -84,18 +84,18 @@ int main( int argc, char *argv[] )
     }
   else
     {
-    maskImage = MaskImageType::New(); 
+    maskImage = MaskImageType::New();
     maskImage->SetOrigin( reader->GetOutput()->GetOrigin() );
     maskImage->SetSpacing( reader->GetOutput()->GetSpacing() );
     maskImage->SetDirection( reader->GetOutput()->GetDirection() );
     maskImage->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
     maskImage->Allocate();
-    maskImage->FillBuffer( 1 ); 
+    maskImage->FillBuffer( 1 );
     }
-  
+
   LabelImageType::RegionType sampleRegion;
   LabelImageType::SizeType sampleSize;
-  sampleSize.Fill( 5 ); 
+  sampleSize.Fill( 5 );
   LabelImageType::IndexType sampleIndex;
   sampleIndex.Fill( 0 );
   sampleRegion.SetSize( sampleSize );
@@ -103,6 +103,7 @@ int main( int argc, char *argv[] )
   typedef itk::ExtractImageFilter<LabelImageType, LabelImageType> SampleExtracterType;
   SampleExtracterType::Pointer sampleExtracter = SampleExtracterType::New();
   sampleExtracter->SetInput( reader->GetOutput() );
+  sampleExtracter->SetDirectionCollapseToSubmatrix();
   sampleExtracter->SetExtractionRegion( sampleRegion );
   sampleExtracter->Update();
 
@@ -113,8 +114,8 @@ int main( int argc, char *argv[] )
   unsigned int numberOfThresholds = 1;
   unsigned int numberOfBins = 200;
   int maskLabel = 1;
-  
-    
+
+
   itk::ImageRegionIterator<ImageType> ItI( reader->GetOutput(),
     reader->GetOutput()->GetLargestPossibleRegion() );
   itk::ImageRegionIterator<MaskImageType> ItM( maskImage,
@@ -134,8 +135,8 @@ int main( int argc, char *argv[] )
         maxValue = ItI.Get();
         }
       }
-    }    
-  
+    }
+
   typedef itk::LabelStatisticsImageFilter<ImageType, MaskImageType> StatsType;
   StatsType::Pointer stats = StatsType::New();
   stats->SetInput( reader->GetOutput() );
@@ -143,14 +144,14 @@ int main( int argc, char *argv[] )
   stats->UseHistogramsOn();
   stats->SetHistogramParameters( numberOfBins, minValue, maxValue );
   stats->Update();
-  
+
   typedef itk::OtsuMultipleThresholdsCalculator<StatsType::HistogramType>
     OtsuType;
   OtsuType::Pointer otsu = OtsuType::New();
   otsu->SetInputHistogram( stats->GetHistogram( maskLabel ) );
   otsu->SetNumberOfThresholds( numberOfThresholds );
-  otsu->Update(); 
-  
+  otsu->Update();
+
   OtsuType::OutputType thresholds = otsu->GetOutput();
 
   otsuOutput = LabelImageType::New();
@@ -167,18 +168,18 @@ int main( int argc, char *argv[] )
   ItO.GoToBegin();
   while ( !ItM.IsAtEnd() )
     {
-    if ( ItM.Get() != maskLabel || ItI.Get() < thresholds[0] ) 
+    if ( ItM.Get() != maskLabel || ItI.Get() < thresholds[0] )
       {
-      ItO.Set( 0 ); 
-      } 
+      ItO.Set( 0 );
+      }
     else
       {
-      ItO.Set( 1 ); 
-      } 
+      ItO.Set( 1 );
+      }
     ++ItI;
     ++ItM;
-    ++ItO; 
-    }  
+    ++ItO;
+    }
 
   unsigned long lowerBound[ImageDimension];
   unsigned long upperBound[ImageDimension];
@@ -229,12 +230,12 @@ int main( int argc, char *argv[] )
   relabeler3->SetInput( connecter3->GetOutput() );
   relabeler3->InPlaceOff();
   relabeler3->Update();
-  
-  /** 
-   * At this point, given the assumption that the background has the largest volume, 
+
+  /**
+   * At this point, given the assumption that the background has the largest volume,
    * the background has a label value of 1
    * and the body has a value of 0.  We want to switch this labeleing so that
-   * the body has a value of 1 and the background has a value of 0.  We also 
+   * the body has a value of 1 and the background has a value of 0.  We also
    * get rid of the labels that have small corresponding volumes. After this step
    * we assume the following labeling.
    *   0 -> Background
@@ -243,39 +244,39 @@ int main( int argc, char *argv[] )
    */
 
   bool needToSeparateLungs = false;
-  if( relabeler3->GetNumberOfObjects() > 2 && 
-        relabeler3->GetSizeOfObjectInPhysicalUnits( 2 ) < 
+  if( relabeler3->GetNumberOfObjects() > 2 &&
+        relabeler3->GetSizeOfObjectInPhysicalUnits( 2 ) <
         0.75 * relabeler3->GetSizeOfObjectInPhysicalUnits( 1 ) )
     {
     needToSeparateLungs = true;
-    }   
+    }
 
-  itk::ImageRegionIterator<LabelImageType> It( relabeler3->GetOutput(), 
+  itk::ImageRegionIterator<LabelImageType> It( relabeler3->GetOutput(),
     relabeler3->GetOutput()->GetLargestPossibleRegion() );
   for ( It.GoToBegin(); !It.IsAtEnd(); ++It )
     {
     if ( It.Get() == 0 )
       {
       It.Set( 1 );
-      } 
+      }
     else if ( It.Get() == 1 || It.Get() > 3 )
       {
       It.Set( 0 );
-      } 
+      }
     else if ( It.Get() > 2 && needToSeparateLungs )
       {
       It.Set( 1 );
-      } 
+      }
     else if ( It.Get() >= 2 && !needToSeparateLungs )
       {
       It.Set( 1 );
-      } 
-    }  
+      }
+    }
 
-  /** 
+  /**
    * Because of the inversion, there might be some spurious pixels labeled as
    * Body pixels.  We apply the connected components again to get rid of these
-   * spurious labels 
+   * spurious labels
    */
 
   ConnectedComponentType::Pointer connecter2 = ConnectedComponentType::New();
@@ -288,56 +289,58 @@ int main( int argc, char *argv[] )
   relabeler2->InPlaceOff();
   relabeler2->Update();
 
-  itk::ImageRegionIterator<LabelImageType> It2( relabeler2->GetOutput(), 
+  itk::ImageRegionIterator<LabelImageType> It2( relabeler2->GetOutput(),
     relabeler2->GetOutput()->GetLargestPossibleRegion() );
   for ( It.GoToBegin(), It2.GoToBegin(); !It2.IsAtEnd(); ++It, ++It2 )
     {
     if ( It2.Get() > 1 )
       {
       It2.Set( 0 );
-      } 
+      }
     else if ( It.Get() == 2 || ( It.Get() > 2 && needToSeparateLungs ) )
       {
       It2.Set( It.Get() );
       }
-    }  
+    }
 
 
   /**
    * Fill the unwanted cavities in the lungs and body
    */
   LabelImageType::RegionType region;
-  LabelImageType::SizeType size 
+  LabelImageType::SizeType size
     = relabeler2->GetOutput()->GetLargestPossibleRegion().GetSize();
   LabelImageType::IndexType index;
   index.Fill( -1 );
   size[2] = 0;
   region.SetSize( size );
 
-  for ( int s = relabeler2->GetOutput()->GetLargestPossibleRegion().GetSize()[2] - 1; 
+  for ( int s = relabeler2->GetOutput()->GetLargestPossibleRegion().GetSize()[2] - 1;
           s >= 0; s-- )
     {
     index[2] = s;
     region.SetIndex( index );
-    
+
     typedef itk::ExtractImageFilter<LabelImageType, LabelSliceType> LabelExtracterType;
     LabelExtracterType::Pointer labelExtracter = LabelExtracterType::New();
     labelExtracter->SetInput( relabeler2->GetOutput() );
     labelExtracter->SetExtractionRegion( region );
+    labelExtracter->SetDirectionCollapseToIdentity();
+
     labelExtracter->Update();
 
     /**
      * Fill in the unwanted cavities and repair the salt and pepper noise in the lungs
      */
-      { 
-      typedef itk::BinaryBallStructuringElement< 
+      {
+      typedef itk::BinaryBallStructuringElement<
                           LabelImageType::PixelType,
                           ImageDimension-1>             StructuringElementType;
-     
+
       StructuringElementType element;
       element.SetRadius( 1 );
       element.CreateStructuringElement();
-     
+
       typedef itk::BinaryMorphologicalClosingImageFilter<LabelSliceType, LabelSliceType,
         StructuringElementType >  CloserType;
       CloserType::Pointer  closer = CloserType::New();
@@ -345,22 +348,22 @@ int main( int argc, char *argv[] )
       closer->SetInput( labelExtracter->GetOutput() );
       closer->SetForegroundValue( 2 );
       closer->Update();
-  
+
       typedef itk::BinaryReinhardtMorphologicalImageFilter<
         LabelSliceType, LabelSliceType, StructuringElementType>  FilterType;
-  
+
       FilterType::Pointer filter = FilterType::New();
       filter->SetInput( closer->GetOutput() );
-  
+
       float pixelArea = reader->GetOutput()->GetSpacing()[0]
         * reader->GetOutput()->GetSpacing()[1];
-  
+
       filter->SetForegroundValue( 2 );
 
       filter->SetEmploySaltAndPepperRepair( true );
-      filter->SetSaltAndPepperMinimumSizeInPixels( 
+      filter->SetSaltAndPepperMinimumSizeInPixels(
         static_cast<unsigned int>( 25.0 / pixelArea + 0.5 ) );
-      
+
       filter->SetEmployMinimumDiameterFilter( false );
       filter->SetEmployUnwantedCavityDeletion( true );
       filter->SetEmployMinimumSizeFilter( false );
@@ -369,7 +372,7 @@ int main( int argc, char *argv[] )
       filter->SetEmployBoundarySmoother( false );
       filter->SetEmployUnclassifiedPixelProcessing( false );
       filter->Update();
-      
+
       itk::ImageRegionIteratorWithIndex<LabelSliceType> It( filter->GetOutput(),
         filter->GetOutput()->GetLargestPossibleRegion() );
       for ( It.GoToBegin(); !It.IsAtEnd(); ++It )
@@ -380,31 +383,32 @@ int main( int argc, char *argv[] )
           index[d] = It.GetIndex()[d];
           }
         index[ImageDimension-1] = s;
-        if ( It.Get() == filter->GetForegroundValue() ) 
-          {  
+        if ( It.Get() == filter->GetForegroundValue() )
+          {
           relabeler2->GetOutput()->SetPixel( index, filter->GetForegroundValue() );
           }
-        }   
-      }   
+        }
+      }
     }
 
 
   typedef itk::ImageFileWriter<LabelImageType> WriterType;
   WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( argv[2] );
-  
+
   LabelImageType::RegionType unpadRegion;
   LabelImageType::IndexType unpadIndex;
   unpadIndex.Fill( 0 );
-  unpadRegion.SetSize( 
+  unpadRegion.SetSize(
     reader->GetOutput()->GetLargestPossibleRegion().GetSize() );
-  
+
   typedef itk::ExtractImageFilter<LabelImageType, LabelImageType> UnpadExtracterType;
   UnpadExtracterType::Pointer unpadExtracter = UnpadExtracterType::New();
   unpadExtracter->SetInput( relabeler2->GetOutput() );
   unpadExtracter->SetExtractionRegion( unpadRegion );
+  unpadExtracter->SetDirectionCollapseToSubmatrix();
   unpadExtracter->Update();
-      
+
   writer->SetInput( unpadExtracter->GetOutput() );
   writer->Update();
 

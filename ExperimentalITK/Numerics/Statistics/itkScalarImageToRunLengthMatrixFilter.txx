@@ -415,8 +415,8 @@ SetPixelValueMinMax( PixelType min, PixelType max )
   itkDebugMacro("setting Min to " << min << "and Max to " << max);
   this->m_Min = min;
   this->m_Max = max;
-  this->m_LowerBound.Fill( min );
-  this->m_UpperBound.Fill( max + 1 );
+  this->m_LowerBound[0] = min;
+  this->m_UpperBound[0] = max;
   this->Modified();
 }
 
@@ -430,6 +430,8 @@ SetDistanceValueMinMax( RealType min, RealType max )
                  "and MaxDistance to " << max );
   this->m_MinDistance = min;
   this->m_MaxDistance = max;
+  this->m_LowerBound[1] = min;
+  this->m_UpperBound[1] = max;
   this->Modified();
   }
 

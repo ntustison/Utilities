@@ -176,7 +176,7 @@ int CalculateFirstOrderStatistics( int argc, char *argv[] )
 				ofstream str( argv[6] );
 				for ( ItM.GoToBegin(), ItI.GoToBegin(); !ItI.IsAtEnd(); ++ItM, ++ItI )
 						{
-						if ( ItM.Get() == label )
+						if ( ItM.Get() == 1 )
 								{
 								str << ItI.Get() << std::endl;
 								}

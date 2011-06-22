@@ -119,40 +119,40 @@ int FastMarchingImageFilter( unsigned int argc, char *argv[] )
     std::cerr << excep << std::endl;
     }
 
-//   typedef itk::BinaryThresholdImageFilter
-//     <InternalImageType, OutputImageType> ThresholdingFilterType;
-//   typename ThresholdingFilterType::Pointer thresholder
-//     = ThresholdingFilterType::New();
-//
-//   thresholder->SetLowerThreshold( 0.0 );
-//   thresholder->SetUpperThreshold( stoppingValue );
-//   thresholder->SetOutsideValue( -stoppingValue );
-//   thresholder->SetInsideValue( 1 );
-//   thresholder->SetInput( fastMarching->GetOutput() );
-//
-//   typedef  itk::ImageFileWriter<OutputImageType> WriterType;
-//   typename WriterType::Pointer writer = WriterType::New();
-//   writer->SetInput( thresholder->GetOutput() );
-//   writer->SetFileName( argv[3] );
-//   writer->Update();
+   typedef itk::BinaryThresholdImageFilter
+     <InternalImageType, OutputImageType> ThresholdingFilterType;
+   typename ThresholdingFilterType::Pointer thresholder
+     = ThresholdingFilterType::New();
 
-//  itk::ImageRegionIteratorWithIndex<LabelImageType> ItL( labelImageReader->GetOutput(),
-//    labelImageReader->GetOutput()->GetLargestPossibleRegion() );
-  itk::ImageRegionIteratorWithIndex<InternalImageType> ItF( fastMarching->GetOutput(),
-    fastMarching->GetOutput()->GetLargestPossibleRegion() );
+   thresholder->SetLowerThreshold( 0.00001 );
+   thresholder->SetUpperThreshold( stoppingValue );
+   thresholder->SetOutsideValue( 0 );
+   thresholder->SetInsideValue( 1 );
+   thresholder->SetInput( fastMarching->GetOutput() );
+   thresholder->Update();
+
+  itk::ImageRegionIteratorWithIndex<OutputImageType> ItF( thresholder->GetOutput(),
+    thresholder->GetOutput()->GetLargestPossibleRegion() );
   for( ItL.GoToBegin(), ItF.GoToBegin(); !ItL.IsAtEnd(); ++ItL, ++ItF )
     {
     if( ItL.Get() != itk::NumericTraits<typename LabelImageType::PixelType>::Zero )
       {
-      ItF.Set( -ItF.Get() );
+      ItF.Set( 1 );
       }
     }
 
-		typedef  itk::ImageFileWriter<InternalImageType> WriterType;
-		typename WriterType::Pointer writer = WriterType::New();
-		writer->SetInput( fastMarching->GetOutput() );
-		writer->SetFileName( argv[3] );
-		writer->Update();
+   typedef  itk::ImageFileWriter<OutputImageType> WriterType;
+   typename WriterType::Pointer writer = WriterType::New();
+   writer->SetInput( thresholder->GetOutput() );
+   writer->SetFileName( argv[3] );
+   writer->Update();
+
+
+//		typedef  itk::ImageFileWriter<InternalImageType> WriterType;
+//		typename WriterType::Pointer writer = WriterType::New();
+//		writer->SetInput( fastMarching->GetOutput() );
+//		writer->SetFileName( argv[3] );
+//		writer->Update();
 
   if( argc > 9 )
     {

@@ -170,6 +170,7 @@ int SplitHeliumLungs3D( int argc, char *argv[] )
     typedef itk::ExtractImageFilter<ImageType, SliceType> ExtracterType;
     typename ExtracterType::Pointer extracter = ExtracterType::New();
     extracter->SetInput( relabeler->GetOutput() );
+    extracter->SetDirectionCollapseToIdentity();
     extracter->SetExtractionRegion( region );
     extracter->Update();
 

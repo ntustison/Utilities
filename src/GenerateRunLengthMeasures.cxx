@@ -41,7 +41,7 @@ int GenerateRunLengthMeasures( int argc, char *argv[] )
     labelImageReader->SetFileName( argv[4] );
     labelImageReader->Update();
     mask = labelImageReader->GetOutput();
-    runLengthFilter->SetInput( mask );
+    runLengthFilter->SetMaskImage( mask );
 
     if ( argc > 5 )
       {

@@ -133,6 +133,7 @@ int main( int argc, char *argv[] )
     LabelExtracterType::Pointer labelExtracter = LabelExtracterType::New();
     labelExtracter->SetInput( labelImage );
     labelExtracter->SetExtractionRegion( region );
+    labelExtracter->SetDirectionCollapseToIdentity();
     labelExtracter->Update();
 
     typedef itk::GrayscaleFillholeImageFilter<LabelSliceType, LabelSliceType> HoleFillerType;
@@ -365,6 +366,7 @@ int main( int argc, char *argv[] )
         ExtracterType::Pointer extracter = ExtracterType::New();
         extracter->SetInput( reader->GetOutput() );
         extracter->SetExtractionRegion( region );
+        extracter->SetDirectionCollapseToIdentity();
         extracter->Update();
 
         typedef itk::LiveWireImageFunction<SliceType> LiveWireType;
@@ -539,6 +541,7 @@ int main( int argc, char *argv[] )
     LabelExtracterType::Pointer labelExtracter = LabelExtracterType::New();
     labelExtracter->SetInput( output );
     labelExtracter->SetExtractionRegion( region );
+    labelExtracter->SetDirectionCollapseToIdentity();
     labelExtracter->Update();
 
     typedef itk::BinaryThresholdImageFilter<LabelSliceType, LabelSliceType> BinaryFilterType;

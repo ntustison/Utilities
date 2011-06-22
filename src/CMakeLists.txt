@@ -51,6 +51,9 @@ set(UI_SOURCES "${CMAKE_SOURCE_DIR}/../ExperimentalITK/Common/antsCommandLinePar
 add_executable( itkTimeAndMemoryProbeTest itkTimeAndMemoryProbeTest.cxx )
 target_link_libraries( itkTimeAndMemoryProbeTest ${ITK_LIBRARIES})
 
+add_executable( BSplineTest BSplineTest.cxx )
+target_link_libraries( BSplineTest ${ITK_LIBRARIES})
+
 add_executable(AdaptiveHistogramEqualizeImage AdaptiveHistogramEqualizeImage.cxx )
 target_link_libraries(AdaptiveHistogramEqualizeImage ${ITK_LIBRARIES})
 
@@ -144,6 +147,9 @@ TARGET_link_libraries(ConvertImage ${ITK_LIBRARIES})
 add_executable(ConvertImageToDicom ConvertImageToDicom.cxx )
 target_link_libraries(ConvertImageToDicom ${ITK_LIBRARIES})
 
+add_executable(ConvertImageToDicomRGB ConvertImageToDicomRGB.cxx )
+target_link_libraries(ConvertImageToDicomRGB ${ITK_LIBRARIES})
+
 add_executable(GetDicomTagValue GetDicomTagValue.cxx )
 target_link_libraries(GetDicomTagValue ${ITK_LIBRARIES})
 
@@ -177,8 +183,8 @@ target_link_libraries(CreateImageSource ${ITK_LIBRARIES} )
 #add_executable(CreateJacobianDeterminantImage CreateJacobianDeterminantImage.cxx )
 #target_link_libraries(CreateJacobianDeterminantImage ${ITK_LIBRARIES} )
 
-#add_executable(CreateRidgeMap CreateRidgeMap.cxx )
-#target_link_libraries(CreateRidgeMap ${ITK_LIBRARIES})
+add_executable(CreateRidgeMap CreateRidgeMap.cxx )
+target_link_libraries(CreateRidgeMap ${ITK_LIBRARIES})
 
 add_executable(CreateImage CreateImage.cxx )
 target_link_libraries(CreateImage ${ITK_LIBRARIES})
