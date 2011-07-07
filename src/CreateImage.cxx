@@ -73,8 +73,7 @@ int CreateZeroImage( int argc, char *argv[] )
   generator->SetSeed();
 
   std::string which = std::string( argv[3] );
-  typename std::string::size_type pos = which.find( "x" );
-  typename std::string::size_type pos2 = which.find( "v" );  // xvec, yvec, etc.
+  typename std::string::size_type pos = which.find( "." );
 
   typename std::string::size_type pos3 = std::string::npos;
   if( argc > 6 )
@@ -150,7 +149,7 @@ int CreateZeroImage( int argc, char *argv[] )
     writer->SetInput( image );
     writer->Update();
     }
-  else if( ( pos == std::string::npos || pos2 != std::string::npos ) && ImageDimension > 1 )
+  else if( pos != std::string::npos )
     {
     typedef itk::ImageFileReader<ImageType> ReaderType;
     typename ReaderType::Pointer reader = ReaderType::New();
