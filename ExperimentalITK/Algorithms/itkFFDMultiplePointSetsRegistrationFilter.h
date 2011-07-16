@@ -268,7 +268,7 @@ private :
 }
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkFFDMultiplePointSetsRegistrationFilter.txx"
+#include "itkFFDMultiplePointSetsRegistrationFilter.hxx"
 #endif
 
 #endif

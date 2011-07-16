@@ -423,7 +423,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkTustisonCorrelationRatioImageToImageMetric.txx"
+#include "itkTustisonCorrelationRatioImageToImageMetric.hxx"
 #endif
 
 #endif

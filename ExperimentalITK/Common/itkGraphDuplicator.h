@@ -76,7 +76,7 @@ private:
 
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkGraphDuplicator.txx"
+#include "itkGraphDuplicator.hxx"
 #endif
 
 #endif /* __itkGraphDuplicator_h */

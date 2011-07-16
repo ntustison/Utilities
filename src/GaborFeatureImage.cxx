@@ -1,4 +1,3 @@
-
 #include "itkConvolutionImageFilter.h"
 #include "itkGaussianInterpolateImageFunction.h"
 #include "itkImageFileReader.h"

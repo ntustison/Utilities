@@ -109,7 +109,7 @@ private:
 
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkConstantScalarOperator.txx"
+#include "itkConstantScalarOperator.hxx"
 #endif
 
 #endif

@@ -470,6 +470,6 @@ private:
 
 } // end namespace itk
 
-#include "itkESMImageToImageMetric.txx"
+#include "itkESMImageToImageMetric.hxx"
 
 #endif

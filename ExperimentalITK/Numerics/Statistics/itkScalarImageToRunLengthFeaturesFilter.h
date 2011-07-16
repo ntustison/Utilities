@@ -215,7 +215,7 @@ private:
 } // end of namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkScalarImageToRunLengthFeaturesFilter.txx"
+#include "itkScalarImageToRunLengthFeaturesFilter.hxx"
 #endif
 
 #endif

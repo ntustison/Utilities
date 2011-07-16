@@ -147,7 +147,7 @@ private:
 
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkLabeledPointSetFileWriter.txx"
+#include "itkLabeledPointSetFileWriter.hxx"
 #endif
 
 #endif

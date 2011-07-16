@@ -140,7 +140,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDecomposeTensorImageFilter.txx"
+#include "itkDecomposeTensorImageFilter.hxx"
 #endif
 
 #endif

@@ -157,6 +157,6 @@ private:
 
 } // end namespace itk
 
-#include "itkESMOptimizerBase.txx"
+#include "itkESMOptimizerBase.hxx"
 
 #endif

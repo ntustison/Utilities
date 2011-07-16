@@ -202,7 +202,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkLabelOverlapMeasuresImageFilter.txx"
+#include "itkLabelOverlapMeasuresImageFilter.hxx"
 #endif
 
 #endif

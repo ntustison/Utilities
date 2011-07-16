@@ -89,6 +89,6 @@ private:
 
 } // end namespace itk
 
-#include "itkESMDogLegOptimizer.txx"
+#include "itkESMDogLegOptimizer.hxx"
 
 #endif

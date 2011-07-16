@@ -108,7 +108,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkQuadratureFilterImageSource.txx"
+#include "itkQuadratureFilterImageSource.hxx"
 #endif
 
 #endif

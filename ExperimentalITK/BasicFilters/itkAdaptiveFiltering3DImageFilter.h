@@ -109,7 +109,7 @@ private:
 }// end namespace itk
 
 #if ITK_TEMPLATE_TXX
-# include "itkAdaptiveFiltering3DImageFilter.txx"
+# include "itkAdaptiveFiltering3DImageFilter.hxx"
 #endif
 
 #endif

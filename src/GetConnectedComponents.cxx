@@ -94,8 +94,7 @@ int GetConnectedComponents(int argc, char* argv[] )
     {
     std::cout << "  Object[" << i << "] consists of "
               << relabeler->GetSizeOfObjectsInPixels()[i-1]
-              << " pixels.  center of mass: "
-              << relabeler->GetCenterOfMass( i ) <<  std::endl;
+              << std::endl;
     }
 
   if( argc > 5 && atoi( argv[5] ) > 1 )

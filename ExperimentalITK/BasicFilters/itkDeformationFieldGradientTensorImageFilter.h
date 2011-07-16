@@ -163,7 +163,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDeformationFieldGradientTensorImageFilter.txx"
+#include "itkDeformationFieldGradientTensorImageFilter.hxx"
 #endif
 
 #endif

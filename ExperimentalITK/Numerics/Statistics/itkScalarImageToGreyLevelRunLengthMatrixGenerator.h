@@ -151,7 +151,7 @@ class ScalarImageToGreyLevelRunLengthMatrixGenerator : public Object
 } // end of namespace itk 
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkScalarImageToGreyLevelRunLengthMatrixGenerator.txx"
+#include "itkScalarImageToGreyLevelRunLengthMatrixGenerator.hxx"
 #endif
 
 #endif

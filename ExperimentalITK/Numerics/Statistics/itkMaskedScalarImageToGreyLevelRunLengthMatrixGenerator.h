@@ -97,7 +97,7 @@ class MaskedScalarImageToGreyLevelRunLengthMatrixGenerator :
 } // end of namespace itk 
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkMaskedScalarImageToGreyLevelRunLengthMatrixGenerator.txx"
+#include "itkMaskedScalarImageToGreyLevelRunLengthMatrixGenerator.hxx"
 #endif
 
 #endif

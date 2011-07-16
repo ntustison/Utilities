@@ -115,7 +115,7 @@ static void Dummy( void );
 }} // end namespace itk::fem
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkFEMElement3DStrain.txx"
+#include "itkFEMElement3DStrain.hxx"
 #endif
 
 #endif  // #ifndef __itkFEMElement3DStrain_h

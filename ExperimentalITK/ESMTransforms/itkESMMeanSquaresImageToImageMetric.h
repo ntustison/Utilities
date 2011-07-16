@@ -124,6 +124,6 @@ private:
 
 } // end namespace itk
 
-#include "itkESMMeanSquaresImageToImageMetric.txx"
+#include "itkESMMeanSquaresImageToImageMetric.hxx"
 
 #endif

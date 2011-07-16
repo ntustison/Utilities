@@ -83,7 +83,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkListSampleDAgostinoPearsonNormalityTest.txx"
+#include "itkListSampleDAgostinoPearsonNormalityTest.hxx"
 #endif
 
 #endif

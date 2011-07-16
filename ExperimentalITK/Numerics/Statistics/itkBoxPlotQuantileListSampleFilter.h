@@ -115,7 +115,7 @@ private:
 } // end of namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkBoxPlotQuantileListSampleFilter.txx"
+#include "itkBoxPlotQuantileListSampleFilter.hxx"
 #endif
 
 #endif

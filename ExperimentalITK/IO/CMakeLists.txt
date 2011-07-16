@@ -83,4 +83,4 @@ ITKEXPAT
 ITKniftiio)
 
 INSTALL_TARGETS(/lib/InsightToolkit ITKIO)
-INSTALL_FILES(/include/InsightToolkit/IO "(\\.h|\\.txx)$")
+INSTALL_FILES(/include/InsightToolkit/IO "(\\.h|\\.hxx)$")

@@ -125,7 +125,7 @@ static void Dummy( void );
 }} // end namespace itk::fem
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkFEMElement2DThinPlate.txx"
+#include "itkFEMElement2DThinPlate.hxx"
 #endif
 
 #endif  // #ifndef __itkFEMElement2DThinPlate_h

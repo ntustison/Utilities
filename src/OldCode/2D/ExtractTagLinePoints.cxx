@@ -1,4 +1,3 @@
-
 #include "itkGaborFilterBankTagging2DImageFilter.h"
 #include "itkImageFileReader.h"
 #include "itkImageRegionIteratorWithIndex.h"

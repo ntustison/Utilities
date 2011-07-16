@@ -147,7 +147,7 @@ private:
 } // end of namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkHistogramToRunLengthFeaturesFilter.txx"
+#include "itkHistogramToRunLengthFeaturesFilter.hxx"
 #endif
 
 #endif

@@ -139,7 +139,7 @@ private:
 
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkSparseMatrixEigenAnalysis.txx"
+#include "itkSparseMatrixEigenAnalysis.hxx"
 #endif
 
 #endif

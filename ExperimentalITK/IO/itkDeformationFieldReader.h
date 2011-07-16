@@ -176,7 +176,7 @@ private:
 } //namespace ITK
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDeformationFieldReader.txx"
+#include "itkDeformationFieldReader.hxx"
 #endif
 
 #endif // __itkDeformationFieldReader_h

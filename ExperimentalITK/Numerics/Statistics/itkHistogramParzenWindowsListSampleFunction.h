@@ -93,7 +93,7 @@ private:
 } // end of namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkHistogramParzenWindowsListSampleFunction.txx"
+#include "itkHistogramParzenWindowsListSampleFunction.hxx"
 #endif
 
 #endif

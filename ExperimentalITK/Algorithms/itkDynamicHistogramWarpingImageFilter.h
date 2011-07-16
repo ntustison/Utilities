@@ -219,7 +219,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDynamicHistogramWarpingImageFilter.txx"
+#include "itkDynamicHistogramWarpingImageFilter.hxx"
 #endif
 
 #endif

@@ -14,8 +14,8 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef _itkSectionMutualInformationRegistrationFunction_txx
-#define _itkSectionMutualInformationRegistrationFunction_txx
+#ifndef _itkSectionMutualInformationRegistrationFunction_hxx
+#define _itkSectionMutualInformationRegistrationFunction_hxx
 
 #include "itkSectionMutualInformationRegistrationFunction.h"
 #include "itkBSplineInterpolateImageFunction.h"

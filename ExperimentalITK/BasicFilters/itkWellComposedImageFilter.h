@@ -137,7 +137,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkWellComposedImageFilter.txx"
+#include "itkWellComposedImageFilter.hxx"
 #endif
 
 #endif

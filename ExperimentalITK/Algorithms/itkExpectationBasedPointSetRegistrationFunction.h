@@ -312,7 +312,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkExpectationBasedPointSetRegistrationFunction.txx"
+#include "itkExpectationBasedPointSetRegistrationFunction.hxx"
 #endif
 
 #endif

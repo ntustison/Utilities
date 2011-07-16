@@ -84,7 +84,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkScalarToFractalImageFilter.txx"
+#include "itkScalarToFractalImageFilter.hxx"
 #endif
 
 #endif

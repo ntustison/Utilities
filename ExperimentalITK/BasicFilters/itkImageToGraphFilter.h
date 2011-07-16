@@ -109,7 +109,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkImageToGraphFilter.txx"
+#include "itkImageToGraphFilter.hxx"
 #endif
 
 #endif

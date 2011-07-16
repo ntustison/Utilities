@@ -86,6 +86,6 @@ GetArithmeticBarycenter(const std::vector< vnl_matrix<T> > & matrices,
 } // end namespace
 
 
-#include "vnl_sd_matrix_tools.txx"
+#include "vnl_sd_matrix_tools.hxx"
 
 #endif

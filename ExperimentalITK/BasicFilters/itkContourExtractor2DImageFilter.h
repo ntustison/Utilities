@@ -238,7 +238,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkContourExtractor2DImageFilter.txx"
+#include "itkContourExtractor2DImageFilter.hxx"
 #endif
 
 #endif

@@ -1,4 +1,3 @@
-
 #include "itkGaborFilterBankTaggingImageFilter.h"
 #include "itkGaborFilterBankTagging2DImageFilter.h"
 #include "itkImageFileReader.h"

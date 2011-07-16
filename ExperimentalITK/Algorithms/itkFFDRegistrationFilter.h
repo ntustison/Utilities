@@ -370,7 +370,7 @@ private :
 }
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkFFDRegistrationFilter.txx"
+#include "itkFFDRegistrationFilter.hxx"
 #endif
 
 #endif

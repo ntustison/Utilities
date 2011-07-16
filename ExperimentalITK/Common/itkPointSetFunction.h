@@ -132,7 +132,7 @@ private:
 #endif
 
 #if ITK_TEMPLATE_TXX
-# include "itkPointSetFunction.txx"
+# include "itkPointSetFunction.hxx"
 #endif
 
 #endif
