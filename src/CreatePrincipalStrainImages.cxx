@@ -1,6 +1,6 @@
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkVectorFieldGradientImageFunction.h"
-#include "itkGradientToMagnitudeImageFilter.h"
+#include "itkVectorMagnitudeImageFilter.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkVector.h"
@@ -157,7 +157,7 @@ int CreatePrincipalStrainImages( int argc, char *argv[] )
 
   if( magnitudeOnly )
     {
-    typedef itk::GradientToMagnitudeImageFilter<VectorImageType, RealImageType>
+    typedef itk::VectorMagnitudeImageFilter<VectorImageType, RealImageType>
       MagnitudeType;
     typedef itk::ImageFileWriter<RealImageType> WriterType;
     if ( ImageDimension == 3 )
