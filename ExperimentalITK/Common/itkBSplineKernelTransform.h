@@ -188,7 +188,7 @@ protected:
 #endif
 
 #if ITK_TEMPLATE_TXX
-# include "itkBSplineKernelTransform.txx"
+# include "itkBSplineKernelTransform.hxx"
 #endif
 
 #endif // __itkBSplineKernelTransform_h

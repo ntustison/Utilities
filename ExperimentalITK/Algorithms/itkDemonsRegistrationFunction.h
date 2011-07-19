@@ -249,7 +249,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDemonsRegistrationFunction.txx"
+#include "itkDemonsRegistrationFunction.hxx"
 #endif
 
 #endif

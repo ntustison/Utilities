@@ -117,7 +117,7 @@ private :
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkWebSplineWeightFunction.txx"
+#include "itkWebSplineWeightFunction.hxx"
 #endif
 
 #endif

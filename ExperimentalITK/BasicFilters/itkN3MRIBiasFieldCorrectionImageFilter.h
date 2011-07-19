@@ -320,7 +320,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkN3MRIBiasFieldCorrectionImageFilter.txx"
+#include "itkN3MRIBiasFieldCorrectionImageFilter.hxx"
 #endif
 
 #endif

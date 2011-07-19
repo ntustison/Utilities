@@ -407,7 +407,7 @@ private :
 }
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkFFD4DRegistrationFilter.txx"
+#include "itkFFD4DRegistrationFilter.hxx"
 #endif
 
 #endif

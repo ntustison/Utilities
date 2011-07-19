@@ -95,7 +95,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDeterminantTensorImageFilter.txx"
+#include "itkDeterminantTensorImageFilter.hxx"
 #endif
 
 #endif

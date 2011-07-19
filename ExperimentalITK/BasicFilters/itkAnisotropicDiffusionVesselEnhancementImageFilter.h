@@ -270,7 +270,7 @@ private:
 }// end namespace itk
 
 #if ITK_TEMPLATE_TXX
-# include "itkAnisotropicDiffusionVesselEnhancementImageFilter.txx"
+# include "itkAnisotropicDiffusionVesselEnhancementImageFilter.hxx"
 #endif
 
 #endif

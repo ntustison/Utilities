@@ -94,7 +94,7 @@ private:
 } // end of namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkWatsonDistributionListSampleFilter.txx"
+#include "itkWatsonDistributionListSampleFilter.hxx"
 #endif
 
 #endif

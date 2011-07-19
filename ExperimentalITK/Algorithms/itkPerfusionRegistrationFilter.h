@@ -299,7 +299,7 @@ private:
 }
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkPerfusionRegistrationFilter.txx"
+#include "itkPerfusionRegistrationFilter.hxx"
 #endif
 
 #endif

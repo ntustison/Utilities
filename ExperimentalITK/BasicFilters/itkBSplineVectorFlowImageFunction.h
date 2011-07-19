@@ -173,7 +173,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkBSplineVectorFlowImageFunction.txx"
+#include "itkBSplineVectorFlowImageFunction.hxx"
 #endif
 
 #endif

@@ -127,15 +127,15 @@ SET(FEM_SRCS ${FEM_SRCS}
   itkFEMElement3DBSplinePatchMembrane.h
   itkFEMElement3DBSplinePatchStrain.h
 
-  itkFEMElementStd.txx
-  itkFEMElement1DStress.txx
-  itkFEMELement2DLinearElasticity.txx
-  itkFEMElement2DMembrane.txx
-  itkFEMElement2DStrain.txx
-  itkFEMElement2DStress.txx
-  itkFEMELement3DLinearElasticity.txx
-  itkFEMElement3DMembrane.txx
-  itkFEMElement3DStrain.txx
+  itkFEMElementStd.hxx
+  itkFEMElement1DStress.hxx
+  itkFEMELement2DLinearElasticity.hxx
+  itkFEMElement2DMembrane.hxx
+  itkFEMElement2DStrain.hxx
+  itkFEMElement2DStress.hxx
+  itkFEMELement3DLinearElasticity.hxx
+  itkFEMElement3DMembrane.hxx
+  itkFEMElement3DStrain.hxx
 
   itkFEMMaterials.h
   itkFEMMaterialBase.h
@@ -188,10 +188,10 @@ SET(FEM_SRCS ${FEM_SRCS}
 
   itkVisitorDispatcher.h
 
-  itkFEMImageMetricLoad.txx
+  itkFEMImageMetricLoad.hxx
   
   ../../Algorithms/itkFEMRegistrationFilter.h
-  ../../Algorithms/itkFEMRegistrationFilter.txx
+  ../../Algorithms/itkFEMRegistrationFilter.hxx
 
 )
 ENDIF(WIN32)
@@ -208,7 +208,7 @@ SOURCE_GROUP("Nodes" REGULAR_EXPRESSION itkFEMNode*)
 SOURCE_GROUP("Loads" REGULAR_EXPRESSION itkFEMLoad*)
 SOURCE_GROUP("Materials" REGULAR_EXPRESSION itkFEMMaterial*)
 SOURCE_GROUP("Linear Systems" REGULAR_EXPRESSION itkFEMLinearSystem*)
-SOURCE_GROUP("Source Files Template" REGULAR_EXPRESSION ./*.txx)
+SOURCE_GROUP("Source Files Template" REGULAR_EXPRESSION ./*.hxx)
 
 INCLUDE_DIRECTORIES(${VXL_NETLIB_INCLUDE_DIR}) # Some .cxx files need f2c.h.
 
@@ -224,4 +224,4 @@ IF(UNIX)
 ENDIF(UNIX)
 
 INSTALL_TARGETS(/lib/InsightToolkit ITKFEM)
-INSTALL_FILES(/include/InsightToolkit/Numerics/FEM "(\\.h|\\.txx)$")
+INSTALL_FILES(/include/InsightToolkit/Numerics/FEM "(\\.h|\\.hxx)$")

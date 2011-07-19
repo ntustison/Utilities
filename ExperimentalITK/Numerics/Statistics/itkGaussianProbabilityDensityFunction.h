@@ -189,7 +189,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkGaussianProbabilityDensityFunction.txx"
+#include "itkGaussianProbabilityDensityFunction.hxx"
 #endif
 
 #endif

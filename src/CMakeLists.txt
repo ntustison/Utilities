@@ -51,6 +51,9 @@ set(UI_SOURCES "${CMAKE_SOURCE_DIR}/../ExperimentalITK/Common/antsCommandLinePar
 add_executable( itkTimeAndMemoryProbeTest itkTimeAndMemoryProbeTest.cxx )
 target_link_libraries( itkTimeAndMemoryProbeTest ${ITK_LIBRARIES})
 
+add_executable( BSplineExample BSplineExample.cxx )
+target_link_libraries( BSplineExample ${ITK_LIBRARIES})
+
 add_executable( BSplineTest BSplineTest.cxx )
 target_link_libraries( BSplineTest ${ITK_LIBRARIES})
 
@@ -77,9 +80,6 @@ target_link_libraries(BinaryMorphology ${ITK_LIBRARIES})
 
 add_executable(BinaryOperateImages BinaryOperateImages.cxx )
 target_link_libraries(BinaryOperateImages ${ITK_LIBRARIES})
-
-# add_executable( BoykovGraphCutFilter BoykovGraphCutFilter.cxx )
-# target_link_libraries( BoykovGraphCutFilter ${ITK_LIBRARIES})
 
 add_executable( BSplineBasisFunctions BSplineBasisFunctions.cxx )
 target_link_libraries( BSplineBasisFunctions ${ITK_LIBRARIES})
@@ -352,6 +352,9 @@ target_link_libraries(OtsuThresholdImage ${ITK_LIBRARIES})
 add_executable(PadImage PadImage.cxx )
 target_link_libraries(PadImage ${ITK_LIBRARIES})
 
+add_executable(PasteImageIntoImage PasteImageIntoImage.cxx )
+target_link_libraries(PasteImageIntoImage ${ITK_LIBRARIES})
+
 add_executable(PointSetPairStatistics PointSetPairStatistics.cxx )
 target_link_libraries(PointSetPairStatistics ${ITK_LIBRARIES})
 
@@ -406,8 +409,8 @@ target_link_libraries(SplitHeliumLungs ${ITK_LIBRARIES})
 add_executable(SSI SSI.cxx )
 target_link_libraries(SSI ${ITK_LIBRARIES})
 
-# add_executable(Test Test.cxx )
-# target_link_libraries(Test ${ITK_LIBRARIES})
+#add_executable(Test Test.cxx )
+#target_link_libraries(Test ${ITK_LIBRARIES})
 
 add_executable(ThresholdImage ThresholdImage.cxx )
 target_link_libraries(ThresholdImage ${ITK_LIBRARIES})

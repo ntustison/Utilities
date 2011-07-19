@@ -230,7 +230,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkVectorFieldGradientImageFunction.txx"
+#include "itkVectorFieldGradientImageFunction.hxx"
 #endif
 
 #endif

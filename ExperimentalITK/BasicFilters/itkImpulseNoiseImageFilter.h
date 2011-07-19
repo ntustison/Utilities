@@ -243,7 +243,7 @@ private:
 } /* end namespace itk */
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkImpulseNoiseImageFilter.txx"
+#include "itkImpulseNoiseImageFilter.hxx"
 #endif
 
 #endif /* __itkImpulseNoiseImageFilter_h */

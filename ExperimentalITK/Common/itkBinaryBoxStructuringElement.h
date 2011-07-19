@@ -116,7 +116,7 @@ private:
 #endif
 
 #if ITK_TEMPLATE_TXX
-# include "itkBinaryBoxStructuringElement.txx"
+# include "itkBinaryBoxStructuringElement.hxx"
 #endif
 
 #endif

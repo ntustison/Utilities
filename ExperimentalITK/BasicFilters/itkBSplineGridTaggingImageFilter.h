@@ -174,7 +174,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkBSplineGridTaggingImageFilter.txx"
+#include "itkBSplineGridTaggingImageFilter.hxx"
 #endif
 
 #endif

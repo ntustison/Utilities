@@ -126,7 +126,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkGaborFilterBankTagging2DImageFilter.txx"
+#include "itkGaborFilterBankTagging2DImageFilter.hxx"
 #endif
 
 #endif

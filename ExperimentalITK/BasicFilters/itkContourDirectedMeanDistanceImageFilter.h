@@ -168,7 +168,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkContourDirectedMeanDistanceImageFilter.txx"
+#include "itkContourDirectedMeanDistanceImageFilter.hxx"
 #endif
 
 #endif

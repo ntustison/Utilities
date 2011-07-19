@@ -151,7 +151,7 @@ private:
 } //end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkBinaryThinning3DImageFilter.txx"
+#include "itkBinaryThinning3DImageFilter.hxx"
 #endif
 
 #endif

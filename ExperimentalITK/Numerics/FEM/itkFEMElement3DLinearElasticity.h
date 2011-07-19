@@ -121,7 +121,7 @@ static void Dummy( void );
 }} // end namespace itk::fem
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkFEMElement3DLinearElasticity.txx"
+#include "itkFEMElement3DLinearElasticity.hxx"
 #endif
 
 #endif  // #ifndef __itkFEMElement3DLinearElasticity_h

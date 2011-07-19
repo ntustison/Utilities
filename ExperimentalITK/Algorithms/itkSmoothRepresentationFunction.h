@@ -103,7 +103,7 @@ private:
 
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkSmoothRepresentationFunction.txx"
+#include "itkSmoothRepresentationFunction.hxx"
 #endif
 
 #endif /* __itkSmoothRepresentationFunction_h */

@@ -138,7 +138,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkGaussianClassDensityFunction.txx"
+#include "itkGaussianClassDensityFunction.hxx"
 #endif
 
 #endif

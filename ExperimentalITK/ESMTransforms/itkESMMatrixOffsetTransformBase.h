@@ -383,7 +383,7 @@ private:
 
 }  // namespace itk
 
-#include "itkESMMatrixOffsetTransformBase.txx"
+#include "itkESMMatrixOffsetTransformBase.hxx"
 
 #endif /* MZ_ESMMatrixOffsetTransformBase_H_ */
 

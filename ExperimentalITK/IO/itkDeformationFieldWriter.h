@@ -189,7 +189,7 @@ private:
 } // end namespace itk
   
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDeformationFieldWriter.txx"
+#include "itkDeformationFieldWriter.hxx"
 #endif
 
 #endif // __itkDeformationFieldWriter_h

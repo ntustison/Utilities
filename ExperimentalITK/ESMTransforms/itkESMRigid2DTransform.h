@@ -234,6 +234,6 @@ private:
 
 }  // namespace itk
 
-#include "itkESMRigid2DTransform.txx"
+#include "itkESMRigid2DTransform.hxx"
 
 #endif /* MZ_ESMRigid2DTransform_H_ */

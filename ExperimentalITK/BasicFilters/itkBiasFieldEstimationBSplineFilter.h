@@ -92,7 +92,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkBiasFieldEstimationBSplineFilter.txx"
+#include "itkBiasFieldEstimationBSplineFilter.hxx"
 #endif
 
 #endif

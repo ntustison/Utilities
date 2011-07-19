@@ -98,7 +98,7 @@ class GreyLevelRunLengthMatrixTextureCoefficientsCalculator : public Object
 } // end of namespace itk 
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkGreyLevelRunLengthMatrixTextureCoefficientsCalculator.txx"
+#include "itkGreyLevelRunLengthMatrixTextureCoefficientsCalculator.hxx"
 #endif
 
 #endif

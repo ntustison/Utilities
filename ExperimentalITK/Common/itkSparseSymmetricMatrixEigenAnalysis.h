@@ -127,7 +127,7 @@ private:
 
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkSparseSymmetricMatrixEigenAnalysis.txx"
+#include "itkSparseSymmetricMatrixEigenAnalysis.hxx"
 #endif
 
 #endif

@@ -220,7 +220,7 @@ private:
 } /* end namespace itk */
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkAdditiveGaussianNoiseImageFilter.txx"
+#include "itkAdditiveGaussianNoiseImageFilter.hxx"
 #endif
 
 #endif /* __itkAdditiveGaussianNoiseImageFilter_h */

@@ -180,7 +180,7 @@ private:
 #endif
 
 #if ITK_TEMPLATE_TXX
-# include "itkAnisotropicDiffusionVesselEnhancementFunction.txx"
+# include "itkAnisotropicDiffusionVesselEnhancementFunction.hxx"
 #endif
 
 #endif

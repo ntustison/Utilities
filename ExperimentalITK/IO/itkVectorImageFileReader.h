@@ -178,7 +178,7 @@ private:
 } //namespace ITK
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkVectorImageFileReader.txx"
+#include "itkVectorImageFileReader.hxx"
 #endif
 
 #endif // __itkVectorImageFileReader_h

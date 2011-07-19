@@ -69,6 +69,6 @@ private:
 
 } // end namespace itk
 
-#include "itkESMOptimizer.txx"
+#include "itkESMOptimizer.hxx"
 
 #endif

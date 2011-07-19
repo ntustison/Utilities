@@ -113,7 +113,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkMultiplePointSetMetric.txx"
+#include "itkMultiplePointSetMetric.hxx"
 #endif
 
 #endif

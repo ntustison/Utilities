@@ -301,7 +301,7 @@ private :
 }
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDMFFDRegistrationFilter.txx"
+#include "itkDMFFDRegistrationFilter.hxx"
 #endif
 
 #endif

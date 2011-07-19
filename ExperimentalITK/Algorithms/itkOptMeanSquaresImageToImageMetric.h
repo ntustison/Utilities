@@ -127,7 +127,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkOptMeanSquaresImageToImageMetric.txx"
+#include "itkOptMeanSquaresImageToImageMetric.hxx"
 #endif
 
 #endif

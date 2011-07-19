@@ -122,7 +122,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDiceMetricImageFilter.txx"
+#include "itkDiceMetricImageFilter.hxx"
 #endif
 
 #endif

@@ -118,7 +118,7 @@ private:
 #endif
 
 #if ITK_TEMPLATE_TXX
-# include "itkListSampleFunction.txx"
+# include "itkListSampleFunction.hxx"
 #endif
 
 #endif

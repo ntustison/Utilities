@@ -77,7 +77,7 @@ private:
 } // end of namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkPassThroughListSampleFilter.txx"
+#include "itkPassThroughListSampleFilter.hxx"
 #endif
 
 #endif

@@ -86,7 +86,7 @@ private:
 } // end of namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkGaussianListSampleFunction.txx"
+#include "itkGaussianListSampleFunction.hxx"
 #endif
 
 #endif

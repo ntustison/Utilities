@@ -14,8 +14,8 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef _itkRobustOpticalFlow_txx_
-#define _itkRobustOpticalFlow_txx_
+#ifndef _itkRobustOpticalFlow_hxx_
+#define _itkRobustOpticalFlow_hxx_
 
 #include "itkRobustOpticalFlow.h"
 #include "itkExceptionObject.h"

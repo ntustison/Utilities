@@ -139,7 +139,7 @@ private:
 
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkSmooth3DSurfaceRepresentationFunction.txx"
+#include "itkSmooth3DSurfaceRepresentationFunction.hxx"
 #endif
 
 #endif /* __itkSmooth3DSurfaceRepresentationFunction_h */

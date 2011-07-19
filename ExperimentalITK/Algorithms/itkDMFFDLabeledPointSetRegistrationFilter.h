@@ -387,7 +387,7 @@ private :
 }
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDMFFDLabeledPointSetRegistrationFilter.txx"
+#include "itkDMFFDLabeledPointSetRegistrationFilter.hxx"
 #endif
 
 #endif

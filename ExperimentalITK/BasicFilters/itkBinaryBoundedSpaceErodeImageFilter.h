@@ -103,7 +103,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkBinaryBoundedSpaceErodeImageFilter.txx"
+#include "itkBinaryBoundedSpaceErodeImageFilter.hxx"
 #endif
 
 #endif
