@@ -93,7 +93,7 @@ int main( int argc, char* argv[] )
 
   const unsigned int      ImageDimension = 3;
 
-  typedef signed short    PixelType;
+  typedef uint8_t    PixelType;
   typedef itk::RGBPixel<PixelType> RGBPixelType;
 
   typedef float RealType;
@@ -314,13 +314,14 @@ int main( int argc, char* argv[] )
 
   RGBImageType::Pointer rgbImage = rgbfilter->GetOutput();
 
-
-
   typedef itk::GDCMImageIO                        ImageIOType;
   typedef itk::NumericSeriesFileNames             NamesGeneratorType;
 
   ImageIOType::Pointer gdcmIO = ImageIOType::New();
   gdcmIO->SetKeepOriginalUID( false );
+//   gdcmIO->SetNumberOfComponents( 3 );
+//   gdcmIO->SetByteOrderToLittleEndian();
+//   gdcmIO->SetPixelType( ImageIOType::RGB );
 
   const char * outputDirectory = argv[9];
 
