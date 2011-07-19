@@ -266,12 +266,13 @@ int main( int argc, char *argv[] )
     // I have no idea why the constants are what they are in the lines that
     // follow.
 
-    if( r2p >= 0.0 && r2p <= 15 && oef >= 0.05 && oef <= 1.0 && lambda >= 0.005 )
+//    if( r2p >= 0.0 && r2p <= 15 && oef >= 0.05 && oef <= 1.0 && lambda >= 0.005 )
+    if( r2p >= 0.0 && r2p <= 50 && oef >= 0.0 && oef <= 1.0 )
       {
       oefImage->SetPixel( maskIndex, oef*1000 );
-      lambdaImage->SetPixel( maskIndex, lambda*10000 );
-      r2Image->SetPixel( maskIndex, r2*100 );
-      r2pImage->SetPixel( maskIndex, r2p*100 );
+      lambdaImage->SetPixel( maskIndex, lambda*1000 );
+      r2Image->SetPixel( maskIndex, r2*1000 );
+      r2pImage->SetPixel( maskIndex, r2p*1000 );
       }
     }
 
