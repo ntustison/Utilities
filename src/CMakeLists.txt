@@ -27,13 +27,20 @@ include_directories(
   )
 
 set(CMAKE_MODULE_PATH ${ITK_SOURCE_DIR}/CMake)
-option(USE_FFTWD "Use double precision FFTW if found" OFF)
-option(USE_FFTWF "Use single precision FFTW if found" ON)
-# find_package( FFTW )
 
-if(USE_FFTWF)
-   link_libraries(${FFTWF_LIB})
-endif(USE_FFTWF)
+# Manage FFT
+#
+# USE_FFTWD -- use double precision fftw
+option(USE_FFTWD "Use double precision fftw if found" OFF)
+mark_as_advanced(USE_FFTWD)
+#
+# USE_FFTWF -- use single precision fftw
+option(USE_FFTWF "Use single precision fftw if found" OFF)
+mark_as_advanced(USE_FFTWF)
+
+# USE_SYSTEM_FFTW -- locate a readybuilt fftw installation
+option(USE_SYSTEM_FFTW "Use an installed version of fftw" OFF)
+mark_as_advanced(USE_SYSTEM_FFTW)
 
 include (${CMAKE_ROOT}/Modules/FindVTK.cmake)
 if (USE_VTK_FILE)

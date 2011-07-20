@@ -3,16 +3,16 @@
 #include "itkImageFileWriter.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkFFTShiftImageFilter.h"
-#include "itkFFTComplexToComplexImageFilter.h"
+#include "itkFFTWComplexToComplexImageFilter.h"
 
 #include "itkComplexToRealImageFilter.h"
 #include "itkComplexToImaginaryImageFilter.h"
 
-//#if !defined(USE_FFTWF)
-////#error "This example only works when single precision FFTW is used
-////Changing WorkPixeltype to double and changing this conditional to USE_FFTWD
-////will also work.
-//#endif
+#if !defined(USE_FFTWF)
+//#error "This example only works when single precision FFTW is used
+//Changing WorkPixeltype to double and changing this conditional to USE_FFTWD
+//will also work.
+#endif
 
 template <unsigned int ImageDimension>
 int FourierTransform( int argc, char * argv[] )
@@ -22,17 +22,15 @@ int FourierTransform( int argc, char * argv[] )
   typedef itk::ImageFileReader<ImageType> ReaderType;
 
   typename ReaderType::Pointer inputRealReader = ReaderType::New();
-  typename ReaderType::Pointer inputImagReader = ReaderType::New();
-
   inputRealReader->SetFileName( argv[2] );
+  inputRealReader->Update();
+
+  typename ReaderType::Pointer inputImagReader = ReaderType::New();
   inputImagReader->SetFileName( argv[3] );
+  inputImagReader->Update();
 
-  typename ImageType::Pointer realImage = ImageType::New();
-  realImage = NULL;
+  typename ImageType::Pointer realImage = inputRealReader->GetOutput();
   typename ImageType::Pointer imagImage = ImageType::New();
-  imagImage = NULL;
-
-  realImage = inputRealReader->GetOutput();
 
   try
     {
@@ -75,7 +73,6 @@ int FourierTransform( int argc, char * argv[] )
   typedef itk::FFTComplexToComplexImageFilter
     <ComplexImageType> invFFTFilterType;
   typename invFFTFilterType::Pointer invfftoutput = invFFTFilterType::New();
-
   if( argc > 7 && atoi( argv[7] ) != 0 )
     {
     typedef itk::FFTShiftImageFilter<ComplexImageType, ComplexImageType>
@@ -90,18 +87,18 @@ int FourierTransform( int argc, char * argv[] )
 
   if( argc > 6 && atoi( argv[6] ) == 1 )
     {
-    invfftoutput->SetTransformDirection( FFTFilterType::INVERSE );
-    invfftoutput->SetInput( complexImage ); // compute inverse FFT
-    invfftoutput->Update();
-    complexImage = invfftoutput->GetOutput();
-    complexImage->DisconnectPipeline();
-    }
-  else
-    {
     fftoutput->SetTransformDirection( FFTFilterType::DIRECT );
     fftoutput->SetInput( complexImage ); // compute forward FFT
     fftoutput->Update();
     complexImage = fftoutput->GetOutput();
+    complexImage->DisconnectPipeline();
+    }
+  else
+    {
+    invfftoutput->SetTransformDirection( FFTFilterType::INVERSE );
+    invfftoutput->SetInput( complexImage ); // compute inverse FFT
+    invfftoutput->Update();
+    complexImage = invfftoutput->GetOutput();
     complexImage->DisconnectPipeline();
     }
 
