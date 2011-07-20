@@ -232,7 +232,7 @@ template<class TInputImage, class TOutputImage, class THistogramMeasurement>
 void
 DynamicHistogramWarpingImageFilter<TInputImage, TOutputImage, THistogramMeasurement>
 ::ThreadedGenerateData( const OutputImageRegionType & outputRegionForThread,
-  int threadId )
+  ThreadIdType threadId )
 {
   // Transform the source image and write to output.
   ImageRegionConstIterator<InputImageType> inIter(
