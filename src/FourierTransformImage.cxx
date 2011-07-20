@@ -87,18 +87,18 @@ int FourierTransform( int argc, char * argv[] )
 
   if( argc > 6 && atoi( argv[6] ) == 1 )
     {
-    fftoutput->SetTransformDirection( FFTFilterType::DIRECT );
-    fftoutput->SetInput( complexImage ); // compute forward FFT
-    fftoutput->Update();
-    complexImage = fftoutput->GetOutput();
-    complexImage->DisconnectPipeline();
-    }
-  else
-    {
     invfftoutput->SetTransformDirection( FFTFilterType::INVERSE );
     invfftoutput->SetInput( complexImage ); // compute inverse FFT
     invfftoutput->Update();
     complexImage = invfftoutput->GetOutput();
+    complexImage->DisconnectPipeline();
+    }
+  else
+    {
+    fftoutput->SetTransformDirection( FFTFilterType::DIRECT );
+    fftoutput->SetInput( complexImage ); // compute forward FFT
+    fftoutput->Update();
+    complexImage = fftoutput->GetOutput();
     complexImage->DisconnectPipeline();
     }
 
