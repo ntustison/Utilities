@@ -10,8 +10,8 @@
   Copyright (c) 2004 Insight Software Consortium. All rights reserved.
   See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
 
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+     This software is distributed WITHOUT ANY WARRANTY; without even
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
@@ -73,7 +73,8 @@ public:
     static const float max = itk::NumericTraits< InputPixelType >::max();
 
     float output = static_cast<float>( input ) +
-      m_Generator->GetNormalVariate( this->m_Mean, this->m_StandardDeviation );
+      m_Generator->GetNormalVariate( this->m_Mean,
+      vnl_math_sqr( this->m_StandardDeviation ) );
 
     // Clamp the output value in valid range
     output = ( output < min ? min : output );
@@ -120,7 +121,7 @@ public:
   typedef SmartPointer<const Self>  ConstPointer;
 
   /** Method for creation through the object factory */
-  itkNewMacro(Self);  
+  itkNewMacro(Self);
 
   /** Run-time type information (and related methods). */
   itkTypeMacro(AdditiveGaussianNoiseImageFilter, ImageToImageFilter);
@@ -133,8 +134,8 @@ public:
   typedef TInputImage InputImageType;
   typedef typename InputImageType::Pointer        InputImagePointer;
   typedef typename InputImageType::ConstPointer   InputImageConstPointer;
-  typedef typename InputImageType::RegionType     InputImageRegionType; 
-  typedef typename InputImageType::PixelType      InputImagePixelType; 
+  typedef typename InputImageType::RegionType     InputImageRegionType;
+  typedef typename InputImageType::PixelType      InputImagePixelType;
 
   /** ImageDimension constants */
   itkStaticConstMacro(InputImageDimension, unsigned int,
