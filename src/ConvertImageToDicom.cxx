@@ -150,7 +150,7 @@ int convert( int argc, char* argv[] )
       // instance number
       typename itksys_ios::ostringstream value2;
       value2.str( "" );
-      value2 << ( t * numberOfTimePoints + s + 1 );
+      value2 << ( t * numberOfSlices + s + 1 );
       itk::EncapsulateMetaData<std::string>( *dict, "0020|0013", value2.str() );
 
      // Image Position Patient: This is calculated by computing the
