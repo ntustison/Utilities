@@ -105,60 +105,97 @@ int convert( int argc, char* argv[] )
   typename ImageType::IndexType start = region.GetIndex();
   typename ImageType::SizeType  size  = region.GetSize();
 
-  for( unsigned int s = 0; s < size[2]; s++ )
+  unsigned int numberOfTimePoints = 1;
+  unsigned int numberOfSlices = 1;
+
+  if( Dimension == 4 )
     {
-    typename SeriesWriterType::DictionaryRawPointer dict =
-      new typename SeriesWriterType::DictionaryType;
+    numberOfTimePoints = size[3];
+    }
+  if( Dimension >= 3 )
+    {
+    numberOfSlices = size[2];
+    }
 
-    std::string tagkey, value;
-
-    for( int n = 6; n < argc; n++ )
+  for( unsigned int t = 0; t < numberOfTimePoints; t++ )
+    {
+    for( unsigned int s = 0; s < numberOfSlices; s++ )
       {
-      std::cout << argv[n] << std::endl;
+      typename SeriesWriterType::DictionaryRawPointer dict =
+        new typename SeriesWriterType::DictionaryType;
 
-      std::string pair = std::string( argv[n] );
-      std::string::size_type crosspos = pair.find( ',', 0 );
+      std::string tagkey, value;
 
-      tagkey = pair.substr( 0, crosspos );
-      value = pair.substr( crosspos + 1, pair.length() );
+      for( int n = 6; n < argc; n++ )
+        {
+        std::cout << argv[n] << std::endl;
 
-      itk::EncapsulateMetaData<std::string>( *dict, tagkey, value );
+        std::string pair = std::string( argv[n] );
+        std::string::size_type crosspos = pair.find( ',', 0 );
+
+        tagkey = pair.substr( 0, crosspos );
+        value = pair.substr( crosspos + 1, pair.length() );
+
+        itk::EncapsulateMetaData<std::string>( *dict, tagkey, value );
+        }
+
+      itk::EncapsulateMetaData<std::string>( *dict,"0020|000e", seriesUID );
+      itk::EncapsulateMetaData<std::string>( *dict,"0020|0052", frameOfReferenceUID );
+
+      gdcm::UIDGenerator sopuid;
+      std::string sopInstanceUID = sopuid.Generate();
+      itk::EncapsulateMetaData<std::string>( *dict, "0008|0018", sopInstanceUID );
+      itk::EncapsulateMetaData<std::string>( *dict, "0002|0003", sopInstanceUID );
+
+      // Slice number
+      typename itksys_ios::ostringstream value2;
+      value2.str( "" );
+      value2 << s + 1;
+      itk::EncapsulateMetaData<std::string>( *dict, "0020|0013", value2.str() );
+
+     // Image Position Patient: This is calculated by computing the
+      // physical coordinate of the first pixel in each slice.
+      typename ImageType::PointType position;
+      typename ImageType::IndexType index;
+      index[0] = start[0];
+      index[1] = start[1];
+      if( Dimension >= 3)
+        {
+        index[2] = start[2] + s;
+        }
+      if( Dimension == 4 )
+        {
+        index[3] = start[3] + t;
+        }
+      reader->GetOutput()->TransformIndexToPhysicalPoint( index, position );
+
+      value2.str( "" );
+      if( Dimension >= 3 )
+        {
+        value2 << position[0] << "\\" << position[1] << "\\" << position[2];
+        }
+      else
+        {
+        value2 << position[0] << "\\" << position[1] << "\\" << 0.0;
+        }
+
+      itk::EncapsulateMetaData<std::string>( *dict,"0020|0032", value2.str() );
+      // Slice Location: For now, we store the z component of the Image
+      // Position Patient.
+      value2.str( "" );
+      if( Dimension >= 3 )
+        {
+        value2 << position[2];
+        }
+      else
+        {
+        value2 << 0.0;
+        }
+
+      itk::EncapsulateMetaData<std::string>( *dict,"0020|1041", value2.str() );
+
+      dictionaryArray.push_back( dict );
       }
-
-    itk::EncapsulateMetaData<std::string>( *dict,"0020|000e", seriesUID );
-    itk::EncapsulateMetaData<std::string>( *dict,"0020|0052", frameOfReferenceUID );
-
-    gdcm::UIDGenerator sopuid;
-    std::string sopInstanceUID = sopuid.Generate();
-    itk::EncapsulateMetaData<std::string>( *dict, "0008|0018", sopInstanceUID );
-    itk::EncapsulateMetaData<std::string>( *dict, "0002|0003", sopInstanceUID );
-
-    // Slice number
-    typename itksys_ios::ostringstream value2;
-    value2.str( "" );
-    value2 << s + 1;
-    itk::EncapsulateMetaData<std::string>( *dict, "0020|0013", value2.str() );
-
-   // Image Position Patient: This is calculated by computing the
-    // physical coordinate of the first pixel in each slice.
-    typename ImageType::PointType position;
-    typename ImageType::IndexType index;
-    index[0] = 0;
-    index[1] = 0;
-    index[2] = s;
-    reader->GetOutput()->TransformIndexToPhysicalPoint( index, position );
-
-    value2.str("");
-    value2 << position[0] << "\\" << position[1] << "\\" << position[2];
-    itk::EncapsulateMetaData<std::string>( *dict,"0020|0032", value2.str() );
-    // Slice Location: For now, we store the z component of the Image
-    // Position Patient.
-    value2.str( "" );
-    value2 << position[2];
-
-    itk::EncapsulateMetaData<std::string>( *dict,"0020|1041", value2.str() );
-
-    dictionaryArray.push_back( dict );
     }
 
 ////////////////////////////////////////////////
@@ -166,7 +203,8 @@ int convert( int argc, char* argv[] )
 //    DICOM reader
   std::string interceptTag("0028|1052");
   typedef itk::MetaDataObject< std::string > MetaDataStringType;
-  itk::MetaDataObjectBase::Pointer entry = (reader->GetOutput()->GetMetaDataDictionary())[interceptTag];
+  itk::MetaDataObjectBase::Pointer entry = (
+    reader->GetOutput()->GetMetaDataDictionary() )[interceptTag];
 
   typename MetaDataStringType::ConstPointer interceptValue =
     dynamic_cast<const MetaDataStringType *>( entry.GetPointer() ) ;
@@ -189,19 +227,15 @@ int convert( int argc, char* argv[] )
   seriesWriter->SetImageIO( gdcmIO );
   seriesWriter->SetMetaDataDictionaryArray( &dictionaryArray );
 
-
-
-
   std::string format = std::string( argv[3] )
     + std::string( "/" ) + std::string( argv[4] )
     + std::string( "%04d.dcm" );
 
   namesGenerator->SetSeriesFormat( format.c_str() );
 
-  namesGenerator->SetStartIndex( start[2] );
-  namesGenerator->SetEndIndex( start[2] + size[2] - 1 );
+  namesGenerator->SetStartIndex( 0 );
+  namesGenerator->SetEndIndex( numberOfTimePoints * numberOfSlices - 1 );
   namesGenerator->SetIncrementIndex( 1 );
-
 
   seriesWriter->SetFileNames( namesGenerator->GetFileNames() );
 
