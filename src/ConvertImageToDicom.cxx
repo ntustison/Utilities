@@ -34,6 +34,7 @@
 #include <vector>
 #include <string>
 #include <itksys/SystemTools.hxx>
+#include <fstream>
 
 template <unsigned int Dimension>
 int convert( int argc, char* argv[] )
@@ -117,6 +118,66 @@ int convert( int argc, char* argv[] )
     numberOfSlices = size[2];
     }
 
+  std::vector<std::vector<std::string> > values;
+  std::vector<std::string> tagkeys;
+
+  for( int n = 6; n < argc; n++ )
+    {
+    std::cout << argv[n] << std::endl;
+
+    std::string pair = std::string( argv[n] );
+    std::string::size_type crosspos = pair.find( ',', 0 );
+
+    std::string tagkey = pair.substr( 0, crosspos );
+//    value = pair.substr( crosspos + 1, pair.length() );
+
+    tagkeys.push_back( tagkey );
+    }
+  for( int n = 6; n < argc; n++ )
+    {
+    std::cout << argv[n] << std::endl;
+
+    std::string pair = std::string( argv[n] );
+    std::string::size_type crosspos = pair.find( ',', 0 );
+
+    std::string tagkey = pair.substr( 0, crosspos );
+    std::string value = pair.substr( crosspos + 1, pair.length() );
+
+    std::vector<std::string> tagkeyvalues;
+    if( value.find( ".txt" ) == std::string::npos )
+      {
+      for( unsigned int t = 0; t < numberOfTimePoints; t++ )
+        {
+        for( unsigned int s = 0; s < numberOfSlices; s++ )
+          {
+          tagkeyvalues.push_back( value );
+          }
+        }
+      values.push_back( tagkeyvalues );
+      }
+    else
+      {
+      std::string file = value;
+
+      std::fstream str( file.c_str() );
+
+      while( str >> value )
+        {
+        tagkeyvalues.push_back( value );
+        }
+      if( tagkeyvalues.size() != numberOfTimePoints * numberOfSlices )
+        {
+        std::cerr << "Number of values in file " << file << " do no match "
+          << "the number of time points x the number of slices." << std::endl;
+        return EXIT_FAILURE;
+        }
+      else
+        {
+        values.push_back( tagkeyvalues );
+        }
+      }
+    }
+
   for( unsigned int t = 0; t < numberOfTimePoints; t++ )
     {
     for( unsigned int s = 0; s < numberOfSlices; s++ )
@@ -126,17 +187,10 @@ int convert( int argc, char* argv[] )
 
       std::string tagkey, value;
 
-      for( int n = 6; n < argc; n++ )
+      for( unsigned int n = 0; n < tagkeys.size(); n++ )
         {
-        std::cout << argv[n] << std::endl;
-
-        std::string pair = std::string( argv[n] );
-        std::string::size_type crosspos = pair.find( ',', 0 );
-
-        tagkey = pair.substr( 0, crosspos );
-        value = pair.substr( crosspos + 1, pair.length() );
-
-        itk::EncapsulateMetaData<std::string>( *dict, tagkey, value );
+        itk::EncapsulateMetaData<std::string>( *dict, tagkeys[n],
+          values[n][t*numberOfSlices + s] );
         }
 
       itk::EncapsulateMetaData<std::string>( *dict,"0020|000e", seriesUID );
