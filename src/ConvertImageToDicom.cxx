@@ -133,10 +133,9 @@ int convert( int argc, char* argv[] )
 
     tagkeys.push_back( tagkey );
     }
+
   for( int n = 6; n < argc; n++ )
     {
-    std::cout << argv[n] << std::endl;
-
     std::string pair = std::string( argv[n] );
     std::string::size_type crosspos = pair.find( ',', 0 );
 
@@ -168,7 +167,9 @@ int convert( int argc, char* argv[] )
       if( tagkeyvalues.size() != numberOfTimePoints * numberOfSlices )
         {
         std::cerr << "Number of values in file " << file << " do no match "
-          << "the number of time points x the number of slices." << std::endl;
+          << "the number of time points x the number of slices ("
+          << tagkeyvalues.size() << " != " << numberOfTimePoints * numberOfSlices
+          << ")" << std::endl;
         return EXIT_FAILURE;
         }
       else
@@ -187,8 +188,11 @@ int convert( int argc, char* argv[] )
 
       std::string tagkey, value;
 
+      std::cout << "t = " << t << ", s = " << s << std::endl;
       for( unsigned int n = 0; n < tagkeys.size(); n++ )
         {
+        std::cout << "  " << tagkeys[n] << " -> " << values[n][t*numberOfSlices + s]
+          << std::endl;
         itk::EncapsulateMetaData<std::string>( *dict, tagkeys[n],
           values[n][t*numberOfSlices + s] );
         }
