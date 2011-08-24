@@ -2,6 +2,8 @@
 
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
+#include "itkSymmetricSecondRankTensor.h"
+#include "itkVector.h"
 
 #include <string>
 #include <vector>
@@ -52,11 +54,9 @@ std::vector<TValue> ConvertVector( std::string optionString )
 			return values;
 			}
 
-template <unsigned int ImageDimension>
+template <unsigned int ImageDimension, class PixelType>
 int ChangeImageInformation( int argc, char *argv[] )
 {
-  typedef float PixelType;
-
   typedef itk::Image<PixelType, ImageDimension> ImageType;
   typedef itk::ImageFileReader<ImageType> ReaderType;
   typename ReaderType::Pointer reader = ReaderType::New();
@@ -192,22 +192,77 @@ int main( int argc, char *argv[] )
       << " what = 1: spacing" << std::endl
       << " what = 2: set direction to identity" << std::endl
       << " what = 3: set direction to vector m_{11}xm_{12}xm_{13}xm_{21}xm_{22}xm_{23}xm_{31}xm_{32}xm_{33}" << std::endl
-      << " what = 4: imageFile  copies image header information" << std::endl
+      << " what = 4: imageFile (copies_image_header_information)" << std::endl
       << " what = 5: index" << std::endl;
     exit( 1 );
     }
 
-  switch( atoi( argv[1] ) )
+  std::string type = std::string( argv[1] );
+
+  char pixelType = 'f';
+
+  char dimension = type[0];
+  if( type.length() > 1 )
+    {
+    pixelType = type[1];
+    }
+
+  switch( dimension )
    {
-   case 2:
-     ChangeImageInformation<2>( argc, argv );
+   case '2':
+     {
+     typedef itk::SymmetricSecondRankTensor<float, 2> TensorType;
+     typedef itk::Vector<float, 2> VectorType;
+     switch( pixelType )
+       {
+       case 'f':  default:
+         ChangeImageInformation<2, float>( argc, argv );
+         break;
+       case 'v':
+         ChangeImageInformation<2, VectorType>( argc, argv );
+         break;
+       case 't':
+         ChangeImageInformation<2, TensorType>( argc, argv );
+         break;
+       }
      break;
-   case 3:
-     ChangeImageInformation<3>( argc, argv );
+     }
+   case '3':
+     {
+     typedef itk::SymmetricSecondRankTensor<float, 3> TensorType;
+     typedef itk::Vector<float, 3> VectorType;
+     switch( pixelType )
+       {
+       case 'f':  default:
+         ChangeImageInformation<3, float>( argc, argv );
+         break;
+       case 'v':
+         ChangeImageInformation<3, VectorType>( argc, argv );
+         break;
+       case 't':
+         ChangeImageInformation<3, TensorType>( argc, argv );
+         break;
+       }
      break;
-   case 4:
-     ChangeImageInformation<3>( argc, argv );
+     }
+   case '4':
+     {
+     typedef itk::SymmetricSecondRankTensor<float, 4> TensorType;
+     typedef itk::Vector<float, 4> VectorType;
+     switch( pixelType )
+       {
+       case 'f':  default:
+         ChangeImageInformation<4, float>( argc, argv );
+         break;
+       case 'v':
+         ChangeImageInformation<4, VectorType>( argc, argv );
+         break;
+       case 't':
+         ChangeImageInformation<4, TensorType>( argc, argv );
+         break;
+       }
      break;
+     }
    default:
       std::cerr << "Unsupported dimension" << std::endl;
       exit( EXIT_FAILURE );

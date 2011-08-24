@@ -43,7 +43,7 @@ int STAPLE( unsigned int argc, char *argv[] )
       {
       for( unsigned int k = 0; k < conf.cols(); k++ )
         {
-        std::cout << conf( k, j );
+        std::cout << conf( j, k );
         if( j == conf.rows()-1 && k == conf.cols()-1 )
           {
           std::cout << std::endl;
