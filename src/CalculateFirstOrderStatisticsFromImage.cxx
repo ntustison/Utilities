@@ -153,6 +153,7 @@ int CalculateFirstOrderStatistics( int argc, char *argv[] )
 		double fifthN = 0.0;
 		double ninetyFifthPercentileMean = 0.0;
 		double ninetyFifthN = 0.0;
+		double quantileValue = 0.0;
 
   if ( argc > 6 )
     {
@@ -185,6 +186,11 @@ int CalculateFirstOrderStatistics( int argc, char *argv[] )
 
 				fifthPercentileValue = histogram->Quantile( 0, 0.05 );
 				ninetyFifthPercentileValue = histogram->Quantile( 0, 0.95 );
+    if( argc > 7 )
+      {
+      float quantile = atof( argv[7] );
+      quantileValue = histogram->Quantile( 0, quantile );
+      }
 
 				entropy = 0.0;
 				for( unsigned int i = 0; i < histogram->Size(); i++ )
@@ -229,7 +235,9 @@ int CalculateFirstOrderStatistics( int argc, char *argv[] )
             << ninetyFifthPercentileMean << " "
             << minValue << " "
             << maxValue << " "
-            << median << std::endl;
+            << median << " "
+            << quantileValue
+            << std::endl;
 
 /*
   std::cout << "mean:        " << mean << std::endl;
@@ -256,10 +264,10 @@ int main( int argc, char *argv[] )
   if ( argc < 3 )
     {
     std::cerr << "Usage: " << argv[0] << " imageDimension inputImage "
-              << "[labelImage] [label] [numberOfBins=100] [histogramFile]" << std::endl;
+              << "[labelImage] [label] [numberOfBins=100] [histogramFile] [quantile]" << std::endl;
 
     std::cerr << "  Output:  mean sigma sum skewness kurtosis entropy 5th% "
-              << "95th% 5th%mean 95th%mean min max median"<< std::endl;
+              << "95th% 5th%mean 95th%mean min max median [quantileValue]"<< std::endl;
     exit( 1 );
     }
 
