@@ -3,6 +3,7 @@
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
+#include "itkNeighborhoodIterator.h"
 
 #include <string>
 #include <vector>
@@ -137,6 +138,37 @@ int DrawLines( int argc, char *argv[] )
       }
     }
 
+  typedef itk::NeighborhoodIterator<ImageType> NeighborhoodIteratorType;
+  typename NeighborhoodIteratorType::RadiusType radius;
+  radius.Fill( 1 );
+
+  unsigned numberOfPixels = 1;
+  for( unsigned int n = 0; n < ImageDimension; n++ )
+    {
+    numberOfPixels *= 3;
+    }
+
+  std::cout << numberOfPixels << std::endl;
+
+  NeighborhoodIteratorType ItN( radius, reader->GetOutput(),
+    reader->GetOutput()->GetLargestPossibleRegion() );
+  for( ItN.GoToBegin(); !ItN.IsAtEnd(); ++ItN )
+    {
+    if( ItN.GetCenterPixel() == 1 )
+      {
+      for( unsigned int n = 0; n < numberOfPixels; n++ )
+        {
+        bool isInBounds = false;
+        typename ImageType::PixelType neighbor = ItN.GetPixel( n, isInBounds );
+        if( isInBounds && neighbor == 2 )
+          {
+          ItN.SetCenterPixel( 3 );
+          break;
+          }
+        }
+      }
+    }
+
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( argv[3] );
@@ -148,10 +180,10 @@ int DrawLines( int argc, char *argv[] )
 
 int main( int argc, char *argv[] )
 {
-  if ( argc < 2 )
+  if ( argc < 4 )
     {
-    std::cout << argv[0] << " imageDimension mask1 mask2 centerPoint outputFile" << std::endl;
-    std::cout << "     Note:  inputMasks are assumed to be 1/0 with mask label = 1." << std::endl;
+    std::cout << argv[0] << " imageDimension mask1 outputFile [centerIndex]" << std::endl;
+    std::cout << "     Note:  inputMasks ar assumed to be 1/0 with mask label = 1." << std::endl;
     exit( 0 );
     }
 
