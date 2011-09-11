@@ -58,8 +58,8 @@ set(UI_SOURCES "${CMAKE_SOURCE_DIR}/../ExperimentalITK/Common/antsCommandLinePar
 add_executable( itkTimeAndMemoryProbeTest itkTimeAndMemoryProbeTest.cxx )
 target_link_libraries( itkTimeAndMemoryProbeTest ${ITK_LIBRARIES})
 
-add_executable( BSplineExample BSplineExample.cxx )
-target_link_libraries( BSplineExample ${ITK_LIBRARIES})
+#add_executable( BSplineExample BSplineExample.cxx )
+#target_link_libraries( BSplineExample ${ITK_LIBRARIES})
 
 add_executable( BSplineTest BSplineTest.cxx )
 target_link_libraries( BSplineTest ${ITK_LIBRARIES})
@@ -213,6 +213,9 @@ target_link_libraries(DivideLungs ${ITK_LIBRARIES})
 
 add_executable( DrawBresenhamLinesFromMaskToPoint DrawBresenhamLinesFromMaskToPoint.cxx )
 target_link_libraries(DrawBresenhamLinesFromMaskToPoint ${ITK_LIBRARIES})
+
+add_executable( DynamicProgrammingForSkullLayers DynamicProgrammingForSkullLayers.cxx )
+target_link_libraries(DynamicProgrammingForSkullLayers ${ITK_LIBRARIES})
 
 add_executable(ExtractLungs ExtractLungs.cxx )
 target_link_libraries(ExtractLungs ${ITK_LIBRARIES})
@@ -434,8 +437,8 @@ target_link_libraries(TruncateImageIntensity ${ITK_LIBRARIES})
 add_executable(UnaryOperateImage UnaryOperateImage.cxx )
 target_link_libraries(UnaryOperateImage ${ITK_LIBRARIES})
 
-# add_executable(WarpPoints WarpPoints.cxx )
-# target_link_libraries(WarpPoints ${ITK_LIBRARIES})
+add_executable(WarpPoints WarpPoints.cxx )
+target_link_libraries(WarpPoints ${ITK_LIBRARIES})
 
 add_executable(WarpVTKPolyData WarpVTKPolyData.cxx )
 target_link_libraries(WarpVTKPolyData ${ITK_LIBRARIES})
