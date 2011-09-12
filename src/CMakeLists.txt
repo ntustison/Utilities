@@ -308,6 +308,9 @@ target_link_libraries(GetPhysicalToImageAffineTransform ${ITK_LIBRARIES})
 #add_executable(GradientAnisotropicDiffusionImageFilter GradientAnisotropicDiffusionImageFilter.cxx )
 #target_link_libraries(GradientAnisotropicDiffusionImageFilter ${ITK_LIBRARIES})
 
+add_executable(GradientImage GradientImage.cxx )
+target_link_libraries(GradientImage ${ITK_LIBRARIES})
+
 add_executable(GradientMagnitudeImageFilter GradientMagnitudeImageFilter.cxx )
 target_link_libraries(GradientMagnitudeImageFilter ${ITK_LIBRARIES})
 
