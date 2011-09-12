@@ -3,6 +3,7 @@
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
+#include "itkLabelContourImageFilter.h"
 #include "itkNeighborhoodIterator.h"
 
 #include <string>
@@ -118,25 +119,27 @@ int DrawLines( int argc, char *argv[] )
       {
       typename ImageType::IndexType startIndex = It.GetIndex();
 
-      typename LinerType::LType direction;
-      for( unsigned int d = 0; d < ImageDimension; d++ )
-        {
-        direction[d] = targetIndex[d] - startIndex[d];
-        }
-      unsigned int length = static_cast<unsigned int>( direction.GetNorm() );
-      typename LinerType::OffsetArray offsets = liner.BuildLine( direction, length );
+      typename LinerType::IndexArray indices = liner.BuildLine( startIndex, targetIndex );
 
-      typename LinerType::OffsetArray::const_iterator it;
-      for( it = offsets.begin(); it != offsets.end(); it++ )
+      typename LinerType::IndexArray::const_iterator it;
+      for( it = indices.begin(); it != indices.end(); it++ )
         {
-        typename ImageType::IndexType currentIndex = startIndex + *it;
-        if( reader->GetOutput()->GetPixel( currentIndex ) == 0 )
+        if( reader->GetOutput()->GetPixel( *it ) == 0 )
           {
-          reader->GetOutput()->SetPixel( currentIndex, 2 );
+          reader->GetOutput()->SetPixel( *it, 2 );
           }
         }
       }
     }
+
+  reader->GetOutput()->SetPixel( targetIndex, 4 );
+
+  typedef itk::LabelContourImageFilter<ImageType, ImageType> ContourFilterType;
+  typename ContourFilterType::Pointer contours = ContourFilterType::New();
+  contours->SetInput( reader->GetOutput() );
+  contours->SetFullyConnected( true );
+  contours->SetBackgroundValue( 0 );
+  contours->Update();
 
   typedef itk::NeighborhoodIterator<ImageType> NeighborhoodIteratorType;
   typename NeighborhoodIteratorType::RadiusType radius;
@@ -148,10 +151,8 @@ int DrawLines( int argc, char *argv[] )
     numberOfPixels *= 3;
     }
 
-  std::cout << numberOfPixels << std::endl;
-
-  NeighborhoodIteratorType ItN( radius, reader->GetOutput(),
-    reader->GetOutput()->GetLargestPossibleRegion() );
+  NeighborhoodIteratorType ItN( radius, contours->GetOutput(),
+    contours->GetOutput()->GetLargestPossibleRegion() );
   for( ItN.GoToBegin(); !ItN.IsAtEnd(); ++ItN )
     {
     if( ItN.GetCenterPixel() == 1 )
@@ -162,7 +163,7 @@ int DrawLines( int argc, char *argv[] )
         typename ImageType::PixelType neighbor = ItN.GetPixel( n, isInBounds );
         if( isInBounds && neighbor == 2 )
           {
-          ItN.SetCenterPixel( 3 );
+          reader->GetOutput()->SetPixel( ItN.GetIndex(), 3 );
           break;
           }
         }
