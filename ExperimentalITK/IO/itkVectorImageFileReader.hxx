@@ -562,7 +562,7 @@ void VectorImageFileReader<TImage, TVectorImage, ConvertPixelTraits>
     try
       {
       if ( m_ImageIO->GetComponentTypeInfo()
-           != typeid(ITK_TYPENAME ConvertPixelTraits::ComponentType)
+           != typeid(typename ConvertPixelTraits::ComponentType)
            || (m_ImageIO->GetNumberOfComponents()
                != ConvertPixelTraits::GetNumberOfComponents()))
         {

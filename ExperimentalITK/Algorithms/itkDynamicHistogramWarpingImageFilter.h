@@ -48,7 +48,7 @@ namespace itk
 /* THistogramMeasurement -- The precision level for which to do
   HistogramMeasurmenets */
 template<class TInputImage, class TOutputImage,
-  class THistogramMeasurement = ITK_TYPENAME TInputImage::PixelType>
+  class THistogramMeasurement = typename TInputImage::PixelType>
 class ITK_EXPORT DynamicHistogramWarpingImageFilter:
   public ImageToImageFilter< TInputImage, TOutputImage >
 {

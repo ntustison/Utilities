@@ -85,7 +85,7 @@ public:
  */
 template <class TImage, class TVectorImage,
           class ConvertPixelTraits=DefaultConvertPixelTraits<
-                   ITK_TYPENAME TImage::IOPixelType > >
+                   typename TImage::IOPixelType > >
 class ITK_EXPORT VectorImageFileReader : public ImageSource<TVectorImage>
 {
 public:
