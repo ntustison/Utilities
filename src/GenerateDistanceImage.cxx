@@ -36,7 +36,6 @@ int GenerateDistanceImage( int argc, char *argv[] )
   filter->SetSquaredDistance( false );
   filter->SetUseImageSpacing( true );
   filter->SetInsideIsPositive( false );
-  filter->SetNumberOfThreads( 1 );
   filter->Update();
 
   typedef itk::ImageFileWriter<ImageType> WriterType;

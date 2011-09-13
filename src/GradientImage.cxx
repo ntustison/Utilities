@@ -3,7 +3,7 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkImageRegionIterator.h"
-#include "itkGradientImageFilter.h"
+#include "itkGradientRecursiveGaussianImageFilter.h"
 
 template <unsigned int ImageDimension>
 int Gradient( int argc, char *argv[] )
@@ -11,33 +11,43 @@ int Gradient( int argc, char *argv[] )
   typedef float PixelType;
   typedef itk::Image<PixelType, ImageDimension> ImageType;
 
+  typedef itk::Vector<PixelType, ImageDimension> CovariantVectorType;
+  typedef itk::Image<CovariantVectorType, ImageDimension> CovariantVectorImageType;
+
   typedef itk::ImageFileReader<ImageType> ReaderType;
   typename ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName( argv[2] );
   reader->Update();
 
-  bool useImageDirection = true;
-  if( argc > 4 )
+  bool sigma = 0.0;
+  if( argc > 5 )
     {
-    useImageDirection = static_cast<bool>( atoi( argv[4] ) );
+    sigma = atof( argv[5] );
     }
 
-  typedef itk::GradientImageFilter<ImageType, PixelType, PixelType> FilterType;
+  bool useImageDirection = true;
+  if( argc > 6 )
+    {
+    useImageDirection = static_cast<bool>( atoi( argv[6] ) );
+    }
+
+  typedef itk::GradientRecursiveGaussianImageFilter<ImageType,
+    CovariantVectorImageType> FilterType;
   typename FilterType::Pointer filter = FilterType::New();
   filter->SetInput( reader->GetOutput() );
-  filter->SetUseImageSpacing( true );
+  filter->SetSigma( sigma );
   filter->SetUseImageDirection( useImageDirection );
   filter->Update();
 
-  if( argc > 5 )
+  if( argc > 4 )
     {
     typename ReaderType::Pointer maskReader = ReaderType::New();
-    maskReader->SetFileName( argv[5] );
+    maskReader->SetFileName( argv[4] );
 
     typename FilterType::OutputPixelType zeroVector;
     zeroVector.Fill( 0.0 );
 
-    itk::ImageRegionIterator<typename FilterType::OutputImageType>
+    itk::ImageRegionIterator<CovariantVectorImageType>
       ItG( filter->GetOutput(),
       filter->GetOutput()->GetLargestPossibleRegion() );
     itk::ImageRegionIterator<ImageType> ItM( maskReader->GetOutput(),
@@ -52,9 +62,7 @@ int Gradient( int argc, char *argv[] )
       }
     }
 
-
-
-  typedef itk::ImageFileWriter<typename FilterType::OutputImageType> WriterType;
+  typedef itk::ImageFileWriter<CovariantVectorImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( argv[3] );
   writer->SetInput( filter->GetOutput() );
@@ -67,7 +75,7 @@ int main( int argc, char *argv[] )
 {
   if ( argc < 4 )
     {
-    std::cout << argv[0] << " imageDimension inputImage outputImage [useImageDirection] [maskImage]" << std::endl;
+    std::cout << argv[0] << " imageDimension inputImage outputImage [maskImage] [sigma=0.0] [useImageDirection=1] " << std::endl;
     exit( 1 );
     }
 

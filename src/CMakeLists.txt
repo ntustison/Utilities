@@ -314,6 +314,9 @@ target_link_libraries(GetPhysicalToImageAffineTransform ${ITK_LIBRARIES})
 add_executable(GradientImage GradientImage.cxx )
 target_link_libraries(GradientImage ${ITK_LIBRARIES})
 
+add_executable(HessianImage HessianImage.cxx )
+target_link_libraries(HessianImage ${ITK_LIBRARIES})
+
 add_executable(GradientMagnitudeImageFilter GradientMagnitudeImageFilter.cxx )
 target_link_libraries(GradientMagnitudeImageFilter ${ITK_LIBRARIES})
 
@@ -361,6 +364,9 @@ target_link_libraries(OtsuThresholdImage ${ITK_LIBRARIES})
 
 #add_executable(MSQ MSQ.cxx )
 #target_link_libraries(MSQ ${ITK_LIBRARIES})
+
+add_executable(OrderDicomSeries OrderDicomSeries.cxx )
+target_link_libraries(OrderDicomSeries ${ITK_LIBRARIES})
 
 add_executable(PadImage PadImage.cxx )
 target_link_libraries(PadImage ${ITK_LIBRARIES})
