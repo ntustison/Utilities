@@ -239,6 +239,12 @@ int DrawLayers( int argc, char *argv[] )
   countImage->Allocate();
   countImage->FillBuffer( zeroVector );
 
+  std::fstream str;
+  if( argc > 5 )
+    {
+    str.open( argv[5] );
+    }
+
   for( ItF.GoToBegin(); !ItF.IsAtEnd(); ++ItF )
     {
     if( ItF.Get() == 1 )
@@ -249,6 +255,8 @@ int DrawLayers( int argc, char *argv[] )
 
       std::vector<PixelType> lineProfile;
 
+      float average = 0.0;
+
       typename LinerType::IndexArray::const_iterator it;
       for( it = indices.begin(); it != indices.end(); it++ )
         {
@@ -256,7 +264,13 @@ int DrawLayers( int argc, char *argv[] )
           {
           break;
           }
+        average += reader->GetOutput()->GetPixel( *it );
         lineProfile.push_back( reader->GetOutput()->GetPixel( *it ) );
+        }
+      average /= static_cast<float>( lineProfile.size() );
+      if( argc > 5 )
+        {
+        str << average << std::endl;
         }
 
       if( lineProfile.size() >= numberOfLayers )
@@ -276,6 +290,10 @@ int DrawLayers( int argc, char *argv[] )
           }
         }
       }
+    }
+  if( argc > 5 )
+    {
+    str.close();
     }
 
   contours2->GetOutput()->FillBuffer( 0 );
@@ -316,7 +334,7 @@ int main( int argc, char *argv[] )
 {
   if ( argc < 5 )
     {
-    std::cout << argv[0] << " imageDimension inputImage labeledMask outputImage" << std::endl;
+    std::cout << argv[0] << " imageDimension inputImage labeledMask outputImage [outputSampleFile]" << std::endl;
     exit( 0 );
     }
 
