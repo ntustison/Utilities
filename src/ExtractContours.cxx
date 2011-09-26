@@ -7,7 +7,7 @@ template <unsigned int ImageDimension>
 int ExtractContours( int argc, char *argv[] )
 {
   typedef float PixelType;
-  typedef itk::Image<PixelType, ImageDimension> ImageType;   
+  typedef itk::Image<PixelType, ImageDimension> ImageType;
 
   typedef itk::ImageFileReader<ImageType> ReaderType;
   typename ReaderType::Pointer reader = ReaderType::New();
@@ -57,9 +57,9 @@ int ExtractContours( int argc, char *argv[] )
     writer->SetFileName( argv[3] );
     writer->SetInput( filter->GetOutput() );
     writer->Update();
-    }  
+    }
 
-  
+
   return 0;
 }
 
@@ -73,7 +73,7 @@ int main( int argc, char *argv[] )
     exit( 1 );
     }
 
-  switch( atoi( argv[1] ) ) 
+  switch( atoi( argv[1] ) )
    {
    case 2:
      ExtractContours<2>( argc, argv );

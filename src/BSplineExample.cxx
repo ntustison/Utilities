@@ -3,7 +3,7 @@
 #include <itkBSplineDeformableTransformInitializer.h>
 #include <itkBSplineDeformableTransform.h>
 
-//#define PATCHEDMETHOD 0
+#define PATCHEDMETHOD
 
 template<class ImageType>
 typename ImageType::PointType GetImageCorner(typename ImageType::Pointer image, unsigned int c, int step=0) {
