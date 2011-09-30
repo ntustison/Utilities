@@ -5,6 +5,7 @@
 #include "itkImageFileWriter.h"
 #include "itkLabelContourImageFilter.h"
 #include "itkNeighborhoodIterator.h"
+#include "itkVector.h"
 
 #include <string>
 #include <vector>
@@ -69,9 +70,9 @@ int DrawLines( int argc, char *argv[] )
 
   typename ImageType::IndexType targetIndex;
 
-  if( argc > 4 )
+  if( argc > 5 )
     {
-    std::vector<int> point = ConvertVector<int>( std::string( argv[4] ) );
+    std::vector<int> point = ConvertVector<int>( std::string( argv[5] ) );
     for( unsigned int d = 0; d < ImageDimension; d++ )
       {
       targetIndex[d] = point[d];
@@ -108,25 +109,111 @@ int DrawLines( int argc, char *argv[] )
 
   std::cout << "Target index = " << targetIndex << std::endl;
 
-  typedef itk::BresenhamLine<ImageDimension> LinerType;
-  LinerType liner;
-
-  itk::ImageRegionIteratorWithIndex<ImageType> It(
-    reader->GetOutput(), reader->GetOutput()->GetLargestPossibleRegion() );
-  for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+  if( argc > 4 )
     {
-    if( It.Get() == 1 )
+    std::fstream str( argv[4] );
+
+    unsigned int numberOfDirections = 0;
+
+    str >> numberOfDirections;
+
+    typedef itk::BresenhamLine<ImageDimension> LinerType;
+    LinerType liner;
+    typedef typename LinerType::LType VectorType;
+    typedef typename LinerType::OffsetType OffsetType;
+    typedef typename LinerType::IndexType IndexType;
+
+    std::vector<VectorType> directions;
+    VectorType direction;
+
+    float x = 0.0;
+
+    unsigned int count = 0;
+    while( str >> x )
       {
-      typename ImageType::IndexType startIndex = It.GetIndex();
-
-      typename LinerType::IndexArray indices = liner.BuildLine( startIndex, targetIndex );
-
-      typename LinerType::IndexArray::const_iterator it;
-      for( it = indices.begin(); it != indices.end(); it++ )
+      direction[count % ImageDimension] = x;
+      ++count;
+      if( count % ImageDimension == 0 )
         {
-        if( reader->GetOutput()->GetPixel( *it ) == 0 )
+        directions.push_back( direction );
+        }
+      }
+
+    typename ImageType::SizeType size = reader->GetOutput()->GetLargestPossibleRegion().GetSize();
+
+    unsigned long maxLength = 0;
+    for( unsigned int d = 0; d < ImageDimension; d++ )
+      {
+      maxLength += size[d] * size[d];
+      }
+    maxLength = static_cast<unsigned long>( vcl_sqrt( maxLength ) );
+
+    for( unsigned int d = 0; d < directions.size(); d++ )
+      {
+      IndexType currentIndex = targetIndex;
+
+      typename LinerType::OffsetArray offsets = liner.BuildLine( directions[d], maxLength );
+      typename LinerType::OffsetArray::const_iterator it;
+      for( it = offsets.begin(); it != offsets.end(); ++it )
+        {
+        if( !reader->GetOutput()->GetLargestPossibleRegion().IsInside( currentIndex ) )
           {
-          reader->GetOutput()->SetPixel( *it, 2 );
+          break;
+          }
+        if( reader->GetOutput()->GetPixel( currentIndex ) == 0 )
+          {
+          reader->GetOutput()->SetPixel( currentIndex, 2 );
+          }
+        else
+          {
+          reader->GetOutput()->SetPixel( currentIndex, 3 );
+          }
+        currentIndex = targetIndex + *it;
+        }
+
+      currentIndex = targetIndex;
+
+     offsets = liner.BuildLine( -directions[d], maxLength );
+      for( it = offsets.begin(); it != offsets.end(); ++it )
+        {
+        if( !reader->GetOutput()->GetLargestPossibleRegion().IsInside( currentIndex ) )
+          {
+          break;
+          }
+        else if( reader->GetOutput()->GetPixel( currentIndex ) == 0 )
+          {
+          reader->GetOutput()->SetPixel( currentIndex, 2 );
+          }
+        else
+          {
+          reader->GetOutput()->SetPixel( currentIndex, 3 );
+          }
+        currentIndex = targetIndex + *it;
+        }
+      }
+    }
+  else
+    {
+    typedef itk::BresenhamLine<ImageDimension> LinerType;
+    LinerType liner;
+
+    itk::ImageRegionIteratorWithIndex<ImageType> It(
+      reader->GetOutput(), reader->GetOutput()->GetLargestPossibleRegion() );
+    for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+      {
+      if( It.Get() == 1 )
+        {
+        typename ImageType::IndexType startIndex = It.GetIndex();
+
+        typename LinerType::IndexArray indices = liner.BuildLine( startIndex, targetIndex );
+
+        typename LinerType::IndexArray::const_iterator it;
+        for( it = indices.begin(); it != indices.end(); it++ )
+          {
+          if( reader->GetOutput()->GetPixel( *it ) == 0 )
+            {
+            reader->GetOutput()->SetPixel( *it, 2 );
+            }
           }
         }
       }
@@ -183,8 +270,9 @@ int main( int argc, char *argv[] )
 {
   if ( argc < 4 )
     {
-    std::cout << argv[0] << " imageDimension mask1 outputFile [centerIndex]" << std::endl;
-    std::cout << "     Note:  inputMasks ar assumed to be 1/0 with mask label = 1." << std::endl;
+    std::cout << argv[0] << " imageDimension mask1 outputFile [sampleVectorFile] [centerIndex]" << std::endl;
+    std::cout << "     Note:  inputMask is assumed to be 1/0 with mask label = 1." << std::endl;
+    std::cout << "     Note2:  sample vector file is like those in PointSets/ in Camino." << std::endl;
     exit( 0 );
     }
 
