@@ -431,6 +431,9 @@ target_link_libraries(SplitHeliumLungs ${ITK_LIBRARIES})
 add_executable(SSI SSI.cxx )
 target_link_libraries(SSI ${ITK_LIBRARIES})
 
+add_executable( StatsForSkullThickness StatsForSkullThickness.cxx )
+target_link_libraries( StatsForSkullThickness ${ITK_LIBRARIES})
+
 #add_executable(Test Test.cxx )
 #target_link_libraries(Test ${ITK_LIBRARIES})
 
