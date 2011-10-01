@@ -22,6 +22,8 @@
 #include "itkImageFileWriter.h"
 #include "itkImageFileReader.h"
 #include "itkImageRegionIteratorWithIndex.h"
+#include "itkVector.h"
+
 
 #include <vector>
 #include <algorithm>
@@ -100,6 +102,22 @@ int StatsForSkullThickness( int argc, char* argv[] )
   std::ofstream strD( distanceFileName.c_str() );
   std::ofstream strI( intensityFileName.c_str() );
 
+  typedef itk::Vector<float, ImageDimension> VectorType;
+  typedef itk::Image<VectorType, ImageDimension> DisplacementFieldType;
+
+  typename DisplacementFieldType::Pointer displacementField = DisplacementFieldType::New();
+  displacementField = NULL;
+  if( argc > 6 )
+    {
+    typedef itk::ImageFileReader<DisplacementFieldType> FieldReaderType;
+    typename FieldReaderType::Pointer fieldreader = FieldReaderType::New();
+    fieldreader->SetFileName( argv[6] );
+
+    displacementField = fieldreader->GetOutput();
+    displacementField->Update();
+    displacementField->DisconnectPipeline();
+    }
+
   typename std::vector<IndexType>::const_iterator it1;
   for( it1 = indices1.begin(); it1 != indices1.end(); ++it1 )
     {
@@ -107,10 +125,19 @@ int StatsForSkullThickness( int argc, char* argv[] )
     IndexType index2 = indices2[it1 - indices1.begin()];
 
     typename ImageType::PointType point1;
-    reader->GetOutput()->TransformIndexToPhysicalPoint( index1, point1 );
+    maskReader->GetOutput()->TransformIndexToPhysicalPoint( index1, point1 );
 
     typename ImageType::PointType point2;
-    reader->GetOutput()->TransformIndexToPhysicalPoint( index2, point2 );
+    maskReader->GetOutput()->TransformIndexToPhysicalPoint( index2, point2 );
+
+    if( displacementField )
+      {
+      point1 += displacementField->GetPixel( index1 );
+      point2 += displacementField->GetPixel( index2 );
+
+      reader->GetOutput()->TransformPhysicalPointToIndex( point1, index1 );
+      reader->GetOutput()->TransformPhysicalPointToIndex( point2, index2 );
+      }
 
     float distance = point1.EuclideanDistanceTo( point2 );
     if( distance > priorDistance )
@@ -153,7 +180,7 @@ int main( int argc, char *argv[] )
 {
   if ( argc < 6 )
     {
-    std::cerr << "Usage: " << argv[0] << " imageDimension inputImage maskImage outputPrefix priorDistance" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " imageDimension inputImage maskImage outputPrefix priorDistance [displacementField]" << std::endl;
     exit( 1 );
     }
 
