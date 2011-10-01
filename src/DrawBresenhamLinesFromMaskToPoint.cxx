@@ -169,17 +169,28 @@ int DrawLines( int argc, char *argv[] )
           }
         currentIndex = targetIndex + *it;
         }
+
       if( isFound )
         {
+        currentIndex = targetIndex;
+
+        bool inSkull = false;
         for( it = offsets.begin(); it != offsets.end(); ++it )
           {
           if( !reader->GetOutput()->GetLargestPossibleRegion().IsInside( currentIndex ) )
             {
             break;
             }
-          if( reader->GetOutput()->GetPixel( currentIndex ) == 1 )
+          if( reader->GetOutput()->GetPixel( currentIndex ) == 1 && inSkull == false )
             {
-            reader->GetOutput()->SetPixel( currentIndex, 3 );
+            reader->GetOutput()->SetPixel( currentIndex, d + 3 );
+            inSkull = true;
+            }
+          else if( reader->GetOutput()->GetPixel( currentIndex ) != 1 && inSkull == true )
+            {
+            IndexType previousIndex = targetIndex + offsets[it - offsets.begin() - 2];
+            reader->GetOutput()->SetPixel( previousIndex, d + 3 );
+            inSkull = false;
             }
           else
             {
@@ -209,15 +220,25 @@ int DrawLines( int argc, char *argv[] )
         }
       if( isFound )
         {
+        currentIndex = targetIndex;
+
+        bool inSkull = false;
         for( it = offsets.begin(); it != offsets.end(); ++it )
           {
           if( !reader->GetOutput()->GetLargestPossibleRegion().IsInside( currentIndex ) )
             {
             break;
             }
-          if( reader->GetOutput()->GetPixel( currentIndex ) == 1 )
+          if( reader->GetOutput()->GetPixel( currentIndex ) == 1 && inSkull == false )
             {
-            reader->GetOutput()->SetPixel( currentIndex, 3 );
+            reader->GetOutput()->SetPixel( currentIndex, d + 3 + numberOfDirections );
+            inSkull = true;
+            }
+          else if( reader->GetOutput()->GetPixel( currentIndex ) != 1 && inSkull == true )
+            {
+            IndexType previousIndex = targetIndex + offsets[it - offsets.begin() - 2];
+            reader->GetOutput()->SetPixel( previousIndex, d + 3 + numberOfDirections );
+            inSkull = false;
             }
           else
             {
@@ -253,45 +274,45 @@ int DrawLines( int argc, char *argv[] )
           }
         }
       }
-    }
 
-  reader->GetOutput()->SetPixel( targetIndex, 4 );
+    typedef itk::LabelContourImageFilter<ImageType, ImageType> ContourFilterType;
+    typename ContourFilterType::Pointer contours = ContourFilterType::New();
+    contours->SetInput( reader->GetOutput() );
+    contours->SetFullyConnected( true );
+    contours->SetBackgroundValue( 0 );
+    contours->Update();
 
-  typedef itk::LabelContourImageFilter<ImageType, ImageType> ContourFilterType;
-  typename ContourFilterType::Pointer contours = ContourFilterType::New();
-  contours->SetInput( reader->GetOutput() );
-  contours->SetFullyConnected( true );
-  contours->SetBackgroundValue( 0 );
-  contours->Update();
+    typedef itk::NeighborhoodIterator<ImageType> NeighborhoodIteratorType;
+    typename NeighborhoodIteratorType::RadiusType radius;
+    radius.Fill( 1 );
 
-  typedef itk::NeighborhoodIterator<ImageType> NeighborhoodIteratorType;
-  typename NeighborhoodIteratorType::RadiusType radius;
-  radius.Fill( 1 );
-
-  unsigned numberOfPixels = 1;
-  for( unsigned int n = 0; n < ImageDimension; n++ )
-    {
-    numberOfPixels *= 3;
-    }
-
-  NeighborhoodIteratorType ItN( radius, contours->GetOutput(),
-    contours->GetOutput()->GetLargestPossibleRegion() );
-  for( ItN.GoToBegin(); !ItN.IsAtEnd(); ++ItN )
-    {
-    if( ItN.GetCenterPixel() == 1 )
+    unsigned numberOfPixels = 1;
+    for( unsigned int n = 0; n < ImageDimension; n++ )
       {
-      for( unsigned int n = 0; n < numberOfPixels; n++ )
+      numberOfPixels *= 3;
+      }
+
+    NeighborhoodIteratorType ItN( radius, contours->GetOutput(),
+      contours->GetOutput()->GetLargestPossibleRegion() );
+    for( ItN.GoToBegin(); !ItN.IsAtEnd(); ++ItN )
+      {
+      if( ItN.GetCenterPixel() == 1 )
         {
-        bool isInBounds = false;
-        typename ImageType::PixelType neighbor = ItN.GetPixel( n, isInBounds );
-        if( isInBounds && neighbor == 2 )
+        for( unsigned int n = 0; n < numberOfPixels; n++ )
           {
-          reader->GetOutput()->SetPixel( ItN.GetIndex(), 3 );
-          break;
+          bool isInBounds = false;
+          typename ImageType::PixelType neighbor = ItN.GetPixel( n, isInBounds );
+          if( isInBounds && neighbor == 2 )
+            {
+            reader->GetOutput()->SetPixel( ItN.GetIndex(), 3 );
+            break;
+            }
           }
         }
       }
     }
+
+  reader->GetOutput()->SetPixel( targetIndex, 4 );
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
