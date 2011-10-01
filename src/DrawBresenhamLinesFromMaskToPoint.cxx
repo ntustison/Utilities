@@ -154,41 +154,77 @@ int DrawLines( int argc, char *argv[] )
 
       typename LinerType::OffsetArray offsets = liner.BuildLine( directions[d], maxLength );
       typename LinerType::OffsetArray::const_iterator it;
+
+      bool isFound = false;
       for( it = offsets.begin(); it != offsets.end(); ++it )
         {
         if( !reader->GetOutput()->GetLargestPossibleRegion().IsInside( currentIndex ) )
           {
           break;
           }
-        if( reader->GetOutput()->GetPixel( currentIndex ) == 0 )
+        if( reader->GetOutput()->GetPixel( currentIndex ) != 1 )
           {
-          reader->GetOutput()->SetPixel( currentIndex, 2 );
-          }
-        else
-          {
-          reader->GetOutput()->SetPixel( currentIndex, 3 );
+          isFound = true;
+          break;
           }
         currentIndex = targetIndex + *it;
+        }
+      if( isFound )
+        {
+        for( it = offsets.begin(); it != offsets.end(); ++it )
+          {
+          if( !reader->GetOutput()->GetLargestPossibleRegion().IsInside( currentIndex ) )
+            {
+            break;
+            }
+          if( reader->GetOutput()->GetPixel( currentIndex ) != 1 )
+            {
+            reader->GetOutput()->SetPixel( currentIndex, 3 );
+            }
+          else
+            {
+            reader->GetOutput()->SetPixel( currentIndex, 2 );
+            }
+          currentIndex = targetIndex + *it;
+          }
         }
 
       currentIndex = targetIndex;
 
-     offsets = liner.BuildLine( -directions[d], maxLength );
+      offsets = liner.BuildLine( -directions[d], maxLength );
+
+      isFound = false;
       for( it = offsets.begin(); it != offsets.end(); ++it )
         {
         if( !reader->GetOutput()->GetLargestPossibleRegion().IsInside( currentIndex ) )
           {
           break;
           }
-        else if( reader->GetOutput()->GetPixel( currentIndex ) == 0 )
+        if( reader->GetOutput()->GetPixel( currentIndex ) != 1 )
           {
-          reader->GetOutput()->SetPixel( currentIndex, 2 );
-          }
-        else
-          {
-          reader->GetOutput()->SetPixel( currentIndex, 3 );
+          isFound = true;
+          break;
           }
         currentIndex = targetIndex + *it;
+        }
+      if( isFound )
+        {
+        for( it = offsets.begin(); it != offsets.end(); ++it )
+          {
+          if( !reader->GetOutput()->GetLargestPossibleRegion().IsInside( currentIndex ) )
+            {
+            break;
+            }
+          if( reader->GetOutput()->GetPixel( currentIndex ) != 1 )
+            {
+            reader->GetOutput()->SetPixel( currentIndex, 3 );
+            }
+          else
+            {
+            reader->GetOutput()->SetPixel( currentIndex, 2 );
+            }
+          currentIndex = targetIndex + *it;
+          }
         }
       }
     }
