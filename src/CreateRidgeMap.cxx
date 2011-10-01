@@ -221,12 +221,12 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
 
     typename ConvolverType::Pointer convolverSX = ConvolverType::New();
     convolverSX->SetInput( gaussian->GetOutput() );
-    convolverSX->SetImageKernelInput( sobelX );
+    convolverSX->SetKernelImage( sobelX );
     convolverSX->Update();
 
     typename ConvolverType::Pointer convolverSY = ConvolverType::New();
     convolverSY->SetInput( gaussian->GetOutput() );
-    convolverSY->SetImageKernelInput( sobelY );
+    convolverSY->SetKernelImage( sobelY );
     convolverSY->Update();
 
     typename SliceType::Pointer gradientMap = SliceType::New();
@@ -273,12 +273,12 @@ int CreateRidgeMap3D( unsigned int argc, char *argv[] )
 
     typename ConvolverType::Pointer convolverRX = ConvolverType::New();
     convolverRX->SetInput( gradientMap );
-    convolverRX->SetImageKernelInput( ridgeX );
+    convolverRX->SetKernelImage( ridgeX );
     convolverRX->Update();
 
     typename ConvolverType::Pointer convolverRY = ConvolverType::New();
     convolverRY->SetInput( gradientMap );
-    convolverRY->SetImageKernelInput( ridgeY );
+    convolverRY->SetKernelImage( ridgeY );
     convolverRY->Update();
 
     itk::ImageRegionIteratorWithIndex<SliceType> ItRX( convolverRX->GetOutput(),
@@ -471,12 +471,12 @@ int CreateRidgeMap2D( unsigned int argc, char *argv[] )
 
   typename ConvolverType::Pointer convolverSX = ConvolverType::New();
   convolverSX->SetInput( gaussian->GetOutput() );
-  convolverSX->SetImageKernelInput( sobelX );
+  convolverSX->SetKernelImage( sobelX );
   convolverSX->Update();
 
   typename ConvolverType::Pointer convolverSY = ConvolverType::New();
   convolverSY->SetInput( gaussian->GetOutput() );
-  convolverSY->SetImageKernelInput( sobelY );
+  convolverSY->SetKernelImage( sobelY );
   convolverSY->Update();
 
   typename SliceType::Pointer gradientMap = SliceType::New();
@@ -523,12 +523,12 @@ int CreateRidgeMap2D( unsigned int argc, char *argv[] )
 
   typename ConvolverType::Pointer convolverRX = ConvolverType::New();
   convolverRX->SetInput( gradientMap );
-  convolverRX->SetImageKernelInput( ridgeX );
+  convolverRX->SetKernelImage( ridgeX );
   convolverRX->Update();
 
   typename ConvolverType::Pointer convolverRY = ConvolverType::New();
   convolverRY->SetInput( gradientMap );
-  convolverRY->SetImageKernelInput( ridgeY );
+  convolverRY->SetKernelImage( ridgeY );
   convolverRY->Update();
 
   itk::ImageRegionIteratorWithIndex<SliceType> ItRX( convolverRX->GetOutput(),

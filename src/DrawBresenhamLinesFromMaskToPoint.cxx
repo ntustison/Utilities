@@ -162,7 +162,7 @@ int DrawLines( int argc, char *argv[] )
           {
           break;
           }
-        if( reader->GetOutput()->GetPixel( currentIndex ) != 1 )
+        if( reader->GetOutput()->GetPixel( currentIndex ) == 1 )
           {
           isFound = true;
           break;
@@ -177,7 +177,7 @@ int DrawLines( int argc, char *argv[] )
             {
             break;
             }
-          if( reader->GetOutput()->GetPixel( currentIndex ) != 1 )
+          if( reader->GetOutput()->GetPixel( currentIndex ) == 1 )
             {
             reader->GetOutput()->SetPixel( currentIndex, 3 );
             }
@@ -200,7 +200,7 @@ int DrawLines( int argc, char *argv[] )
           {
           break;
           }
-        if( reader->GetOutput()->GetPixel( currentIndex ) != 1 )
+        if( reader->GetOutput()->GetPixel( currentIndex ) == 1 )
           {
           isFound = true;
           break;
@@ -215,7 +215,7 @@ int DrawLines( int argc, char *argv[] )
             {
             break;
             }
-          if( reader->GetOutput()->GetPixel( currentIndex ) != 1 )
+          if( reader->GetOutput()->GetPixel( currentIndex ) == 1 )
             {
             reader->GetOutput()->SetPixel( currentIndex, 3 );
             }

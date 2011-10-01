@@ -23,7 +23,7 @@ int ConvolveImage( int argc, char *argv[] )
   typedef itk::ConvolutionImageFilter<ImageType> FilterType;
   typename FilterType::Pointer convoluter = FilterType::New();
   convoluter->SetInput( reader->GetOutput() );
-  convoluter->SetImageKernelInput( kernelReader->GetOutput() );
+  convoluter->SetKernelImage( kernelReader->GetOutput() );
   convoluter->NormalizeOn();
   convoluter->Update();
 
