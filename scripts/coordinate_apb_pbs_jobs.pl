@@ -30,7 +30,7 @@ sub wanted
   if( $filename =~ m/t1\.nii\.gz$/ )
     {
 
-    my $baseScript = "/home/njt4n/Pkg/scripts/pbs_test.sh";
+    my $baseScript = "/home/njt4n/Pkg/Utilities/scripts/pbs_test.sh";
     open( BASEFILE, "<$baseScript" );
     my @baseScriptContents = <BASEFILE>;
     close( BASEFILE );
@@ -63,7 +63,7 @@ sub wanted
     print FILE @baseScriptContents;
     close( FILE );
 
-    system( "qsub $pbsFile" );
+#     system( "qsub $pbsFile" );
 
     }
   }

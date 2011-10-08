@@ -1,9 +1,10 @@
 #!/bin/sh
 #PBS -l nodes=1:ppn=1
-#PBS -l walltime=18:00:00
+#PBS -l walltime=24:00:00
 #PBS -m ea
 #PBS -V
 #PBS -M ntustison@gmail.com
+#    #PBS -q nopreempt
 
 # variables that change between calls
 T1=${HOME}/share/Data/dp04_001_x_t1.nii.gz
@@ -12,7 +13,7 @@ OUTPUT_DATA_DIR=${HOME}/share/Data/TestOutput2/
 
 # ants brain processing script
 
-ABP=${HOME}/Pkg/scripts/abp.sh
+ABP=${HOME}/Pkg/Utilities/scripts/abp.sh
 
 # Define variable for local storage on compute nodes associated with the job
 LS="/jobtmp/pbstmp.$PBS_JOBID"
@@ -69,17 +70,15 @@ sh ./abp.sh -d 3 \
           -p ${SEGMENTATION_DATA_DIR}/smoothprior\%d.nii.gz \
           -t $REGISTRATION_TEMPLATE
 
+/bin/cp $T1_IMAGE ${LOCAL_OUTPUT_DATA_DIR}/abp_t1.nii.gz
+
 # cp data to it's final location
 
-DIRS=( `ls /gluster/pbstmp/*${PBS_JOBID}*` )
-TMP_OUTPUT_DIR=${DIRS[0]}
+TMP_OUTPUT_DIR=/jobtmp/pbstmp.${PBS_JOBID}
 
-echo "Outputting to $TMP_OUTPUT_DIR"
-
-if [[ -d "$TMP_OUTPUT_DIR" ]];
-  then
-    /bin/cp ${TMP_OUTPUT_DIR}/Output/abp_* $OUTPUT_DATA_DIR
-  else
-    echo "$TMP_OUTPUT_DIR does not exist."
-  fi
-
+OUTPUT_FILES=( `ls ${LOCAL_OUTPUT_DATA_DIR}/abp_*` )
+for f in "${OUTPUT_FILES[@]}"
+  do
+    echo "Output file: $f"
+    /bin/cp $f ${OUTPUT_DATA_DIR}/
+  done
