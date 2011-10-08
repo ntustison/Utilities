@@ -59,7 +59,7 @@ HOME_DATA_DIR=${HOME}/share/Data/Public/
 
 sh ./abp.sh -d 3 \
           -a ${T1_IMAGE} \
-          -o ${LOCAL_OUTPUT_DATA_DIR}/apb_ \
+          -o ${LOCAL_OUTPUT_DATA_DIR}/abp_ \
           -w 3 \
           -g 2 \
           -k 0 \
@@ -71,14 +71,14 @@ sh ./abp.sh -d 3 \
 
 # cp data to it's final location
 
-DIRS=( `ls /gluster/pbstemp/*${PBS_JOBID}*` )
+DIRS=( `ls /gluster/pbstmp/*${PBS_JOBID}*` )
 TMP_OUTPUT_DIR=${DIRS[0]}
 
 echo "Outputting to $TMP_OUTPUT_DIR"
 
 if [[ -d "$TMP_OUTPUT_DIR" ]];
   then
-    /bin/cp ${TMP_OUTPUT_DIR}/Output/apb_* $OUTPUT_DATA_DIR
+    /bin/cp ${TMP_OUTPUT_DIR}/Output/abp_* $OUTPUT_DATA_DIR
   else
     echo "$TMP_OUTPUT_DIR does not exist."
   fi
