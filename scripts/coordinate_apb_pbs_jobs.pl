@@ -53,9 +53,9 @@ sub wanted
         die "Can't create output directory $localOutputDir\n\t";
       }
 
-    $baseScriptContents[8] = "T1=${directories}/${filename}\n";
-    $baseScriptContents[9] = "REGISTRATION_TEMPLATE=${registrationTemplate}\n";
-    $baseScriptContents[10] = "OUTPUT_DATA_DIR=${localOutputDir}\n";
+    $baseScriptContents[9] = "T1=${directories}/${filename}\n";
+    $baseScriptContents[10] = "REGISTRATION_TEMPLATE=${registrationTemplate}\n";
+    $baseScriptContents[11] = "OUTPUT_DATA_DIR=${localOutputDir}\n";
 
     my $pbsFile = "${outputScriptDir}/${filename}";
     $pbsFile =~ s/\.nii\.gz$/_pbs\.sh/;
