@@ -334,7 +334,7 @@ int MultipleOperateImages( int argc, char * argv[] )
   else if( op.compare( std::string( "w" ) ) == 0 )
     {
     std::vector<typename ImageType::Pointer> images;
-    for( unsigned int n = 4; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
       {
       typename ReaderType::Pointer reader = ReaderType::New();
       reader->SetFileName( argv[n] );
@@ -371,6 +371,50 @@ int MultipleOperateImages( int argc, char * argv[] )
           probability += negation * images[i]->GetPixel( ItO.GetIndex() );
           }
         ItO.Set( probability );
+        }
+      }
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( output );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+    }
+  else if( op.compare( std::string( "seg" ) ) == 0 )
+    {
+    std::vector<typename ImageType::Pointer> images;
+    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( argv[n] );
+      reader->Update();
+      images.push_back( reader->GetOutput() );
+      }
+
+    typename ImageType::Pointer output = ImageType::New();
+    output->SetOrigin( images[0]->GetOrigin() );
+    output->SetSpacing( images[0]->GetSpacing() );
+    output->SetRegions( images[0]->GetLargestPossibleRegion() );
+    output->SetDirection( images[0]->GetDirection() );
+    output->Allocate();
+    output->FillBuffer( 0 );
+
+    itk::ImageRegionIteratorWithIndex<ImageType> ItO( output,
+      output->GetLargestPossibleRegion() );
+    for( ItO.GoToBegin(); !ItO.IsAtEnd(); ++ItO )
+      {
+      if( mask && mask->GetPixel( ItO.GetIndex() ) != 0 )
+        {
+        float maxProbability = 0;
+        float maxLabel = 0;
+        for( unsigned int i = 0; i < images.size(); i++ )
+          {
+          if( images[i]->GetPixel( ItO.GetIndex() ) >= maxProbability )
+            {
+            maxProbability = images[i]->GetPixel( ItO.GetIndex() );
+            maxLabel = i + 1;
+            }
+          }
+        ItO.Set( maxLabel );
         }
       }
     typedef itk::ImageFileWriter<ImageType> WriterType;
@@ -477,6 +521,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    mean:   Create mean image" << std::endl;
     std::cerr << "    var:    Create variance image" << std::endl;
     std::cerr << "    w:      create probabilistic weight image from label probability images" << std::endl;
+    std::cerr << "    seg:    create labe image from label probability images" << std::endl;
     std::cerr << "    ex:     Create expected ventilation from posterior prob. images" << std::endl;
     std::cerr << "    sample: Print samples to output text/index files (prefix specified in place of outputImage)" << std::endl;
     return EXIT_FAILURE;
