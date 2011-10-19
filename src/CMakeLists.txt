@@ -266,6 +266,9 @@ target_link_libraries(GetConnectedComponents ${ITK_LIBRARIES})
 add_executable(GenerateAttenuationMask GenerateAttenuationMask.cxx )
 target_link_libraries(GenerateAttenuationMask ${ITK_LIBRARIES})
 
+add_executable(GenerateImageFromIndexFile GenerateImageFromIndexFile.cxx )
+target_link_libraries(GenerateImageFromIndexFile ${ITK_LIBRARIES})
+
 add_executable(GeneralToBSplineDeformationField GeneralToBSplineDeformationField.cxx )
 target_link_libraries(GeneralToBSplineDeformationField ${ITK_LIBRARIES})
 
