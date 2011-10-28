@@ -25,10 +25,32 @@ int MultipleOperateImages( int argc, char * argv[] )
   /**
    * list the files
    */
-  std::cout << "Using the following files: " << std::endl;
-  for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
+  std::string firstFile = std::string( argv[5] );
+  std::vector<std::string> filenames;
+  std::cout << "Using the following files ";
+
+  if( firstFile.find( ".txt" ) != std::string::npos || firstFile.find( ".csv" ) != std::string::npos )
     {
-    std::cout << "   " << n-4 << ": " << argv[n] << std::endl;
+    std::cout << "(reading images names from text file):" << std::endl;
+    std::fstream str( firstFile.c_str(), std::ios::in );
+    std::string file;
+    while( str >> file )
+      {
+      filenames.push_back( file );
+      }
+    }
+  else
+    {
+    std::cout << "(reading images names from command line):" << std::endl;
+    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
+      {
+      filenames.push_back( std::string( argv[n] ) );
+      }
+    }
+
+  for( unsigned int n = 0; n < filenames.size(); n++ )
+    {
+    std::cout << "   " << n+1 << ": " << filenames[n].c_str() << std::endl;
     }
 
   typename LabelImageType::Pointer mask = LabelImageType::New();
@@ -52,17 +74,17 @@ int MultipleOperateImages( int argc, char * argv[] )
   if( op.compare( std::string( "mean" ) ) == 0 )
     {
     typename ReaderType::Pointer reader = ReaderType::New();
-    reader->SetFileName( argv[5] );
+    reader->SetFileName( filenames[0].c_str() );
     reader->Update();
 
     typename ImageType::Pointer output = reader->GetOutput();
 
     float N = 1.0;
 
-    for( unsigned int n = 6; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 1; n < filenames.size(); n++ )
       {
       typename ReaderType::Pointer reader = ReaderType::New();
-      reader->SetFileName( argv[n] );
+      reader->SetFileName( filenames[n].c_str() );
       reader->Update();
 
       N += 1.0;
@@ -88,7 +110,7 @@ int MultipleOperateImages( int argc, char * argv[] )
   else if( op.compare( std::string( "var" ) ) == 0 )
     {
     typename ReaderType::Pointer reader = ReaderType::New();
-    reader->SetFileName( argv[5] );
+    reader->SetFileName( filenames[0].c_str() );
     reader->Update();
 
     typename ImageType::Pointer meanImage = reader->GetOutput();
@@ -103,10 +125,10 @@ int MultipleOperateImages( int argc, char * argv[] )
     output->Allocate();
     output->FillBuffer( 0 );
 
-    for( unsigned int n = 6; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 1; n < filenames.size(); n++ )
       {
       typename ReaderType::Pointer reader = ReaderType::New();
-      reader->SetFileName( argv[n] );
+      reader->SetFileName( filenames[n].c_str() );
       reader->Update();
 
       N += 1.0;
@@ -140,10 +162,10 @@ int MultipleOperateImages( int argc, char * argv[] )
   else if( op.compare( std::string( "s" ) ) == 0 )
     {
     std::vector<typename LabelImageType::Pointer> labelImages;
-    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 0; n < filenames.size(); n++ )
       {
       typename LabelReaderType::Pointer reader = LabelReaderType::New();
-      reader->SetFileName( argv[n] );
+      reader->SetFileName( filenames[n].c_str() );
       reader->Update();
       labelImages.push_back( reader->GetOutput() );
       }
@@ -334,10 +356,10 @@ int MultipleOperateImages( int argc, char * argv[] )
   else if( op.compare( std::string( "w" ) ) == 0 )
     {
     std::vector<typename ImageType::Pointer> images;
-    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 0; n < filenames.size(); n++ )
       {
       typename ReaderType::Pointer reader = ReaderType::New();
-      reader->SetFileName( argv[n] );
+      reader->SetFileName( filenames[n].c_str() );
       reader->Update();
       images.push_back( reader->GetOutput() );
       }
@@ -382,10 +404,10 @@ int MultipleOperateImages( int argc, char * argv[] )
   else if( op.compare( std::string( "seg" ) ) == 0 )
     {
     std::vector<typename ImageType::Pointer> images;
-    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 0; n < filenames.size(); n++ )
       {
       typename ReaderType::Pointer reader = ReaderType::New();
-      reader->SetFileName( argv[n] );
+      reader->SetFileName( filenames[n].c_str() );
       reader->Update();
       images.push_back( reader->GetOutput() );
       }
@@ -426,10 +448,10 @@ int MultipleOperateImages( int argc, char * argv[] )
   else if( op.compare( std::string( "ex" ) ) == 0 )
     {
     std::vector<typename ImageType::Pointer> images;
-    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 0; n < filenames.size(); n++ )
       {
       typename ReaderType::Pointer reader = ReaderType::New();
-      reader->SetFileName( argv[n] );
+      reader->SetFileName( filenames[n].c_str() );
       reader->Update();
       images.push_back( reader->GetOutput() );
       }
@@ -465,10 +487,10 @@ int MultipleOperateImages( int argc, char * argv[] )
   else if( op.compare( std::string( "sample" ) ) == 0 )
     {
     std::vector<typename ImageType::Pointer> images;
-    for( unsigned int n = 5; n < static_cast<unsigned int>( argc ); n++ )
+    for( unsigned int n = 0; n < filenames.size(); n++ )
       {
       typename ReaderType::Pointer reader = ReaderType::New();
-      reader->SetFileName( argv[n] );
+      reader->SetFileName( filenames[n].c_str() );
       reader->Update();
       images.push_back( reader->GetOutput() );
       }

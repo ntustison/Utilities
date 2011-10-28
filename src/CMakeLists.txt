@@ -226,6 +226,9 @@ target_link_libraries(ExtractContours ${ITK_LIBRARIES})
 add_executable(ExtractMaskImage ExtractMaskImage.cxx )
 target_link_libraries(ExtractMaskImage ${ITK_LIBRARIES})
 
+add_executable(ExtractRGBComponent ExtractRGBComponent.cxx )
+target_link_libraries(ExtractRGBComponent ${ITK_LIBRARIES})
+
 add_executable( ExtractRegionFromImage ExtractRegionFromImage.cxx )
 target_link_libraries( ExtractRegionFromImage ${ITK_LIBRARIES} )
 
@@ -422,6 +425,9 @@ target_link_libraries(ShapeMorphology ${ITK_LIBRARIES})
 add_executable(ShapePriorLevelSet ShapePriorLevelSet.cxx )
 target_link_libraries(ShapePriorLevelSet ${ITK_LIBRARIES})
 
+add_executable(SimpleRegistration SimpleRegistration.cxx )
+target_link_libraries(SimpleRegistration ${ITK_LIBRARIES})
+
 add_executable(SmoothLungs SmoothLungs.cxx )
 target_link_libraries(SmoothLungs ${ITK_LIBRARIES})
 
@@ -434,8 +440,8 @@ target_link_libraries(SSI ${ITK_LIBRARIES})
 add_executable( StatsForSkullThickness StatsForSkullThickness.cxx )
 target_link_libraries( StatsForSkullThickness ${ITK_LIBRARIES})
 
-#add_executable(Test Test.cxx )
-#target_link_libraries(Test ${ITK_LIBRARIES})
+add_executable(BSplineCalc BSplineCalc.cxx )
+target_link_libraries(BSplineCalc ${ITK_LIBRARIES})
 
 add_executable(ThresholdImage ThresholdImage.cxx )
 target_link_libraries(ThresholdImage ${ITK_LIBRARIES})

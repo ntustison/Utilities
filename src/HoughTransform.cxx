@@ -1,106 +1,242 @@
+#include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-#include "itkImageRegionIteratorWithIndex.h"
-#include "itkHoughTransform2DCirclesImageFilter.h"
+#include "itkImageRegionIterator.h"
+#include "itkThresholdImageFilter.h"
+#include "itkMinimumMaximumImageCalculator.h"
+#include <itkGradientMagnitudeImageFilter.h>
+#include <itkDiscreteGaussianImageFilter.h>
+#include "itkBinaryBallStructuringElement.h"
+#include "itkGrayscaleDilateImageFilter.h"
+#include "itkLabelOverlayImageFilter.h"
+#include <list>
+#include "itkCastImageFilter.h"
+#include "vnl/vnl_math.h"
+#include "itkHoughTransformRadialVotingImageFilter.h"
+
+#include "time.h"
 
 
 template <unsigned int ImageDimension>
 int HoughTransform( unsigned int argc, char *argv[] )
 {
-  typedef float PixelType;
-  typedef float RealType;
+	clock_t beginT, endT;
+  beginT = clock();
 
-  typedef itk::Image<PixelType, ImageDimension> ImageType;
+  const    unsigned int    Dimension = ImageDimension;
+  typedef  unsigned char   InputPixelType;
+  typedef  float           InternalPixelType;
+  typedef  unsigned char   OutputPixelType;
 
-  typedef itk::ImageFileReader<ImageType> ReaderType;
+  typedef itk::Image< InputPixelType, Dimension >  InputImageType;
+  typedef itk::Image< InternalPixelType, Dimension >    InternalImageType;
+  typedef itk::Image< OutputPixelType, Dimension >  OutputImageType;
+
+  typename InputImageType::IndexType localIndex;
+  typename InputImageType::SpacingType spacing;
+
+  typedef  itk::ImageFileReader< InputImageType > ReaderType;
   typename ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( argv[2] );
-  reader->Update();
-
-  typedef itk::HoughTransform2DCirclesImageFilter<
-    RealType, RealType> HoughFilterType;
-  HoughFilterType::Pointer hough = HoughFilterType::New();
-  hough->SetInput( reader->GetOutput() );
-  hough->SetMinimumRadius( atoi( argv[4] ) );
-  hough->SetMaximumRadius( atoi( argv[5] ) );
-  hough->SetSigmaGradient(  atof( argv[6] )  );
-  hough->SetVariance( atof( argv[7] ) );
-  hough->SetNumberOfCircles(  atoi( argv[8] )  );
-  hough->SetSweepAngle(  atof( argv[9] )  );
-  hough->SetThreshold( atof( argv[10] ) );
-  hough->Update();
-
-  typename HoughFilterType::CirclesListType circles =
-    hough->GetCircles( hough->GetNumberOfCircles() );
-  typename HoughFilterType::CirclesListType::iterator iter;
-
-  unsigned count = 0;
-  for ( iter = circles.begin(); iter != circles.end(); ++iter )
+  reader->SetFileName( argv[1+1] );
+  try
     {
-    std::cout << count++ << ": ("
-      << (*iter)->GetObjectToParentTransform()->GetOffset()[0] << ", "
-      << (*iter)->GetObjectToParentTransform()->GetOffset()[1] << ") "
-      << (*iter)->GetRadius()[0] << std::endl;
+    reader->Update();
+    }
+  catch( itk::ExceptionObject & excep )
+    {
+    std::cerr << "Exception caught !" << std::endl;
+    std::cerr << excep << std::endl;
+    }
+  typename InputImageType::Pointer localImage = reader->GetOutput();
+  spacing = localImage->GetSpacing();
+  std::cout << "Computing Hough Map" << std::endl;
+
+  typedef itk::HoughTransformRadialVotingImageFilter< InputImageType,
+               InternalImageType > HoughTransformFilterType;
+  typename HoughTransformFilterType::Pointer houghFilter = HoughTransformFilterType::New();
+  houghFilter->SetInput( reader->GetOutput() );
+  houghFilter->SetNumberOfSpheres( atoi(argv[1+4]) );
+  houghFilter->SetMinimumRadius(   atof(argv[1+5]) );
+  houghFilter->SetMaximumRadius(   atof(argv[1+6]) );
+
+  if( argc > 8 )
+    {
+    houghFilter->SetSigmaGradient( atof(argv[1+7]) );
+    }
+  if( argc > 9 )
+    {
+    houghFilter->SetVariance( atof(argv[1+8]) );
+    }
+  if( argc > 10 )
+    {
+    houghFilter->SetSphereRadiusRatio( atof(argv[1+9]) );
+    }
+  if( argc > 11 )
+    {
+  houghFilter->SetVotingRadiusRatio( atof(argv[1+10]) );
+    }
+  if( argc > 12 )
+    {
+    houghFilter->SetThreshold( atof(argv[1+11]) );
+    }
+  if( argc > 13 )
+    {
+    houghFilter->SetOutputThreshold( atof(argv[1+12]) );
+    }
+  if( argc > 14 )
+    {
+    houghFilter->SetGradientThreshold( atof(argv[1+13]) );
+    }
+  if( argc > 15 )
+    {
+  houghFilter->SetNbOfThreads( atoi(argv[1+14]) );
+    }
+  if( argc > 16 )
+    {
+  houghFilter->SetSamplingRatio( atof(argv[1+15]) );
     }
 
-  typename ImageType::Pointer output = ImageType::New();
-  output->SetOrigin( reader->GetOutput()->GetOrigin() );
-  output->SetSpacing( reader->GetOutput()->GetSpacing() );
-  output->SetDirection( reader->GetOutput()->GetDirection() );
-  output->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
-  output->Allocate();
-  output->FillBuffer( 0 );
+  std::cout << "Try updating." << std::endl;
+  houghFilter->Update();
+  std::cout << "Done updating." << std::endl;
 
-  itk::ImageRegionIteratorWithIndex<ImageType> It( reader->GetOutput(),
-    reader->GetOutput()->GetLargestPossibleRegion() );
-  for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+
+  typename InternalImageType::Pointer localAccumulator = houghFilter->GetOutput();
+
+  typename HoughTransformFilterType::SpheresListType circles;
+  circles = houghFilter->GetSpheres( );
+
+  endT = clock();
+  std::cout << ( static_cast< double >( endT - beginT )/static_cast< double >( CLOCKS_PER_SEC ) ) << std::endl;
+
+  std::cout << "Found " << circles.size() << " circle(s)." << std::endl;
+
+
+  // Computing the circles output
+  typename OutputImageType::Pointer  localOutputImage = OutputImageType::New();
+
+  typename OutputImageType::RegionType region;
+  region.SetSize( localImage->GetLargestPossibleRegion().GetSize() );
+  region.SetIndex( localImage->GetLargestPossibleRegion().GetIndex() );
+  localOutputImage->SetRegions( region );
+  localOutputImage->SetOrigin(localImage->GetOrigin());
+  localOutputImage->SetSpacing(localImage->GetSpacing());
+  localOutputImage->Allocate();
+  localOutputImage->FillBuffer(0);
+
+  typedef typename HoughTransformFilterType::SpheresListType SpheresListType;
+  typename SpheresListType::const_iterator itSpheres = circles.begin();
+
+  unsigned int count = 1;
+  while( itSpheres != circles.end() )
     {
-    unsigned count = 0;
-    PixelType label = 0;
-				for ( iter = circles.begin(); iter != circles.end(); ++iter )
-						{
-      count++;
-      RealType centerX = (*iter)->GetObjectToParentTransform()->GetOffset()[0];
-      RealType centerY = (*iter)->GetObjectToParentTransform()->GetOffset()[1];
-      RealType radius = (*iter)->GetRadius()[0];
-      RealType distance = vcl_sqrt( vnl_math_sqr( It.GetIndex()[0] - centerX ) +
-        vnl_math_sqr( It.GetIndex()[1] - centerY ) );
-      if( distance <= radius )
+    std::cout << "Center: ";
+    std::cout << (*itSpheres)->GetObjectToParentTransform()->GetOffset()
+              << std::endl;
+    std::cout << "Radius: " << (*itSpheres)->GetRadius()[0] << std::endl;
+
+    for(double angle = 0;angle <= 2*vnl_math::pi; angle += vnl_math::pi/60.0 )
+      {
+      localIndex[0] =
+         (long int)((*itSpheres)->GetObjectToParentTransform()->GetOffset()[0]
+             + ( (*itSpheres)->GetRadius()[0]*vcl_cos(angle) )/spacing[0] );
+      localIndex[1] =
+         (long int)((*itSpheres)->GetObjectToParentTransform()->GetOffset()[1]
+             + ( (*itSpheres)->GetRadius()[1]*vcl_sin(angle) )/spacing[1] );
+      typename OutputImageType::RegionType outputRegion =
+                                  localOutputImage->GetLargestPossibleRegion();
+
+      if( outputRegion.IsInside( localIndex ) )
         {
-        label = static_cast<PixelType>( count );
-        break;
+        localOutputImage->SetPixel( localIndex, count );
         }
-						}
-    output->SetPixel( It.GetIndex(), label );
+      }
+    itSpheres++;
+    count++;
     }
 
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-  typename WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( argv[3] );
-  writer->SetInput( output );
-  writer->Update();
+  int radius = 2;
+  typedef itk::BinaryBallStructuringElement< OutputPixelType, Dimension >
+    SEType;
+  SEType sE;
+  sE.SetRadius ( radius );
+  sE.CreateStructuringElement();
+
+  typedef itk::GrayscaleDilateImageFilter< OutputImageType, OutputImageType, SEType >
+    DilateFilterType;
+  typename DilateFilterType::Pointer grayscaleDilate = DilateFilterType::New();
+  grayscaleDilate->SetKernel ( sE );
+  grayscaleDilate->SetInput ( localOutputImage );
+  grayscaleDilate->Update();
+
+  typedef itk::ImageFileWriter< OutputImageType > CirclesWriterType;
+  typename CirclesWriterType::Pointer cwriter = CirclesWriterType::New();
+  cwriter->SetInput( grayscaleDilate->GetOutput() );
+  cwriter->SetFileName( argv[1+2] );
+  cwriter->Update();
+
+  try
+    {
+    cwriter->Update();
+    }
+  catch( itk::ExceptionObject & excep )
+    {
+    std::cerr << "Exception caught !" << std::endl;
+    std::cerr << excep << std::endl;
+    }
+
+  typedef  itk::ImageFileWriter< InternalImageType  > InputWriterType;
+  typename InputWriterType::Pointer writer2 = InputWriterType::New();
+  writer2->SetFileName( argv[1+3] );
+  writer2->SetInput( localAccumulator );
+
+  try
+    {
+    writer2->Update();
+    }
+  catch( itk::ExceptionObject & excep )
+    {
+    std::cerr << "Exception caught !" << std::endl;
+    std::cerr << excep << std::endl;
+    }
 
   return 0;
 }
 
 int main( int argc, char *argv[] )
 {
-  if ( argc < 11 )
+  if( argc < 8 )
     {
-    std::cout << argv[0] << " imageDimension inputImage outputImage "
-      << "minRadiusInVoxels maxRadiusInVoxels sigmaGradient numberOfCircles variance "
-      << "sweepAngle threshold" << std::endl;
-    exit( 1 );
+    std::cerr << "Missing Parameters " << std::endl;
+    std::cerr << "Usage: " << argv[0] << std::endl;
+    std::cerr << " imageDimension" << std::endl;
+    std::cerr << " inputImage " << std::endl;
+    std::cerr << " outputImage" << std::endl;
+    std::cerr << " accumulatorImage" << std::endl;
+    std::cerr << " numberOfSpheres " << std::endl;
+    std::cerr << " radius Min " << std::endl;
+    std::cerr << " radius Max " << std::endl;
+    std::cerr << " SigmaGradient (default = 1) " << std::endl;
+    std::cerr << " variance of the accumulator blurring (default = 1) " << std::endl;
+    std::cerr << " radius ratio of the disk to remove from the accumulator (default = 1) "<< std::endl;
+    std::cerr << " voting radius ratio (default = 0.5) "<< std::endl;
+    std::cerr << " input threshold "<< std::endl;
+    std::cerr << " output threshold "<< std::endl;
+    std::cerr << " gradient threshold "<< std::endl;
+    std::cerr << " number of threads "<< std::endl;
+    std::cerr << " sampling ratio "<< std::endl;
+    return 1;
     }
+
 
   switch( atoi( argv[1] ) )
    {
    case 2:
      HoughTransform<2>( argc, argv );
      break;
-//    case 3:
-//      HoughTransform<3>( argc, argv );
-//      break;
+    case 3:
+      HoughTransform<3>( argc, argv );
+      break;
    default:
       std::cerr << "Unsupported dimension" << std::endl;
       exit( EXIT_FAILURE );
