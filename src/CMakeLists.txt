@@ -428,8 +428,8 @@ target_link_libraries(ShapeMorphology ${ITK_LIBRARIES})
 add_executable(ShapePriorLevelSet ShapePriorLevelSet.cxx )
 target_link_libraries(ShapePriorLevelSet ${ITK_LIBRARIES})
 
-add_executable(SimpleRegistration SimpleRegistration.cxx )
-target_link_libraries(SimpleRegistration ${ITK_LIBRARIES})
+#add_executable(SimpleRegistration SimpleRegistration.cxx )
+#target_link_libraries(SimpleRegistration ${ITK_LIBRARIES})
 
 add_executable(SmoothLungs SmoothLungs.cxx )
 target_link_libraries(SmoothLungs ${ITK_LIBRARIES})
