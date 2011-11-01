@@ -1,7 +1,7 @@
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-#include "itkImageRegionIterator.h"
+#include "itkImageRegionIteratorWithIndex.h"
 #include "itkThresholdImageFilter.h"
 #include "itkMinimumMaximumImageCalculator.h"
 #include <itkGradientMagnitudeImageFilter.h>
@@ -24,9 +24,9 @@ int HoughTransform( unsigned int argc, char *argv[] )
   beginT = clock();
 
   const    unsigned int    Dimension = ImageDimension;
-  typedef  unsigned char   InputPixelType;
+  typedef  unsigned int   InputPixelType;
   typedef  float           InternalPixelType;
-  typedef  unsigned char   OutputPixelType;
+  typedef  unsigned int   OutputPixelType;
 
   typedef itk::Image< InputPixelType, Dimension >  InputImageType;
   typedef itk::Image< InternalPixelType, Dimension >    InternalImageType;
@@ -135,43 +135,42 @@ int HoughTransform( unsigned int argc, char *argv[] )
               << std::endl;
     std::cout << "Radius: " << (*itSpheres)->GetRadius()[0] << std::endl;
 
-    for(double angle = 0;angle <= 2*vnl_math::pi; angle += vnl_math::pi/60.0 )
+    itk::ImageRegionIteratorWithIndex<OutputImageType> It( localImage,
+      localImage->GetLargestPossibleRegion() );
+    for( It.GoToBegin(); !It.IsAtEnd(); ++It )
       {
-      localIndex[0] =
-         (long int)((*itSpheres)->GetObjectToParentTransform()->GetOffset()[0]
-             + ( (*itSpheres)->GetRadius()[0]*vcl_cos(angle) )/spacing[0] );
-      localIndex[1] =
-         (long int)((*itSpheres)->GetObjectToParentTransform()->GetOffset()[1]
-             + ( (*itSpheres)->GetRadius()[1]*vcl_sin(angle) )/spacing[1] );
-      typename OutputImageType::RegionType outputRegion =
-                                  localOutputImage->GetLargestPossibleRegion();
-
-      if( outputRegion.IsInside( localIndex ) )
+      typename OutputImageType::IndexType index = It.GetIndex();
+      float sum = 0.0;
+      for( unsigned int d = 0; d < ImageDimension; d++ )
         {
-        localOutputImage->SetPixel( localIndex, count );
+        sum += vnl_math_sqr( index[d] - (*itSpheres)->GetObjectToParentTransform()->GetOffset()[d] );
+        }
+      if( sum <= vnl_math_sqr( (*itSpheres)->GetRadius()[0] ) )
+        {
+        localOutputImage->SetPixel( index, count );
         }
       }
     itSpheres++;
     count++;
     }
 
-  int radius = 2;
-  typedef itk::BinaryBallStructuringElement< OutputPixelType, Dimension >
-    SEType;
-  SEType sE;
-  sE.SetRadius ( radius );
-  sE.CreateStructuringElement();
-
-  typedef itk::GrayscaleDilateImageFilter< OutputImageType, OutputImageType, SEType >
-    DilateFilterType;
-  typename DilateFilterType::Pointer grayscaleDilate = DilateFilterType::New();
-  grayscaleDilate->SetKernel ( sE );
-  grayscaleDilate->SetInput ( localOutputImage );
-  grayscaleDilate->Update();
+//  int radius = 2;
+//  typedef itk::BinaryBallStructuringElement< OutputPixelType, Dimension >
+//    SEType;
+//  SEType sE;
+//  sE.SetRadius ( radius );
+//  sE.CreateStructuringElement();
+//
+//  typedef itk::GrayscaleDilateImageFilter< OutputImageType, OutputImageType, SEType >
+//    DilateFilterType;
+//  typename DilateFilterType::Pointer grayscaleDilate = DilateFilterType::New();
+//  grayscaleDilate->SetKernel ( sE );
+//  grayscaleDilate->SetInput ( localOutputImage );
+//  grayscaleDilate->Update();
 
   typedef itk::ImageFileWriter< OutputImageType > CirclesWriterType;
   typename CirclesWriterType::Pointer cwriter = CirclesWriterType::New();
-  cwriter->SetInput( grayscaleDilate->GetOutput() );
+  cwriter->SetInput( localOutputImage );
   cwriter->SetFileName( argv[1+2] );
   cwriter->Update();
 

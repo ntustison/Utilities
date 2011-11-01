@@ -103,7 +103,7 @@ int BinaryOperateImages( int argc, char * argv[] )
       {
       It.SetCenterPixel( vnl_math_max( It1.GetCenterPixel(), It2.GetCenterPixel() ) );
       }
-    else if( op.compare( "isgreatherthan" ) == 0 )
+    else if( op.compare( "isgreaterthan" ) == 0 )
       {
       It.SetCenterPixel( ( It1.GetCenterPixel() > It2.GetCenterPixel() ) ? 1 : 0 );
       }
