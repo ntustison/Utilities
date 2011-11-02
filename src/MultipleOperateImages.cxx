@@ -504,6 +504,12 @@ int MultipleOperateImages( int argc, char * argv[] )
     std::ofstream str( sampleFilename.c_str() );
     std::ofstream str2( indexFilename.c_str() );
 
+    for( unsigned int n = 0; n < filenames.size() - 1; n++ )
+      {
+      str << filenames[n] << ",";
+      }
+    str << filenames[filenames.size()-1] << std::endl;
+
     itk::ImageRegionIteratorWithIndex<ImageType> It( images[0],
       images[0]->GetLargestPossibleRegion() );
     for( It.GoToBegin(); !It.IsAtEnd(); ++It )
