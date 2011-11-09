@@ -6,6 +6,8 @@
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageFileWriter.h"
 
+#include <itksys/SystemTools.hxx>
+
 #include <string>
 #include <vector>
 
@@ -34,9 +36,18 @@ int MultipleOperateImages( int argc, char * argv[] )
     std::cout << "(reading images names from text file):" << std::endl;
     std::fstream str( firstFile.c_str(), std::ios::in );
     std::string file;
+
     while( str >> file )
       {
-      filenames.push_back( file );
+      bool isFile = itksys::SystemTools::FileExists( file.c_str(), true );
+      if( isFile )
+        {
+        filenames.push_back( file );
+        }
+      else
+        {
+        std::cout << "File does not exist---" << file.c_str() << std::endl;
+        }
       }
     }
   else
