@@ -123,6 +123,48 @@ int ConvertImage( int argc, char *argv[] )
       }
 
     }
+  else if( atoi( argv[4] ) == 9 )
+    {
+    typedef itk::Vector<PixelType, ImageDimension> VectorType;
+    typedef itk::Image<VectorType, ImageDimension+1> VelocityFieldType;
+    typedef itk::Image<PixelType, ImageDimension+1> ComponentImageType;
+
+    typedef itk::ImageFileReader<VelocityFieldType> ReaderType;
+    typename ReaderType::Pointer reader = ReaderType::New();
+    reader->SetFileName( argv[2] );
+    reader->Update();
+
+    for( unsigned int d = 0; d < ImageDimension; d++ )
+      {
+      typedef itk::VectorIndexSelectionCastImageFilter<VelocityFieldType, ComponentImageType> SelectorType;
+      typename SelectorType::Pointer selector = SelectorType::New();
+      selector->SetInput( reader->GetOutput() );
+      selector->SetIndex( d );
+      selector->Update();
+
+      std::string filename = std::string( argv[3] );
+      if( d == 0 )
+        {
+        filename += std::string( "xvec.nii.gz" );
+        }
+      else if( d == 1 )
+        {
+        filename += std::string( "yvec.nii.gz" );
+        }
+      else if( d == 2 )
+        {
+        filename += std::string( "zvec.nii.gz" );
+        }
+
+      typedef itk::ImageFileWriter<ComponentImageType> WriterType;
+      typename WriterType::Pointer writer = WriterType::New();
+      writer->SetInput( selector->GetOutput() );
+
+      writer->SetFileName( filename.c_str() );
+      writer->Update();
+      }
+
+    }
   else if( atoi( argv[4] ) < 7 )
     {
     typedef itk::Image<PixelType, ImageDimension> ImageType;
@@ -184,7 +226,8 @@ int main( int argc, char *argv[] )
               << "            5 -> int" << std::endl
               << "            6 -> long" << std::endl
               << "            7 -> component images to a float vector image" << std::endl
-              << "            8 -> vector image to component images" << std::endl;
+              << "            8 -> vector image to component images" << std::endl
+              << "            9 -> time-varying velocity field image to component images (ImageDimension is the dimensionality of the displacement vector)" << std::endl;
 
     exit( 0 );
     }

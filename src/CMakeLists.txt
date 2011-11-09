@@ -125,6 +125,9 @@ add_executable(ConvertAvantsLandmarkFileToVTKLines ConvertAvantsLandmarkFileToVT
 target_link_libraries(ConvertAvantsLandmarkFileToVTKLines vtkIO)
 endif (USE_VTK_FILE)
 
+add_executable(ConvertAvantsLandmarkFileToImageLines ConvertAvantsLandmarkFileToImageLines.cxx )
+target_link_libraries(ConvertAvantsLandmarkFileToImageLines ${ITK_LIBRARIES})
+
 add_executable(ConvertDICOMImageSeries ConvertDICOMImageSeries.cxx )
 target_link_libraries(ConvertDICOMImageSeries ${ITK_LIBRARIES})
 
