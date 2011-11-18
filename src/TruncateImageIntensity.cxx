@@ -91,42 +91,55 @@ int TruncateImageIntensity( unsigned int argc, char *argv[] )
       }
     }
 
-  typedef itk::LabelStatisticsImageFilter<RealImageType, ImageType> HistogramGeneratorType;
-  typename HistogramGeneratorType::Pointer stats = HistogramGeneratorType::New();
-  stats->SetInput( imageReader->GetOutput() );
-  stats->SetLabelInput( mask );
-  stats->SetUseHistograms( true );
-  stats->SetHistogramParameters( numberOfBins, minValue, maxValue );
-  stats->Update();
-  typedef typename HistogramGeneratorType::HistogramType  HistogramType;
-  const HistogramType *histogram = stats->GetHistogram( 1 );
+  double lowerValue = 0.0;
+  double upperValue = 0.0;
 
-  double lowerValue = 0.025;
-  if( argc > 6 )
+  if( argc != 8 )
     {
-    lowerValue = atof( argv[6] );
-    }
-		double lowerQuantile = histogram->Quantile( 0, lowerValue );
-  double upperValue = 0.975;
-  if( argc > 7 )
-    {
-    upperValue = atof( argv[7] );
-    }
-		double	upperQuantile = histogram->Quantile( 0, upperValue );
+				typedef itk::LabelStatisticsImageFilter<RealImageType, ImageType> HistogramGeneratorType;
+				typename HistogramGeneratorType::Pointer stats = HistogramGeneratorType::New();
+				stats->SetInput( imageReader->GetOutput() );
+				stats->SetLabelInput( mask );
+				stats->SetUseHistograms( true );
+				stats->SetHistogramParameters( numberOfBins, minValue, maxValue );
+				stats->Update();
+				typedef typename HistogramGeneratorType::HistogramType  HistogramType;
+				const HistogramType *histogram = stats->GetHistogram( 1 );
 
-  std::cout << "Lower quantile: " << lowerQuantile << std::endl;
-  std::cout << "Upper quantile: " << upperQuantile << std::endl;
+				double lowerValue = 0.025;
+				if( argc > 6 )
+						{
+						lowerValue = atof( argv[6] );
+						}
+				double lowerQuantile = histogram->Quantile( 0, lowerValue );
+				double upperValue = 0.975;
+				if( argc > 7 )
+						{
+						upperValue = atof( argv[7] );
+						}
+				double	upperQuantile = histogram->Quantile( 0, upperValue );
 
+				lowerValue = lowerQuantile;
+				upperValue = upperQuantile;
+				}
+		else
+		  {
+		  lowerValue = atof( argv[6] );
+		  upperValue = atof( argv[7] );
+		  }
+
+  std::cout << "Lower value = " << lowerValue << std::endl;
+  std::cout << "Upper value = " << upperValue << std::endl;
 
   for ( ItI.GoToBegin(); !ItI.IsAtEnd(); ++ItI )
     {
-    if ( ItI.Get() < lowerQuantile )
+    if ( ItI.Get() < lowerValue )
       {
-      ItI.Set( lowerQuantile );
+      ItI.Set( lowerValue );
       }
-    else if( ItI.Get() > upperQuantile )
+    else if( ItI.Get() > upperValue )
       {
-      ItI.Set( upperQuantile );
+      ItI.Set( upperValue );
       }
     }
 
@@ -146,6 +159,8 @@ int main( int argc, char *argv[] )
     std::cout << argv[0] << " imageDimension inputImage outputImage "
       << "[maskImage] [maskLabel=1] [lowerQuantile=0.025] [upperQuantile=0.975] "
       << "[numberOfBins=200]" << std::endl;
+    std::cout << argv[0] << " imageDimension inputImage outputImage "
+      << "maskImage maskLabel=1 lowerValue upperValue" << std::endl;
     exit( 1 );
     }
 
