@@ -45,7 +45,7 @@ int Convert( int argc, char *argv[] )
 
   std::fstream str( argv[2] );
 
-  while ( str >> x[0] >> x[1] >> x[2] >> l )
+  while ( str >> x[1] >> x[0] >> x[2] >> l )
     {
     if ( x[0] == 0 && x[1] == 0 && x[2] == 0 && l == 0 )
       {
@@ -66,8 +66,6 @@ int Convert( int argc, char *argv[] )
     labels.push_back( l );
     }
   str.close();
-
-  std::cout << "HERE" << std::endl;
 
   for( l = 0; l < distinctLabels.size(); l++ )
     {

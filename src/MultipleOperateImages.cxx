@@ -376,7 +376,7 @@ int MultipleOperateImages( int argc, char * argv[] )
       output->GetLargestPossibleRegion() );
     for( ItO.GoToBegin(); !ItO.IsAtEnd(); ++ItO )
       {
-      if( mask && mask->GetPixel( ItO.GetIndex() ) != 0 )
+      if( !mask || mask->GetPixel( ItO.GetIndex() ) != 0 )
         {
         float probability = 0.0;
         for( unsigned int i = 0; i < images.size(); i++ )

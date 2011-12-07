@@ -61,6 +61,9 @@ target_link_libraries( itkTimeAndMemoryProbeTest ${ITK_LIBRARIES})
 #add_executable( BSplineExample BSplineExample.cxx )
 #target_link_libraries( BSplineExample ${ITK_LIBRARIES})
 
+add_executable( Test Test.cxx )
+target_link_libraries( Test ${ITK_LIBRARIES})
+
 add_executable( BSplineTest BSplineTest.cxx )
 target_link_libraries( BSplineTest ${ITK_LIBRARIES})
 
@@ -361,6 +364,9 @@ target_link_libraries(LabelGeometryMeasures ${ITK_LIBRARIES})
 
 add_executable(MakeCheckerBoardImage MakeCheckerBoardImage.cxx )
 target_link_libraries(MakeCheckerBoardImage ${ITK_LIBRARIES})
+
+add_executable(MakeHilbertPath MakeHilbertPath.cxx )
+target_link_libraries(MakeHilbertPath ${ITK_LIBRARIES})
 
 add_executable( MinimalPath MinimalPath.cxx )
 target_link_libraries( MinimalPath ${ITK_LIBRARIES} )
