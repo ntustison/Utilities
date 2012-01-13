@@ -356,6 +356,9 @@ target_link_libraries(InvertImageIntensity ${ITK_LIBRARIES})
 # add_executable(EvaluatePointSetMetric EvaluatePointSetMetric.cxx)
 # target_link_libraries(EvaluatePointSetMetric ${ITK_LIBRARIES} )
 
+add_executable(InvertDisplacementField InvertDisplacementField.cxx)
+target_link_libraries(InvertDisplacementField ${ITK_LIBRARIES} )
+
 add_executable(LabelGeometryMeasures LabelGeometryMeasures.cxx )
 target_link_libraries(LabelGeometryMeasures ${ITK_LIBRARIES})
 

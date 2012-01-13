@@ -1,3 +1,4 @@
+#include "itkBSplineControlPointImageFilter.h"
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
@@ -12,11 +13,17 @@ int Test( unsigned int argc, char *argv[] )
   typedef itk::Vector<double, ImageDimension> VectorType;
   typedef itk::Image<VectorType, ImageDimension> DeformationFieldType;
   typedef itk::Image<VectorType, ImageDimension+1> TimeVaryingVelocityFieldType;
+  typedef itk::Image<float, ImageDimension> ImageType;
 
   typedef itk::ImageFileReader<TimeVaryingVelocityFieldType> ReaderType;
   typename ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName( argv[2] );
   reader->Update();
+
+  typedef itk::ImageFileReader<ImageType> Reader2Type;
+  typename Reader2Type::Pointer reader2 = Reader2Type::New();
+  reader2->SetFileName( argv[7] );
+  reader2->Update();
 
   typedef itk::TimeVaryingBSplineVelocityFieldIntegrationImageFilter
     <TimeVaryingVelocityFieldType, DeformationFieldType> IntegratorType;
@@ -25,17 +32,27 @@ int Test( unsigned int argc, char *argv[] )
   integrator->SetSplineOrder( 3 );
   integrator->SetLowerTimeBound( atof( argv[5] ) );
   integrator->SetUpperTimeBound( atof( argv[6] ) );
-
 //  integrator->SetNumberOfIntegrationSteps( atoi( argv[4] ) );
-//  integrator->Update();
-//
-//  typedef itk::ImageFileWriter<DeformationFieldType> WriterType;
-//  typename WriterType::Pointer writer = WriterType::New();
-//  writer->SetFileName( argv[3] );
-//  writer->SetInput( integrator->GetOutput() );
-//  writer->Update();
-//
-//
+  integrator->Update();
+
+  typedef itk::BSplineControlPointImageFilter<DeformationFieldType, DeformationFieldType> BSplineFilterType;
+  typename BSplineFilterType::Pointer bspliner = BSplineFilterType::New();
+  bspliner->SetInput( integrator->GetOutput() );
+  bspliner->SetSplineOrder( integrator->GetSplineOrder() );
+  bspliner->SetSpacing( reader2->GetOutput()->GetSpacing() );
+  bspliner->SetSize( reader2->GetOutput()->GetLargestPossibleRegion().GetSize() );
+  bspliner->SetDirection( reader2->GetOutput()->GetDirection() );
+  bspliner->SetOrigin( reader2->GetOutput()->GetOrigin() );
+  bspliner->Update();
+
+  typedef itk::ImageFileWriter<DeformationFieldType> WriterType;
+  typename WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName( argv[3] );
+  writer->SetInput( bspliner->GetOutput() );
+  writer->Update();
+
+
+
 //  TimeVaryingVelocityFieldType::PointType origin;
 //  origin.Fill( 0.0 );
 //  TimeVaryingVelocityFieldType::SpacingType spacing;

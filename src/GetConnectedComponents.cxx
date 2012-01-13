@@ -99,6 +99,7 @@ int GetConnectedComponents(int argc, char* argv[] )
 
   if( argc > 5 && atoi( argv[5] ) > 1 )
     {
+    relabeler->Update();
     itk::ImageRegionIterator<ImageType> It( relabeler->GetOutput(),
       relabeler->GetOutput()->GetLargestPossibleRegion() );
     for ( It.GoToBegin(); !It.IsAtEnd(); ++It )
