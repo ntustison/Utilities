@@ -112,6 +112,9 @@ target_link_libraries(CalculateVolumeFromBinaryImage ${ITK_LIBRARIES})
 add_executable(ChangeImageInformation ChangeImageInformation.cxx )
 target_link_libraries(ChangeImageInformation ${ITK_LIBRARIES})
 
+add_executable(CollidingFronts CollidingFronts.cxx )
+target_link_libraries(CollidingFronts ${ITK_LIBRARIES})
+
 add_executable(CompareLandmarks CompareLandmarks.cxx )
 target_link_libraries(CompareLandmarks ${ITK_LIBRARIES})
 
@@ -466,6 +469,9 @@ target_link_libraries(ThresholdPlane ${ITK_LIBRARIES})
 
 add_executable(TileImages TileImages.cxx )
 target_link_libraries(TileImages ${ITK_LIBRARIES})
+
+add_executable(Tortuosity Tortuosity.cxx )
+target_link_libraries(Tortuosity ${ITK_LIBRARIES})
 
 add_executable(TruncateImageIntensity TruncateImageIntensity.cxx )
 target_link_libraries(TruncateImageIntensity ${ITK_LIBRARIES})
