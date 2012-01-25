@@ -131,6 +131,11 @@ add_executable(ConvertAvantsLandmarkFileToVTKLines ConvertAvantsLandmarkFileToVT
 target_link_libraries(ConvertAvantsLandmarkFileToVTKLines vtkIO)
 endif (USE_VTK_FILE)
 
+if (USE_VTK_FILE)
+add_executable(ColorPolyDataByImage ColorPolyDataByImage.cxx )
+target_link_libraries(ColorPolyDataByImage ${ITK_LIBRARIES} vtkIO)
+endif (USE_VTK_FILE)
+
 add_executable(ConvertAvantsLandmarkFileToImageLines ConvertAvantsLandmarkFileToImageLines.cxx )
 target_link_libraries(ConvertAvantsLandmarkFileToImageLines ${ITK_LIBRARIES})
 
