@@ -112,6 +112,9 @@ target_link_libraries(CalculateVolumeFromBinaryImage ${ITK_LIBRARIES})
 add_executable(ChangeImageInformation ChangeImageInformation.cxx )
 target_link_libraries(ChangeImageInformation ${ITK_LIBRARIES})
 
+add_executable(CollidingFronts CollidingFronts.cxx )
+target_link_libraries(CollidingFronts ${ITK_LIBRARIES})
+
 add_executable(CompareLandmarks CompareLandmarks.cxx )
 target_link_libraries(CompareLandmarks ${ITK_LIBRARIES})
 
@@ -126,6 +129,11 @@ endif (USE_VTK_FILE)
 if (USE_VTK_FILE)
 add_executable(ConvertAvantsLandmarkFileToVTKLines ConvertAvantsLandmarkFileToVTKLines.cxx )
 target_link_libraries(ConvertAvantsLandmarkFileToVTKLines vtkIO)
+endif (USE_VTK_FILE)
+
+if (USE_VTK_FILE)
+add_executable(ColorPolyDataByImage ColorPolyDataByImage.cxx )
+target_link_libraries(ColorPolyDataByImage ${ITK_LIBRARIES} vtkIO)
 endif (USE_VTK_FILE)
 
 add_executable(ConvertAvantsLandmarkFileToImageLines ConvertAvantsLandmarkFileToImageLines.cxx )
@@ -356,6 +364,9 @@ target_link_libraries(InvertImageIntensity ${ITK_LIBRARIES})
 # add_executable(EvaluatePointSetMetric EvaluatePointSetMetric.cxx)
 # target_link_libraries(EvaluatePointSetMetric ${ITK_LIBRARIES} )
 
+add_executable(InvertDisplacementField InvertDisplacementField.cxx)
+target_link_libraries(InvertDisplacementField ${ITK_LIBRARIES} )
+
 add_executable(LabelGeometryMeasures LabelGeometryMeasures.cxx )
 target_link_libraries(LabelGeometryMeasures ${ITK_LIBRARIES})
 
@@ -463,6 +474,9 @@ target_link_libraries(ThresholdPlane ${ITK_LIBRARIES})
 
 add_executable(TileImages TileImages.cxx )
 target_link_libraries(TileImages ${ITK_LIBRARIES})
+
+add_executable(Tortuosity Tortuosity.cxx )
+target_link_libraries(Tortuosity ${ITK_LIBRARIES})
 
 add_executable(TruncateImageIntensity TruncateImageIntensity.cxx )
 target_link_libraries(TruncateImageIntensity ${ITK_LIBRARIES})

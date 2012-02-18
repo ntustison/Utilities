@@ -67,7 +67,7 @@ int HessianBasedFeatures( int argc, char *argv[] )
 
   if( argc > 8 )
     {
-    brightObject = static_cast<bool>( atoi( argv[11] ) );
+    brightObject = static_cast<bool>( atoi( argv[8] ) );
     }
   if( argc > 9 )
     {
