@@ -88,6 +88,9 @@ int main( int argc, char *argv[] )
    case 3:
      LabelIntensityStatistics<3>( argc, argv );
      break;
+   case 4:
+     LabelIntensityStatistics<3>( argc, argv );
+     break;
    default:
       std::cerr << "Unsupported dimension" << std::endl;
       exit( EXIT_FAILURE );

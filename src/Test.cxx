@@ -1,9 +1,9 @@
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-#include "itkTimeVaryingBSplineVelocityFieldIntegrationImageFilter.h"
-#include "itkTimeVaryingBSplineVelocityFieldTransform.h"
-#include "itkTimeVaryingBSplineVelocityFieldTransformParametersAdaptor.h"
+//#include "itkTimeVaryingBSplineVelocityFieldIntegrationImageFilter.h"
+//#include "itkTimeVaryingBSplineVelocityFieldTransform.h"
+//#include "itkTimeVaryingBSplineVelocityFieldTransformParametersAdaptor.h"
 #include "itkVector.h"
 
 template <unsigned int ImageDimension>
@@ -18,13 +18,13 @@ int Test( unsigned int argc, char *argv[] )
   reader->SetFileName( argv[2] );
   reader->Update();
 
-  typedef itk::TimeVaryingBSplineVelocityFieldIntegrationImageFilter
-    <TimeVaryingVelocityFieldType, DeformationFieldType> IntegratorType;
-  typename IntegratorType::Pointer integrator = IntegratorType::New();
-  integrator->SetInput( reader->GetOutput() );
-  integrator->SetSplineOrder( 3 );
-  integrator->SetLowerTimeBound( atof( argv[5] ) );
-  integrator->SetUpperTimeBound( atof( argv[6] ) );
+//  typedef itk::TimeVaryingBSplineVelocityFieldIntegrationImageFilter
+//    <TimeVaryingVelocityFieldType, DeformationFieldType> IntegratorType;
+//  typename IntegratorType::Pointer integrator = IntegratorType::New();
+//  integrator->SetInput( reader->GetOutput() );
+//  integrator->SetSplineOrder( 3 );
+//  integrator->SetLowerTimeBound( atof( argv[5] ) );
+//  integrator->SetUpperTimeBound( atof( argv[6] ) );
 
 //  integrator->SetNumberOfIntegrationSteps( atoi( argv[4] ) );
 //  integrator->Update();

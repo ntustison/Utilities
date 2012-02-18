@@ -1,4 +1,4 @@
-#include "itkBinaryContourImageFilter.h"
+#include "itkLabelContourImageFilter.h"
 #include "itkBinaryThresholdImageFilter.h"
 #include "itkFastMarchingImageFilter.h"
 #include "itkImageFileReader.h"
@@ -69,8 +69,11 @@ int PropagateLabels( unsigned int argc, char *argv[] )
   std::sort( labels.begin(), labels.end() );
 
   std::vector<LabelType>::const_iterator it;
+
   for( it = labels.begin(); it != labels.end(); ++it )
     {
+    std::cout << "Processing label " << *it << std::endl;
+
     typedef itk::BinaryThresholdImageFilter<LabelImageType, LabelImageType> ThresholderType;
     typename ThresholderType::Pointer thresholder = ThresholderType::New();
     thresholder->SetInput( labelImageReader->GetOutput() );
@@ -97,13 +100,11 @@ int PropagateLabels( unsigned int argc, char *argv[] )
       }
     else
       {
-      typedef itk::BinaryContourImageFilter<LabelImageType, RealImageType>
+      typedef itk::LabelContourImageFilter<LabelImageType, RealImageType>
         ContourFilterType;
       typename ContourFilterType::Pointer contour = ContourFilterType::New();
       contour->SetInput( thresholder->GetOutput() );
       contour->FullyConnectedOff();
-      contour->SetBackgroundValue( 0 );
-      contour->SetForegroundValue( 1 );
       contour->Update();
 
       typedef itk::FastMarchingImageFilter<RealImageType, RealImageType>
@@ -164,6 +165,7 @@ int PropagateLabels( unsigned int argc, char *argv[] )
 
       distanceImage = fastMarching->GetOutput();
       }
+
 
     itk::ImageRegionIteratorWithIndex<RealImageType> ItD(
       distanceImage, distanceImage->GetRequestedRegion() );

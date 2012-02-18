@@ -14,8 +14,8 @@ int ExtractContours( int argc, char *argv[] )
   reader->SetFileName( argv[2] );
   reader->Update();
 
-  if( argc < 7 )
-    {
+//  if( argc < 7 )
+//    {
     typedef itk::LabelContourImageFilter<ImageType, ImageType> FilterType;
     typename FilterType::Pointer filter = FilterType::New();
     filter->SetInput( reader->GetOutput() );
@@ -23,41 +23,33 @@ int ExtractContours( int argc, char *argv[] )
       {
       filter->SetFullyConnected( static_cast<PixelType>( atof( argv[4] ) ) );
       }
-    if( argc > 5 )
-      {
-      filter->SetBackgroundValue( static_cast<PixelType>( atof( argv[5] ) ) );
-      }
 
     typedef itk::ImageFileWriter<ImageType> WriterType;
     typename WriterType::Pointer writer = WriterType::New();
     writer->SetFileName( argv[3] );
     writer->SetInput( filter->GetOutput() );
     writer->Update();
-    }
-  else
-    {
-    typedef itk::BinaryContourImageFilter<ImageType, ImageType> FilterType;
-    typename FilterType::Pointer filter = FilterType::New();
-    filter->SetInput( reader->GetOutput() );
-    if( argc > 4 )
-      {
-      filter->SetFullyConnected( static_cast<PixelType>( atof( argv[4] ) ) );
-      }
-    if( argc > 5 )
-      {
-      filter->SetBackgroundValue( static_cast<PixelType>( atof( argv[5] ) ) );
-      }
-    if( argc > 6 )
-      {
-      filter->SetForegroundValue( static_cast<PixelType>( atof( argv[6] ) ) );
-      }
-
-    typedef itk::ImageFileWriter<ImageType> WriterType;
-    typename WriterType::Pointer writer = WriterType::New();
-    writer->SetFileName( argv[3] );
-    writer->SetInput( filter->GetOutput() );
-    writer->Update();
-    }
+//    }
+//  else
+//    {
+//    typedef itk::BinaryContourImageFilter<ImageType, ImageType> FilterType;
+//    typename FilterType::Pointer filter = FilterType::New();
+//    filter->SetInput( reader->GetOutput() );
+//    if( argc > 4 )
+//      {
+//      filter->SetFullyConnected( static_cast<PixelType>( atof( argv[4] ) ) );
+//      }
+//    if( argc > 5 )
+//      {
+//      filter->SetBackgroundValue( static_cast<PixelType>( atof( argv[5] ) ) );
+//      }
+//
+//    typedef itk::ImageFileWriter<ImageType> WriterType;
+//    typename WriterType::Pointer writer = WriterType::New();
+//    writer->SetFileName( argv[3] );
+//    writer->SetInput( filter->GetOutput() );
+//    writer->Update();
+//    }
 
 
   return 0;
@@ -68,8 +60,7 @@ int main( int argc, char *argv[] )
   if ( argc < 4 )
     {
     std::cout << argv[0] << " imageDimension inputImage outputImage"
-      << " [fullyConnected] "
-      << "[backgroundValue] [foregroundValue] " << std::endl;
+      << " [fullyConnected] " << std::endl;
     exit( 1 );
     }
 
