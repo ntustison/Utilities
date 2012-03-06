@@ -63,6 +63,8 @@ int ConvertScalarImageToRGB( int argc, char *argv[] )
 
   std::string colormapString( argv[5] );
 
+  std::cout << colormapString << std::endl;
+
   typedef itk::ScalarToRGBColormapImageFilter<RealImageType,
     RGBImageType> RGBFilterType;
   typename RGBFilterType::Pointer rgbfilter = RGBFilterType::New();
@@ -114,19 +116,21 @@ int ConvertScalarImageToRGB( int argc, char *argv[] )
     }
   else if ( colormapString == "jet"  )
     {
-//    rgbfilter->SetColormap( RGBFilterType::Jet );
-    typedef itk::Function::JetColormapFunction<typename RealImageType::PixelType,
-      typename RGBImageType::PixelType> ColormapType;
-    typename ColormapType::Pointer colormap = ColormapType::New();
-    rgbfilter->SetColormap( colormap );
+    std::cout << "HERE1" << std::endl;
+    rgbfilter->SetColormap( RGBFilterType::Jet );
+//    typedef itk::Function::JetColormapFunction<typename RealImageType::PixelType,
+//      typename RGBImageType::PixelType> ColormapType;
+//    typename ColormapType::Pointer colormap = ColormapType::New();
+//    rgbfilter->SetColormap( colormap );
     }
   else if ( colormapString == "hsv"  )
     {
-//    rgbfilter->SetColormap( RGBFilterType::HSV );
-    typedef itk::Function::HSVColormapFunction<typename RealImageType::PixelType,
-      typename RGBImageType::PixelType> ColormapType;
-    typename ColormapType::Pointer colormap = ColormapType::New();
-    rgbfilter->SetColormap( colormap );
+    std::cout << "HERE2" << std::endl;
+    rgbfilter->SetColormap( RGBFilterType::HSV );
+//    typedef itk::Function::HSVColormapFunction<typename RealImageType::PixelType,
+//      typename RGBImageType::PixelType> ColormapType;
+//    typename ColormapType::Pointer colormap = ColormapType::New();
+//    rgbfilter->SetColormap( colormap );
     }
   else if ( colormapString == "overunder"  )
     {

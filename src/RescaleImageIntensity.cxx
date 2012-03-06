@@ -16,7 +16,7 @@ int RescaleImageIntensity( int argc, char *argv[] )
   typename ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName( argv[2] );
   reader->Update();
-  
+
   typedef itk::RescaleIntensityImageFilter<ImageType, ImageType> RescalerType;
   typename RescalerType::Pointer rescaler = RescalerType::New();
   rescaler->SetInput( reader->GetOutput() );
@@ -42,7 +42,7 @@ int main( int argc, char *argv[] )
     exit( 1 );
     }
 
-  switch( atoi( argv[1] ) ) 
+  switch( atoi( argv[1] ) )
    {
    case 2:
      RescaleImageIntensity<2>( argc, argv );

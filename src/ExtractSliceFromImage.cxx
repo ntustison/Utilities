@@ -19,7 +19,7 @@ int ExtractSliceFromImage( int argc, char *argv[] )
   reader->Update();
 
   typename ImageType::RegionType region;
-  typename ImageType::RegionType::SizeType size = reader->GetOutput()->GetLargestPossibleRegion().GetSize();
+  typename ImageType::RegionType::SizeType size = reader->GetOutput()->GetRequestedRegion().GetSize();
   size[atoi( argv[4] )] = 0;
   typename ImageType::IndexType index;
   index.Fill( 0 );
@@ -31,7 +31,7 @@ int ExtractSliceFromImage( int argc, char *argv[] )
   typename ExtracterType::Pointer extracter = ExtracterType::New();
   extracter->SetInput( reader->GetOutput() );
   extracter->SetExtractionRegion( region );
-  extracter->SetDirectionCollapseToSubmatrix();
+  extracter->SetDirectionCollapseToIdentity();
   extracter->Update();
 
   typedef itk::ImageFileWriter<SliceType> WriterType;
@@ -39,7 +39,6 @@ int ExtractSliceFromImage( int argc, char *argv[] )
   writer->SetFileName( argv[3] );
   writer->SetInput( extracter->GetOutput() );
   writer->Update();
-
 
   return 0;
 }

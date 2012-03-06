@@ -433,6 +433,12 @@ target_link_libraries(RescaleImageIntensity ${ITK_LIBRARIES})
 add_executable(RigidTransformImage RigidTransformImage.cxx )
 target_link_libraries(RigidTransformImage ${ITK_LIBRARIES})
 
+add_executable(SalernoFitVoxelwise3ParameterModel SalernoFitVoxelwise3ParameterModel.cxx )
+target_link_libraries(SalernoFitVoxelwise3ParameterModel ${ITK_LIBRARIES})
+
+add_executable(SalernoGenerateSyntheticImage SalernoGenerateSyntheticImage.cxx )
+target_link_libraries(SalernoGenerateSyntheticImage ${ITK_LIBRARIES})
+
 add_executable(SegmentAirways SegmentAirways.cxx )
 target_link_libraries(SegmentAirways ${ITK_LIBRARIES})
 

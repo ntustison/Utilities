@@ -6,6 +6,8 @@
 #include "vtkMarchingContourFilter.h"
 
 #include "itkNearestNeighborInterpolateImageFunction.h"
+#include "itkLabelImageGaussianInterpolateImageFunction.h"
+#include "itkBSplineInterpolateImageFunction.h"
 #include "itkImageFileReader.h"
 
 int main( int argc, char *argv[] )
@@ -32,7 +34,8 @@ int main( int argc, char *argv[] )
   imageReader->SetFileName( argv[2] );
   imageReader->Update();
 
-  typedef itk::NearestNeighborInterpolateImageFunction<ImageType, float> InterpolatorType;
+//  typedef itk::NearestNeighborInterpolateImageFunction<ImageType, float> InterpolatorType;
+  typedef itk::BSplineInterpolateImageFunction<ImageType, float> InterpolatorType;
   InterpolatorType::Pointer interpolator = InterpolatorType::New();
   interpolator->SetInputImage( imageReader->GetOutput() );
 
@@ -47,7 +50,6 @@ int main( int argc, char *argv[] )
       }
     InterpolatorType::OutputType value = interpolator->Evaluate( point );
 
-    std::cout << point << " -> " << value << std::endl;
     scalars->SetValue( n, value );
     }
   polydata->GetPointData()->SetScalars( scalars );
