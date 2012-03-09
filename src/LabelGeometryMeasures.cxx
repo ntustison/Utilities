@@ -1,6 +1,7 @@
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkLabelGeometryImageFilter.h"
+#include "itkLabelPerimeterEstimationCalculator.h"
 
 #include <iomanip>
 #include <iostream>
@@ -45,6 +46,11 @@ int LabelGeometryMeasures( int argc, char * argv[] )
 //   filter->CalculateOrientedLabelRegionsOn();
   filter->Update();
 
+  typedef itk::LabelPerimeterEstimationCalculator<LabelImageType> AreaFilterType;
+  typename AreaFilterType::Pointer areafilter = AreaFilterType::New();
+  areafilter->SetImage( labelReader->GetOutput() );
+  areafilter->Compute();
+
 
   typename FilterType::LabelsType allLabels = filter->GetLabels();
   typename FilterType::LabelsType::iterator allLabelsIt;
@@ -52,6 +58,7 @@ int LabelGeometryMeasures( int argc, char * argv[] )
 //   std::cout << "Label geometry measures." << std::endl;
   std::cout << std::left << std::setw( 7 )  << "Label"
             << std::left << std::setw( 10 ) << "Volume"
+            << std::left << std::setw( 15 ) << "Surface Area"
             << std::left << std::setw( 15 ) << "Eccentricity"
             << std::left << std::setw( 15 ) << "Elongation"
             << std::left << std::setw( 15 ) << "Orientation"
@@ -72,6 +79,7 @@ int LabelGeometryMeasures( int argc, char * argv[] )
       }
     std::cout << std::setw( 7 ) << *allLabelsIt;
     std::cout << std::setw( 10 ) << filter->GetVolume( *allLabelsIt );
+    std::cout << std::setw( 15 ) << areafilter->GetPerimeter( *allLabelsIt );
     std::cout << std::setw( 15 ) << filter->GetEccentricity( *allLabelsIt );
     std::cout << std::setw( 15 ) << filter->GetElongation( *allLabelsIt );
     std::cout << std::setw( 15 ) << filter->GetOrientation( *allLabelsIt );
