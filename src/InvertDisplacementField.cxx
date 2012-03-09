@@ -2,6 +2,7 @@
 #include "itkImageFileWriter.h"
 
 #include "itkInvertDisplacementFieldImageFilter.h"
+#include "itkImageRegionIteratorWithIndex.h"
 //#include "itkBSplineInvertDisplacementFieldImageFilter.h"
 #include "itkVector.h"
 
