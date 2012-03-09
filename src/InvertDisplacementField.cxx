@@ -2,7 +2,7 @@
 #include "itkImageFileWriter.h"
 
 #include "itkInvertDisplacementFieldImageFilter.h"
-#include "itkBSplineInvertDisplacementFieldImageFilter.h"
+//#include "itkBSplineInvertDisplacementFieldImageFilter.h"
 #include "itkVector.h"
 
 #include <string>
@@ -109,52 +109,52 @@ int Invert( int argc, char *argv[] )
   return 0;
 }
 
-template <unsigned int ImageDimension>
-int BSplineInvertField( int argc, char *argv[] )
-{
-  typedef itk::Vector<double, ImageDimension> VectorType;
-  typedef itk::Image<VectorType, ImageDimension> DisplacementFieldType;
-
-  typedef itk::ImageFileReader<DisplacementFieldType> ReaderType;
-  typename ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( argv[2] );
-  reader->Update();
-
-  typedef itk::BSplineInvertDisplacementFieldImageFilter<DisplacementFieldType> InverterType;
-
-  unsigned int splineOrder = 3;
-  unsigned int numberOfFittingLevels = 1;
-  typename InverterType::ArrayType numberOfControlPoints;
-  numberOfControlPoints.Fill( 4 );
-
-  if( argc > 4 )
-    {
-    numberOfControlPoints.Fill( atoi( argv[4] ) );
-    }
-  if( argc > 5 )
-    {
-    numberOfFittingLevels = atoi( argv[5] );
-    }
-  if( argc > 6 )
-    {
-    splineOrder = atoi( argv[6] );
-    }
-
-  typename InverterType::Pointer inverter = InverterType::New();
-  inverter->SetInput( reader->GetOutput() );
-  inverter->SetNumberOfFittingLevels( numberOfFittingLevels );
-  inverter->SetSplineOrder( splineOrder );
-  inverter->SetNumberOfControlPoints( numberOfControlPoints );
-  inverter->Update();
-
-  typedef itk::ImageFileWriter<DisplacementFieldType> WriterType;
-  typename WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( argv[3] );
-  writer->SetInput( inverter->GetOutput() );
-  writer->Update();
-
-  return 0;
-}
+//template <unsigned int ImageDimension>
+//int BSplineInvertField( int argc, char *argv[] )
+//{
+//  typedef itk::Vector<double, ImageDimension> VectorType;
+//  typedef itk::Image<VectorType, ImageDimension> DisplacementFieldType;
+//
+//  typedef itk::ImageFileReader<DisplacementFieldType> ReaderType;
+//  typename ReaderType::Pointer reader = ReaderType::New();
+//  reader->SetFileName( argv[2] );
+//  reader->Update();
+//
+//  typedef itk::BSplineInvertDisplacementFieldImageFilter<DisplacementFieldType> InverterType;
+//
+//  unsigned int splineOrder = 3;
+//  unsigned int numberOfFittingLevels = 1;
+//  typename InverterType::ArrayType numberOfControlPoints;
+//  numberOfControlPoints.Fill( 4 );
+//
+//  if( argc > 4 )
+//    {
+//    numberOfControlPoints.Fill( atoi( argv[4] ) );
+//    }
+//  if( argc > 5 )
+//    {
+//    numberOfFittingLevels = atoi( argv[5] );
+//    }
+//  if( argc > 6 )
+//    {
+//    splineOrder = atoi( argv[6] );
+//    }
+//
+//  typename InverterType::Pointer inverter = InverterType::New();
+//  inverter->SetInput( reader->GetOutput() );
+//  inverter->SetNumberOfFittingLevels( numberOfFittingLevels );
+//  inverter->SetSplineOrder( splineOrder );
+//  inverter->SetNumberOfControlPoints( numberOfControlPoints );
+//  inverter->Update();
+//
+//  typedef itk::ImageFileWriter<DisplacementFieldType> WriterType;
+//  typename WriterType::Pointer writer = WriterType::New();
+//  writer->SetFileName( argv[3] );
+//  writer->SetInput( inverter->GetOutput() );
+//  writer->Update();
+//
+//  return 0;
+//}
 
 template <class DisplacementFieldType>
 void
