@@ -436,8 +436,8 @@ target_link_libraries(RigidTransformImage ${ITK_LIBRARIES})
 add_executable(SalernoFitVoxelwise3ParameterModel SalernoFitVoxelwise3ParameterModel.cxx )
 target_link_libraries(SalernoFitVoxelwise3ParameterModel ${ITK_LIBRARIES})
 
-add_executable(SalernoGenerateSyntheticImage SalernoGenerateSyntheticImage.cxx )
-target_link_libraries(SalernoGenerateSyntheticImage ${ITK_LIBRARIES})
+add_executable(SalernoGenerateSignalImage SalernoGenerateSignalImage.cxx )
+target_link_libraries(SalernoGenerateSignalImage ${ITK_LIBRARIES})
 
 add_executable(SalernoSyntheticImageEstimation SalernoSyntheticImageEstimation.cxx )
 target_link_libraries(SalernoSyntheticImageEstimation ${ITK_LIBRARIES})

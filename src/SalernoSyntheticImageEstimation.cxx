@@ -104,8 +104,8 @@ CreateCorrelationMap( std::vector<typename ImageType::Pointer> images )
 template<class ImageType>
 float
 CalculateEnergy( std::vector<typename ImageType::Pointer> images,
+  std::vector<typename ImageType::Pointer> signalImages,
   std::vector<typename ImageType::Pointer> syntheticImages,
-  std::vector<typename ImageType::Pointer> outputImages,
   typename ImageType::Pointer correlationMap, float alpha, float beta )
 {
   std::vector<typename ImageType::Pointer> gradImages;
@@ -135,9 +135,9 @@ CalculateEnergy( std::vector<typename ImageType::Pointer> images,
     for( unsigned int n = 0; n < images.size(); n++ )
       {
       float I = images[n]->GetPixel( index );
-      float M = outputImages[n]->GetPixel( index );
+      float M = syntheticImages[n]->GetPixel( index );
       float mag = gradImages[n]->GetPixel( index );
-      float absS = vnl_math_abs( syntheticImages[n]->GetPixel( index ) );
+      float absS = vnl_math_abs( signalImages[n]->GetPixel( index ) );
 
       summation += ( vnl_math_sqr( I - M ) + alpha * w * mag + beta * vnl_math_sqr( absS -  M ) );
       }
@@ -158,8 +158,8 @@ int main( unsigned int argc, char *argv[] )
   if ( argc < 6 )
     {
     std::cout
-      << argv[0] << " outputImagePrefix deltaK alpha beta inputImage1 syntheticImage1 "
-      << "inputImage2 syntheticImage2 ... inputImageN syntheticImageN "
+      << argv[0] << " syntheticImagePrefix deltaK alpha beta inputImage1 signalImage1 "
+      << "inputImage2 signalImage2 ... inputImageN signalImageN "
       << std::endl;
     exit( 1 );
     }
@@ -168,9 +168,9 @@ int main( unsigned int argc, char *argv[] )
   typedef itk::Image<PixelType, 2> ImageType;
 
   std::vector<ImageType::Pointer> inputImages;
+  std::vector<ImageType::Pointer> signalImages;
   std::vector<ImageType::Pointer> syntheticImages;
-  std::vector<ImageType::Pointer> outputImages;
-  std::vector<ImageType::Pointer> newOutputImages;
+  std::vector<ImageType::Pointer> newSyntheticImages;
 
   float deltaK = atof( argv[2] );
   float alpha = atof( argv[3] );
@@ -188,14 +188,14 @@ int main( unsigned int argc, char *argv[] )
     reader2->Update();
 
     inputImages.push_back( reader->GetOutput() );
-    syntheticImages.push_back( reader2->GetOutput() );
+    signalImages.push_back( reader2->GetOutput() );
 
     typedef itk::ImageDuplicator<ImageType> DuplicatorType;
     DuplicatorType::Pointer duplicator = DuplicatorType::New();
     duplicator->SetInputImage( reader2->GetOutput() );
     duplicator->Update();
 
-    outputImages.push_back( duplicator->GetOutput() );
+    syntheticImages.push_back( duplicator->GetOutput() );
     }
 
   ImageType::Pointer correlationMap = CreateCorrelationMap<ImageType>( inputImages );
@@ -218,7 +218,7 @@ int main( unsigned int argc, char *argv[] )
     {
     energy = newEnergy;
 
-    newOutputImages.clear();
+    newSyntheticImages.clear();
     for( unsigned int n = 0; n < inputImages.size(); n++ )
       {
       typedef itk::LaplacianRecursiveGaussianImageFilter<ImageType> LogFilterType;
@@ -233,12 +233,12 @@ int main( unsigned int argc, char *argv[] )
       term1->Update();
 
       MultiplierType::Pointer term2 = MultiplierType::New();
-      term2->SetInput( outputImages[n] );
+      term2->SetInput( syntheticImages[n] );
       term2->SetConstant( -(1 + beta) );
       term2->Update();
 
       MultiplierType::Pointer term4 = MultiplierType::New();
-      term4->SetInput( syntheticImages[n] );
+      term4->SetInput( signalImages[n] );
       term4->SetConstant( beta );
       term4->Update();
 
@@ -262,14 +262,14 @@ int main( unsigned int argc, char *argv[] )
 
       AdderType::Pointer adder4 = AdderType::New();
       adder4->SetInput1( multiplier2->GetOutput() );
-      adder4->SetInput2( outputImages[n] );
+      adder4->SetInput2( syntheticImages[n] );
       adder4->Update();
 
-      newOutputImages[n] = adder4->GetOutput();
-      newOutputImages[n]->DisconnectPipeline();
+      newSyntheticImages[n] = adder4->GetOutput();
+      newSyntheticImages[n]->DisconnectPipeline();
       }
 
-    newEnergy = CalculateEnergy<ImageType>( inputImages, syntheticImages, newOutputImages, correlationMap, alpha, beta );
+    newEnergy = CalculateEnergy<ImageType>( inputImages, signalImages, newSyntheticImages, correlationMap, alpha, beta );
     epsilon = energy - newEnergy;
     }
 
@@ -284,7 +284,7 @@ int main( unsigned int argc, char *argv[] )
     typedef itk::ImageFileWriter<ImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
     writer->SetFileName( filename.c_str() );
-    writer->SetInput( outputImages[n] );
+    writer->SetInput( syntheticImages[n] );
     writer->Update();
     }
 
