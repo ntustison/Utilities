@@ -439,6 +439,9 @@ target_link_libraries(SalernoFitVoxelwise3ParameterModel ${ITK_LIBRARIES})
 add_executable(SalernoGenerateSyntheticImage SalernoGenerateSyntheticImage.cxx )
 target_link_libraries(SalernoGenerateSyntheticImage ${ITK_LIBRARIES})
 
+add_executable(SalernoSyntheticImageEstimation SalernoSyntheticImageEstimation.cxx )
+target_link_libraries(SalernoSyntheticImageEstimation ${ITK_LIBRARIES})
+
 add_executable(SegmentAirways SegmentAirways.cxx )
 target_link_libraries(SegmentAirways ${ITK_LIBRARIES})
 

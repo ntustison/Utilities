@@ -145,7 +145,7 @@ int main( unsigned int argc, char *argv[] )
   float maxInversionTime = itimes[0];
   unsigned int max_n = 0;
 
-  for( unsigned int n = 1; n < itimes.size(); n++ )
+  for( unsigned int n = 0; n < itimes.size(); n++ )
     {
     inversionTimes[n] = itimes[n];
     if( itimes[n] > maxInversionTime )
@@ -199,6 +199,7 @@ int main( unsigned int argc, char *argv[] )
     A->SetPixel( index, currentPosition[0] );
     B->SetPixel( index, currentPosition[1] );
     T1->SetPixel( index, currentPosition[2] );
+
     }
 
   std::string filenameA = std::string( argv[1] ) + std::string( "A.nii.gz" );
