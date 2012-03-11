@@ -1,167 +1,187 @@
-#include "itkBSplineControlPointImageFilter.h"
+#include "itkConstNeighborhoodIterator.h"
+#include "itkCrossCorrelationRegistrationFunction.h"
+#include "itkDisplacementFieldTransform.h"
+#include "itkFiniteDifferenceFunction.h"
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-//#include "itkTimeVaryingBSplineVelocityFieldIntegrationImageFilter.h"
-//#include "itkTimeVaryingBSplineVelocityFieldTransform.h"
-//#include "itkTimeVaryingBSplineVelocityFieldTransformParametersAdaptor.h"
+#include "itkImageRegionIteratorWithIndex.h"
+#include "itkImportImageFilter.h"
 #include "itkVector.h"
+
+#include "itkANTSNeighborhoodCorrelationImageToImageMetricv4.h"
+
 
 template <unsigned int ImageDimension>
 int Test( unsigned int argc, char *argv[] )
 {
-  typedef itk::Vector<double, ImageDimension> VectorType;
-  typedef itk::Image<VectorType, ImageDimension> DeformationFieldType;
-  typedef itk::Image<VectorType, ImageDimension+1> TimeVaryingVelocityFieldType;
-  typedef itk::Image<float, ImageDimension> ImageType;
+  typedef double RealType;
 
-  typedef itk::ImageFileReader<TimeVaryingVelocityFieldType> ReaderType;
-  typename ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( argv[2] );
-  reader->Update();
+  typedef itk::Image<RealType, ImageDimension> ImageType;
+  typedef itk::Vector<RealType, ImageDimension> VectorType;
+  typedef itk::Image<VectorType, ImageDimension> DisplacementFieldType;
 
-<<<<<<< HEAD
-//  typedef itk::TimeVaryingBSplineVelocityFieldIntegrationImageFilter
-//    <TimeVaryingVelocityFieldType, DeformationFieldType> IntegratorType;
-//  typename IntegratorType::Pointer integrator = IntegratorType::New();
-//  integrator->SetInput( reader->GetOutput() );
-//  integrator->SetSplineOrder( 3 );
-//  integrator->SetLowerTimeBound( atof( argv[5] ) );
-//  integrator->SetUpperTimeBound( atof( argv[6] ) );
+  typedef itk::DisplacementFieldTransform<RealType, ImageDimension> DisplacementFieldTransformType;
 
-=======
-  typedef itk::ImageFileReader<ImageType> Reader2Type;
-  typename Reader2Type::Pointer reader2 = Reader2Type::New();
-  reader2->SetFileName( argv[7] );
-  reader2->Update();
+  typedef itk::ImageFileReader<ImageType> ReaderType;
 
-  typedef itk::TimeVaryingBSplineVelocityFieldIntegrationImageFilter
-    <TimeVaryingVelocityFieldType, DeformationFieldType> IntegratorType;
-  typename IntegratorType::Pointer integrator = IntegratorType::New();
-  integrator->SetInput( reader->GetOutput() );
-  integrator->SetSplineOrder( 3 );
-  integrator->SetLowerTimeBound( atof( argv[5] ) );
-  integrator->SetUpperTimeBound( atof( argv[6] ) );
->>>>>>> d6ece4988053be6b6f2932d9a76cd1966ccfecdf
-//  integrator->SetNumberOfIntegrationSteps( atoi( argv[4] ) );
-  integrator->Update();
+  typename ReaderType::Pointer fixedreader = ReaderType::New();
+  fixedreader->SetFileName( argv[2] );
+  fixedreader->Update();
 
-  typedef itk::BSplineControlPointImageFilter<DeformationFieldType, DeformationFieldType> BSplineFilterType;
-  typename BSplineFilterType::Pointer bspliner = BSplineFilterType::New();
-  bspliner->SetInput( integrator->GetOutput() );
-  bspliner->SetSplineOrder( integrator->GetSplineOrder() );
-  bspliner->SetSpacing( reader2->GetOutput()->GetSpacing() );
-  bspliner->SetSize( reader2->GetOutput()->GetLargestPossibleRegion().GetSize() );
-  bspliner->SetDirection( reader2->GetOutput()->GetDirection() );
-  bspliner->SetOrigin( reader2->GetOutput()->GetOrigin() );
-  bspliner->Update();
+  typename ReaderType::Pointer movingreader = ReaderType::New();
+  movingreader->SetFileName( argv[3] );
+  movingreader->Update();
 
-  typedef itk::ImageFileWriter<DeformationFieldType> WriterType;
+  VectorType zeroVector( 0.0 );
+
+  //////////////////////////////////////////////////////////////////
+  // ITKv4 metric
+  //////////////////////////////////////////////////////////////////
+
+  typename DisplacementFieldType::Pointer identityField = DisplacementFieldType::New();
+  identityField->CopyInformation( fixedreader->GetOutput() );
+  identityField->SetRegions( fixedreader->GetOutput()->GetRequestedRegion() );
+  identityField->Allocate();
+  identityField->FillBuffer( zeroVector );
+
+  typename DisplacementFieldTransformType::Pointer identityDisplacementFieldTransform = DisplacementFieldTransformType::New();
+  identityDisplacementFieldTransform->SetDisplacementField( identityField );
+
+  typedef itk::ANTSNeighborhoodCorrelationImageToImageMetricv4<ImageType, ImageType> CorrelationMetricType;
+  typename CorrelationMetricType::Pointer correlationMetric = CorrelationMetricType::New();
+  typename CorrelationMetricType::RadiusType radius;
+  radius.Fill( 4 );
+  correlationMetric->SetRadius( radius );
+  correlationMetric->SetFixedImage( fixedreader->GetOutput() );
+  correlationMetric->SetFixedTransform( identityDisplacementFieldTransform );
+  correlationMetric->SetMovingImage( movingreader->GetOutput() );
+  correlationMetric->SetMovingTransform( identityDisplacementFieldTransform );
+  correlationMetric->SetVirtualDomainImage( fixedreader->GetOutput() );
+  correlationMetric->SetUseMovingImageGradientFilter( false );
+  correlationMetric->SetUseFixedImageGradientFilter( false );
+  correlationMetric->Initialize();
+
+  RealType value;
+  typename CorrelationMetricType::DerivativeType metricDerivative;
+  correlationMetric->GetValueAndDerivative( value, metricDerivative );
+
+  const unsigned long numberOfPixels = static_cast<unsigned long>( metricDerivative.Size() / ImageDimension );
+  const bool importFilterWillReleaseMemory = false;
+
+  VectorType *metricDerivativeFieldPointer = reinterpret_cast<VectorType *>( metricDerivative.data_block() );
+
+  typedef itk::ImportImageFilter<VectorType, ImageDimension> ImporterType;
+  typename ImporterType::Pointer importer = ImporterType::New();
+  importer->SetImportPointer( metricDerivativeFieldPointer, numberOfPixels, importFilterWillReleaseMemory );
+  importer->SetRegion( fixedreader->GetOutput()->GetBufferedRegion() );
+  importer->SetOrigin( fixedreader->GetOutput()->GetOrigin() );
+  importer->SetSpacing( fixedreader->GetOutput()->GetSpacing() );
+  importer->SetDirection( fixedreader->GetOutput()->GetDirection() );
+  importer->Update();
+
+  std::cout << "ITKv4 value: " << value << std::endl;
+
+  {
+  typedef itk::ImageFileWriter<DisplacementFieldType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( argv[3] );
-  writer->SetInput( bspliner->GetOutput() );
+  writer->SetFileName( "itkv4.nii.gz" );
+  writer->SetInput( importer->GetOutput() );
   writer->Update();
+  }
+
+  //////////////////////////////////////////////////////////////////
+  // ants metric
+  //////////////////////////////////////////////////////////////////
+
+  typedef itk::CrossCorrelationRegistrationFunction<ImageType, ImageType,
+                                                    DisplacementFieldType>         CCMetricType;
+  typename CCMetricType::Pointer ccmet = CCMetricType::New();
+
+  typename DisplacementFieldType::Pointer updateField = DisplacementFieldType::New();
+  updateField->CopyInformation( fixedreader->GetOutput() );
+  updateField->SetRegions( fixedreader->GetOutput()->GetLargestPossibleRegion() );
+  updateField->Allocate();
+  updateField->FillBuffer( zeroVector );
+
+  void * globalData = ccmet->GetGlobalDataPointer();
+
+  ccmet->SetFixedImage( fixedreader->GetOutput() );
+  ccmet->SetMovingImage( movingreader->GetOutput() );
+  ccmet->SetRadius( radius );
+  ccmet->SetGradientStep( 1.e2 );
+  ccmet->SetNormalizeGradient( false );
+  ccmet->InitializeIteration();
 
 
+  double ccval = 0;
+  typedef itk::ConstNeighborhoodIterator<ImageType> ScanIteratorType;
+  typedef itk::NeighborhoodIterator<DisplacementFieldType> NIteratorType;
+  typename ImageType::RegionType region = fixedreader->GetOutput()->GetLargestPossibleRegion();
+  ScanIteratorType asamIt( radius, fixedreader->GetOutput(), region);
+  unsigned long    ct = 0;
 
-//  TimeVaryingVelocityFieldType::PointType origin;
-//  origin.Fill( 0.0 );
-//  TimeVaryingVelocityFieldType::SpacingType spacing;
-//  spacing.Fill( 2.0 );
-//  TimeVaryingVelocityFieldType::SizeType size;
-//  size.Fill( 25 );
-//  VectorType velocity;
-//  velocity.Fill( 0.1 );
-//
-//  TimeVaryingVelocityFieldType::Pointer timeVaryingVelocityField =
-//    TimeVaryingVelocityFieldType::New();
-//  timeVaryingVelocityField->SetOrigin( origin );
-//  timeVaryingVelocityField->SetSpacing( spacing );
-//  timeVaryingVelocityField->SetRegions( size );
-//  timeVaryingVelocityField->Allocate();
-//  timeVaryingVelocityField->FillBuffer( velocity );
-//
-//  typedef itk::TimeVaryingVelocityFieldIntegrationImageFilter
-//    <TimeVaryingVelocityFieldType, DeformationFieldType> IntegratorType;
-//
-//  IntegratorType::Pointer integrator = IntegratorType::New();
-//  integrator->SetInput( timeVaryingVelocityField );
-//  integrator->SetLowerTimeBound( 0.3 );
-//  integrator->SetUpperTimeBound( 0.75 );
-//  integrator->SetNumberOfIntegrationSteps( 10 );
-//  integrator->Update();
-//
-//  integrator->Print( std::cout, 3 );
-//
-//  DeformationFieldType::IndexType index;
-//  index.Fill( 0 );
-//  VectorType displacement;
-//
-//  // This integration should result in a constant image of value
-//  // 0.75 * 0.1 - 0.3 * 0.1 = 0.045 with ~epsilon deviation
-//  // due to numerical computations
-//  displacement = integrator->GetOutput()->GetPixel( index );
-//  if( vnl_math_abs( displacement[0] - 0.045 ) > 0.0001 )
-//    {
-//    std::cerr << "Failed to produce the correct forward integration."
-//      << std::endl;
-//    return EXIT_FAILURE;
-//    }
-//
-//  IntegratorType::Pointer inverseIntegrator = IntegratorType::New();
-//  inverseIntegrator->SetInput( timeVaryingVelocityField );
-//  inverseIntegrator->SetLowerTimeBound( 1.0 );
-//  inverseIntegrator->SetUpperTimeBound( 0.0 );
-//  inverseIntegrator->SetNumberOfIntegrationSteps( 10 );
-//  inverseIntegrator->Update();
-//
-//  // This integration should result in a constant image of value
-//  // -( 0.1 * 1.0 - ( 0.1 * 0.0 ) ) = -0.1 with ~epsilon deviation
-//  // due to numerical computations
-//  displacement = inverseIntegrator->GetOutput()->GetPixel( index );
-//  if( vnl_math_abs( displacement[0] + 0.1 ) > 0.0001 )
-//    {
-//    std::cerr << "Failed to produce the correct inverse integration."
-//      << std::endl;
-//    return EXIT_FAILURE;
-//    }
-//
-//  // Now test the transform
-//
-//  typedef itk::TimeVaryingVelocityFieldTransform<double, 3> TransformType;
-//  TransformType::Pointer transform = TransformType::New() ;
-//  transform->SetLowerTimeBound( 0.0 );
-//  transform->SetUpperTimeBound( 1.0 );
-//  transform->SetTimeVaryingVelocityField( timeVaryingVelocityField );
-//
-//  TransformType::InputPointType point;
-//  point.Fill( 1.3 );
-//
-//  TransformType::OutputPointType transformedPoint =
-//    transform->TransformPoint( point );
-//
-//  point += velocity;
-//  if( point.EuclideanDistanceTo( transformedPoint ) > 0.001 )
-//    {
-//    std::cerr << "Failed to produce the expected transformed point."
-//      << std::endl;
-//    return EXIT_FAILURE;
-//    }
-//  point -= velocity;
-//
-//  TransformType::InputPointType point2;
-//  point2.CastFrom( transformedPoint );
-//  transformedPoint = transform->GetInverseTransform()->TransformPoint( point2 );
-//
-//  if( point.EuclideanDistanceTo( transformedPoint ) > 0.001 )
-//    {
-//    std::cerr << "Failed to produce the expected inverse transformed point."
-//      << std::endl;
-//    return EXIT_FAILURE;
-//    }
-//
-//  transform->Print( std::cout, 3 );
-//
+  typedef itk::FiniteDifferenceFunction<DisplacementFieldType>     FiniteDifferenceFunctionType;
+  typedef typename FiniteDifferenceFunctionType::NeighborhoodType
+  NeighborhoodIteratorType;
+  NeighborhoodIteratorType nD(radius, updateField, region);
+  NIteratorType nD2(radius, updateField, region);
+
+
+  double metricvalue = 0.0;
+
+  itk::ImageRegionIteratorWithIndex<ImageType> iter( fixedreader->GetOutput(), region );
+  for(  iter.GoToBegin(); !iter.IsAtEnd(); ++iter )
+    {
+    typename ImageType::IndexType index = iter.GetIndex();
+    double    val = 0;
+    double    fmip = 0, mmip = 0, ffip = 0;
+    asamIt.SetLocation(index);
+    nD.SetLocation( index );
+    VectorType temp = ccmet->ComputeUpdate(nD, globalData);
+    nD2.SetLocation( index );
+    nD2.SetCenterPixel( temp );
+
+    typename ImageType::PointType point;
+    fixedreader->GetOutput()->TransformIndexToPhysicalPoint( index, point );
+
+    for( unsigned int i = 0; i < asamIt.Size(); i++ )
+      {
+      typename ImageType::IndexType locind = asamIt.GetIndex(i);
+      if( region.IsInside( locind ) )
+        {
+        double f = fixedreader->GetOutput()->GetPixel(locind);
+        double m = movingreader->GetOutput()->GetPixel(locind);
+        fmip += (f * m);  mmip += (m * m);  ffip += (f * f);
+        }
+      }
+    double denom = mmip * ffip;
+    if( denom == 0 )
+      {
+      val = 1;
+      }
+    else
+      {
+      val = fmip / vcl_sqrt(denom);
+      }
+    ccval += val;
+    ct++;
+    }
+  if( ct >  0 )
+    {
+    metricvalue = ccval / ct;
+    }
+
+  std::cout << "ants value: " << ccmet->GetEnergy() / ct << std::endl;
+
+  {
+  typedef itk::ImageFileWriter<DisplacementFieldType> WriterType;
+  typename WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName( "ants.nii.gz" );
+  writer->SetInput( updateField );
+  writer->Update();
+  }
+
   return EXIT_SUCCESS;
 }
 
@@ -169,7 +189,7 @@ int main( int argc, char *argv[] )
 {
   if ( argc < 4 )
     {
-    std::cout << argv[0] << " imageDimension velocityField integratedField numberOfIntegrationPoints" << std::endl;
+    std::cout << argv[0] << " imageDimension fixedImage movingImage" << std::endl;
     exit( 1 );
     }
 
@@ -180,9 +200,6 @@ int main( int argc, char *argv[] )
      break;
    case 3:
      Test<3>( argc, argv );
-     break;
-   case 4:
-     Test<4>( argc, argv );
      break;
    default:
       std::cerr << "Unsupported dimension" << std::endl;

@@ -7,11 +7,11 @@
   Version:   $Revision: 1.18 $
 
   Copyright (c) ConsortiumOfANTS. All rights reserved.
-  See accompanying COPYING.txt or 
+  See accompanying COPYING.txt or
  http://sourceforge.net/projects/advants/files/ANTS/ANTSCopyright.txt for details.
 
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+     This software is distributed WITHOUT ANY WARRANTY; without even
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
@@ -22,17 +22,18 @@
 #include "itkExceptionObject.h"
 #include "vnl/vnl_math.h"
 
-namespace itk {
+namespace itk
+{
 
 /*
  * Default constructor
  */
-template <class TFixedImage, class TMovingImage, class TDeformationField>
-SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
+template <class TFixedImage, class TMovingImage, class TDisplacementField>
+SyNDemonsRegistrationFunction<TFixedImage, TMovingImage, TDisplacementField>
 ::SyNDemonsRegistrationFunction()
 {
 
-  RadiusType r;
+  RadiusType   r;
   unsigned int j;
   for( j = 0; j < ImageDimension; j++ )
     {
@@ -42,7 +43,7 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
 
   m_TimeStep = 1.0;
   m_DenominatorThreshold = 1e-9;
-  m_IntensityDifferenceThreshold =0.001;
+  m_IntensityDifferenceThreshold = 0.001;
   this->SetMovingImage(NULL);
   this->SetFixedImage(NULL);
   m_FixedImageSpacing.Fill( 1.0 );
@@ -50,12 +51,11 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
   m_Normalizer = 1.0;
   m_FixedImageGradientCalculator = GradientCalculatorType::New();
 
-
   typename DefaultInterpolatorType::Pointer interp =
     DefaultInterpolatorType::New();
 
-  m_MovingImageInterpolator = static_cast<InterpolatorType*>(
-    interp.GetPointer() );
+  m_MovingImageInterpolator = static_cast<InterpolatorType *>(
+      interp.GetPointer() );
 
   m_Metric = NumericTraits<double>::max();
   m_SumOfSquaredDifference = 0.0;
@@ -65,16 +65,16 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
 
   m_MovingImageGradientCalculator = MovingImageGradientCalculatorType::New();
   m_UseMovingImageGradient = false;
+  m_UseSSD = false;
 
 }
-
 
 /*
  * Standard "PrintSelf" method.
  */
-template <class TFixedImage, class TMovingImage, class TDeformationField>
+template <class TFixedImage, class TMovingImage, class TDisplacementField>
 void
-SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
+SyNDemonsRegistrationFunction<TFixedImage, TMovingImage, TDisplacementField>
 ::PrintSelf(std::ostream& os, Indent indent) const
 {
   Superclass::PrintSelf(os, indent);
@@ -104,13 +104,12 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
 
 }
 
-
 /**
  *
  */
-template <class TFixedImage, class TMovingImage, class TDeformationField>
+template <class TFixedImage, class TMovingImage, class TDisplacementField>
 void
-SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
+SyNDemonsRegistrationFunction<TFixedImage, TMovingImage, TDisplacementField>
 ::SetIntensityDifferenceThreshold(double threshold)
 {
   m_IntensityDifferenceThreshold = threshold;
@@ -119,21 +118,20 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
 /**
  *
  */
-template <class TFixedImage, class TMovingImage, class TDeformationField>
+template <class TFixedImage, class TMovingImage, class TDisplacementField>
 double
-SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
+SyNDemonsRegistrationFunction<TFixedImage, TMovingImage, TDisplacementField>
 ::GetIntensityDifferenceThreshold() const
 {
   return m_IntensityDifferenceThreshold;
 }
 
-
 /*
  * Set the function state values before each iteration
  */
-template <class TFixedImage, class TMovingImage, class TDeformationField>
+template <class TFixedImage, class TMovingImage, class TDisplacementField>
 void
-SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
+SyNDemonsRegistrationFunction<TFixedImage, TMovingImage, TDisplacementField>
 ::InitializeIteration()
 {
 
@@ -154,7 +152,7 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
     }
   m_Normalizer /= static_cast<double>( ImageDimension );
 
-  this->m_Energy=0;
+  this->m_Energy = 0;
 
   // setup gradient calculator
   m_FixedImageGradientCalculator->SetInputImage( this->GetFixedImage() );
@@ -168,32 +166,29 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
   m_NumberOfPixelsProcessed = 0L;
   m_SumOfSquaredChange      = 0.0;
 
-  
-
 }
-
 
 /*
  * Compute update at a specify neighbourhood
  */
-template <class TFixedImage, class TMovingImage, class TDeformationField>
-typename SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
+template <class TFixedImage, class TMovingImage, class TDisplacementField>
+typename SyNDemonsRegistrationFunction<TFixedImage, TMovingImage, TDisplacementField>
 ::PixelType
-SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
-::ComputeUpdate(const NeighborhoodType &it, void * gd,
-                const FloatOffsetType& itkNotUsed(offset))
+SyNDemonsRegistrationFunction<TFixedImage, TMovingImage, TDisplacementField>
+::ComputeUpdate(const NeighborhoodType & it, void * gd,
+                const FloatOffsetType & itkNotUsed(offset) )
 {
 
-  PixelType update;
+  PixelType    update;
   unsigned int j;
 
   IndexType index = it.GetIndex();
 
   // Get fixed image related information
-  double fixedValue;
+  double              fixedValue;
   CovariantVectorType gradient;
   CovariantVectorType mgradient;
-  double gradientSquaredMagnitude = 0;
+  double              gradientSquaredMagnitude = 0;
 
   // Note: no need to check the index is within
   // fixed image buffer. This is done by the external filter.
@@ -201,23 +196,23 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
   double movingValue = (double)this->GetMovingImage()->GetPixel( index );
 
   //  if (fixedValue > 0)std::cout << " fxv  " << fixedValue << " movingValue " << movingValue << std::endl;
- 
-    gradient = m_FixedImageGradientCalculator->EvaluateAtIndex( index );
- 
-    mgradient = m_MovingImageGradientCalculator->EvaluateAtIndex( index );
-   
 
+  gradient = m_FixedImageGradientCalculator->EvaluateAtIndex( index );
+
+  mgradient = m_MovingImageGradientCalculator->EvaluateAtIndex( index );
   for( j = 0; j < ImageDimension; j++ )
     {
-      if ( this->m_UseMovingImageGradient)  gradient[j]=gradient[j]+mgradient[j];
-      gradientSquaredMagnitude += vnl_math_sqr( gradient[j] );
-    } 
-
+    if( this->m_UseMovingImageGradient )
+      {
+      gradient[j] = gradient[j] + mgradient[j];
+      }
+    gradientSquaredMagnitude += vnl_math_sqr( gradient[j] );
+    }
 
   /**
    * Compute Update.
    * In the original equation the denominator is defined as (g-f)^2 + grad_mag^2.
-   * However there is a mismatch in units between the two terms. 
+   * However there is a mismatch in units between the two terms.
    * The units for the second term is intensity^2/mm^2 while the
    * units for the first term is intensity^2. This mismatch is particularly
    * problematic when the fixed image does not have unit spacing.
@@ -226,22 +221,28 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
    * where K = mean square spacing to compensate for the mismatch in units.
    */
   double speedValue = fixedValue - movingValue;
-  if ( fabs(speedValue) < this->m_RobustnessParameter) speedValue=0;
+  if( fabs(speedValue) < this->m_RobustnessParameter )
+    {
+    speedValue = 0;
+    }
 
   // update the metric
   GlobalDataStruct *globalData = (GlobalDataStruct *)gd;
-  if ( globalData )
+  if( globalData )
     {
     globalData->m_SumOfSquaredDifference += vnl_math_sqr( speedValue );
     globalData->m_NumberOfPixelsProcessed += 1;
     }
 
-  double denominator = vnl_math_sqr( speedValue ) / m_Normalizer + 
-    gradientSquaredMagnitude;
-  this->m_Energy+=speedValue*speedValue;
-
-  if ( vnl_math_abs(speedValue) < m_IntensityDifferenceThreshold || 
-       denominator < m_DenominatorThreshold )
+  double denominator = vnl_math_sqr( speedValue ) / m_Normalizer
+    + gradientSquaredMagnitude;
+  this->m_Energy += speedValue * speedValue;
+  if( m_UseSSD )
+    {
+    denominator = 1;
+    }
+  if( vnl_math_abs(speedValue) < m_IntensityDifferenceThreshold ||
+      denominator < m_DenominatorThreshold )
     {
     for( j = 0; j < ImageDimension; j++ )
       {
@@ -249,11 +250,10 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
       }
     return update;
     }
-
   for( j = 0; j < ImageDimension; j++ )
     {
     update[j] = speedValue * gradient[j] / denominator;
-    if ( globalData )
+    if( globalData )
       {
       globalData->m_SumOfSquaredChange += vnl_math_sqr( update[j] );
       }
@@ -266,24 +266,23 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
 /*
  * Compute update at a specify neighbourhood
  */
-template <class TFixedImage, class TMovingImage, class TDeformationField>
-typename SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
+template <class TFixedImage, class TMovingImage, class TDisplacementField>
+typename SyNDemonsRegistrationFunction<TFixedImage, TMovingImage, TDisplacementField>
 ::PixelType
-SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
-::ComputeUpdateInv(const NeighborhoodType &it, void * gd,
-                const FloatOffsetType& itkNotUsed(offset))
+SyNDemonsRegistrationFunction<TFixedImage, TMovingImage, TDisplacementField>
+::ComputeUpdateInv(const NeighborhoodType & it, void * gd,
+                   const FloatOffsetType & itkNotUsed(offset) )
 {
 
-
-  PixelType update;
+  PixelType    update;
   unsigned int j;
 
   IndexType index = it.GetIndex();
 
   // Get fixed image related information
-  double fixedValue;
+  double              fixedValue;
   CovariantVectorType gradient;
-  double gradientSquaredMagnitude = 0;
+  double              gradientSquaredMagnitude = 0;
 
   // Note: no need to check the index is within
   // fixed image buffer. This is done by the external filter.
@@ -291,22 +290,19 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
   double movingValue = (double)this->GetMovingImage()->GetPixel( index );
 
   //  if (fixedValue > 0)std::cout << " fxv  " << fixedValue << " movingValue " << movingValue << std::endl;
- 
-  //    gradient = m_FixedImageGradientCalculator->EvaluateAtIndex( index );
- 
-     gradient = m_MovingImageGradientCalculator->EvaluateAtIndex( index );
-   
 
+  //    gradient = m_FixedImageGradientCalculator->EvaluateAtIndex( index );
+
+  gradient = m_MovingImageGradientCalculator->EvaluateAtIndex( index );
   for( j = 0; j < ImageDimension; j++ )
     {
     gradientSquaredMagnitude += vnl_math_sqr( gradient[j] );
-    } 
-
+    }
 
   /**
    * Compute Update.
    * In the original equation the denominator is defined as (g-f)^2 + grad_mag^2.
-   * However there is a mismatch in units between the two terms. 
+   * However there is a mismatch in units between the two terms.
    * The units for the second term is intensity^2/mm^2 while the
    * units for the first term is intensity^2. This mismatch is particularly
    * problematic when the fixed image does not have unit spacing.
@@ -315,21 +311,24 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
    * where K = mean square spacing to compensate for the mismatch in units.
    */
   double speedValue = movingValue - fixedValue;
-  if ( fabs(speedValue) < this->m_RobustnessParameter) speedValue=0;
-  
+  if( fabs(speedValue) < this->m_RobustnessParameter )
+    {
+    speedValue = 0;
+    }
+
   // update the metric
   GlobalDataStruct *globalData = (GlobalDataStruct *)gd;
-  if ( globalData )
+  if( globalData )
     {
     globalData->m_SumOfSquaredDifference += vnl_math_sqr( speedValue );
     globalData->m_NumberOfPixelsProcessed += 1;
     }
 
-  double denominator = vnl_math_sqr( speedValue ) / m_Normalizer + 
-    gradientSquaredMagnitude;
+  double denominator = vnl_math_sqr( speedValue ) / m_Normalizer
+    + gradientSquaredMagnitude;
 
-  if ( vnl_math_abs(speedValue) < m_IntensityDifferenceThreshold || 
-       denominator < m_DenominatorThreshold )
+  if( vnl_math_abs(speedValue) < m_IntensityDifferenceThreshold ||
+      denominator < m_DenominatorThreshold )
     {
     for( j = 0; j < ImageDimension; j++ )
       {
@@ -337,12 +336,10 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
       }
     return update;
     }
-
-
   for( j = 0; j < ImageDimension; j++ )
     {
     update[j] = speedValue * gradient[j] / denominator;
-    if ( globalData )
+    if( globalData )
       {
       globalData->m_SumOfSquaredChange += vnl_math_sqr( update[j] );
       }
@@ -352,38 +349,29 @@ SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
 
 }
 
-
 /*
  * Update the metric and release the per-thread-global data.
  */
-template <class TFixedImage, class TMovingImage, class TDeformationField>
+template <class TFixedImage, class TMovingImage, class TDisplacementField>
 void
-SyNDemonsRegistrationFunction<TFixedImage,TMovingImage,TDeformationField>
+SyNDemonsRegistrationFunction<TFixedImage, TMovingImage, TDisplacementField>
 ::ReleaseGlobalDataPointer( void *gd ) const
 {
   GlobalDataStruct * globalData = (GlobalDataStruct *) gd;
 
-  m_MetricCalculationLock.Lock();
   m_SumOfSquaredDifference  += globalData->m_SumOfSquaredDifference;
   m_NumberOfPixelsProcessed += globalData->m_NumberOfPixelsProcessed;
   m_SumOfSquaredChange += globalData->m_SumOfSquaredChange;
-  if ( m_NumberOfPixelsProcessed )
+  if( m_NumberOfPixelsProcessed )
     {
-    m_Metric = m_SumOfSquaredDifference / 
-               static_cast<double>( m_NumberOfPixelsProcessed ); 
-    m_RMSChange = vcl_sqrt( m_SumOfSquaredChange / 
-               static_cast<double>( m_NumberOfPixelsProcessed ) ); 
+    m_Metric = m_SumOfSquaredDifference
+      / static_cast<double>( m_NumberOfPixelsProcessed );
+    m_RMSChange = vcl_sqrt( m_SumOfSquaredChange
+                            / static_cast<double>( m_NumberOfPixelsProcessed ) );
     }
-  m_MetricCalculationLock.Unlock();
 
   delete globalData;
 }
-
-
-
-
-
-
 
 } // end namespace itk
 
