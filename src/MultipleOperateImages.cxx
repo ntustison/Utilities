@@ -118,6 +118,72 @@ int MultipleOperateImages( int argc, char * argv[] )
     writer->SetFileName( argv[3] );
     writer->Update();
     }
+  else if( op.compare( std::string( "sum" ) ) == 0 )
+    {
+    typename ReaderType::Pointer reader = ReaderType::New();
+    reader->SetFileName( filenames[0].c_str() );
+    reader->Update();
+
+    typename ImageType::Pointer output = reader->GetOutput();
+
+    for( unsigned int n = 1; n < filenames.size(); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+
+      itk::ImageRegionIteratorWithIndex<ImageType> It( reader->GetOutput(),
+        reader->GetOutput()->GetLargestPossibleRegion() );
+      itk::ImageRegionIterator<ImageType> ItO( output,
+        output->GetLargestPossibleRegion() );
+      for( It.GoToBegin(), ItO.GoToBegin(); !It.IsAtEnd(); ++It, ++ItO )
+        {
+        if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
+          {
+          ItO.Set( ItO.Get() + It.Get() );
+          }
+        }
+      }
+
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( output );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+    }
+  else if( op.compare( std::string( "max" ) ) == 0 )
+    {
+    typename ReaderType::Pointer reader = ReaderType::New();
+    reader->SetFileName( filenames[0].c_str() );
+    reader->Update();
+
+    typename ImageType::Pointer output = reader->GetOutput();
+
+    for( unsigned int n = 1; n < filenames.size(); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+
+      itk::ImageRegionIteratorWithIndex<ImageType> It( reader->GetOutput(),
+        reader->GetOutput()->GetLargestPossibleRegion() );
+      itk::ImageRegionIterator<ImageType> ItO( output,
+        output->GetLargestPossibleRegion() );
+      for( It.GoToBegin(), ItO.GoToBegin(); !It.IsAtEnd(); ++It, ++ItO )
+        {
+        if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
+          {
+          ItO.Set( vnl_math_max( ItO.Get(), It.Get() ) );
+          }
+        }
+      }
+
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( output );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+    }
   else if( op.compare( std::string( "var" ) ) == 0 )
     {
     typename ReaderType::Pointer reader = ReaderType::New();
@@ -558,6 +624,8 @@ int main( int argc, char *argv[] )
     std::cerr << "  operations: " << std::endl;
     std::cerr << "    s:      Create speed image from atlas" << std::endl;
     std::cerr << "    mean:   Create mean image" << std::endl;
+    std::cerr << "    sum:    Create sum image" << std::endl;
+    std::cerr << "    max:    Create max image" << std::endl;
     std::cerr << "    var:    Create variance image" << std::endl;
     std::cerr << "    w:      create probabilistic weight image from label probability images" << std::endl;
     std::cerr << "    seg:    create labe image from label probability images" << std::endl;
