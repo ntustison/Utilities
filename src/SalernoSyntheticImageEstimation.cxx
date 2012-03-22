@@ -9,6 +9,7 @@
 #include "itkGradientMagnitudeRecursiveGaussianImageFilter.h"
 
 #include <vector>
+#include <iomanip>
 #include <string>
 
 typedef float RealType;
@@ -91,7 +92,7 @@ CreateCorrelationMap( std::vector<typename ImageType::Pointer> images )
     float r2 = GetCorrelation( X, Y2 );
     float r3 = GetCorrelation( X, Y3 );
 
-    float sum = r0 + r1 + r2 + r3;
+    float sum = ( r0 + r1 + r2 + r3 ) / 4.0;
     if( sum > 0.75 )
       {
       w->SetPixel( It.GetIndex(), sum );
@@ -115,14 +116,15 @@ CalculateEnergy( std::vector<typename ImageType::Pointer> images,
     typedef itk::GradientMagnitudeRecursiveGaussianImageFilter<ImageType, ImageType> GradientFilterType;
     typename GradientFilterType::Pointer gradFilter = GradientFilterType::New();
     gradFilter->SetSigma( 2.0 );
-    gradFilter->SetInput( images[0] );
+    gradFilter->SetInput( images[n] );
     gradFilter->SetNormalizeAcrossScale( false );
     gradFilter->Update();
 
     gradImages.push_back( gradFilter->GetOutput() );
     }
 
-  float summation = 0;
+  float summation = 0.0;
+  float N = 0.0;
 
   typedef itk::ImageRegionConstIteratorWithIndex<ImageType> IteratorType;
   IteratorType It( images[0], images[0]->GetLargestPossibleRegion() );
@@ -140,8 +142,10 @@ CalculateEnergy( std::vector<typename ImageType::Pointer> images,
       float absS = vnl_math_abs( signalImages[n]->GetPixel( index ) );
 
       summation += ( vnl_math_sqr( I - M ) + alpha * w * mag + beta * vnl_math_sqr( absS -  M ) );
+      N+=1.0;
       }
     }
+  summation /= N;
 
   typename ImageType::SpacingType spacing = images[0]->GetSpacing();
 
@@ -224,6 +228,7 @@ int main( unsigned int argc, char *argv[] )
       typedef itk::LaplacianRecursiveGaussianImageFilter<ImageType> LogFilterType;
       LogFilterType::Pointer logFilter = LogFilterType::New();
       logFilter->SetSigma( 2.0 );
+      logFilter->SetInput( syntheticImages[n] );
       logFilter->SetNormalizeAcrossScale( true );
       logFilter->Update();
 
@@ -265,26 +270,27 @@ int main( unsigned int argc, char *argv[] )
       adder4->SetInput2( syntheticImages[n] );
       adder4->Update();
 
-      newSyntheticImages[n] = adder4->GetOutput();
-      newSyntheticImages[n]->DisconnectPipeline();
+      newSyntheticImages.push_back( adder4->GetOutput() );
       }
 
-    newEnergy = CalculateEnergy<ImageType>( inputImages, signalImages, newSyntheticImages, correlationMap, alpha, beta );
+    syntheticImages = newSyntheticImages;
+
+    newEnergy = CalculateEnergy<ImageType>( inputImages, signalImages, syntheticImages, correlationMap, alpha, beta );
+
     epsilon = energy - newEnergy;
     }
-
 
   for( unsigned int n = 0; n < inputImages.size(); n++ )
     {
     std::ostringstream iss;
-    iss << n;
+    iss << std::setw( 5 ) << std::setfill( '0' ) << n;
 
-    std::string filename = std::string( argv[1] ) + iss.str();
+    std::string filename = std::string( argv[1] ) + iss.str() + std::string( ".nii.gz" );
 
     typedef itk::ImageFileWriter<ImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
     writer->SetFileName( filename.c_str() );
-    writer->SetInput( syntheticImages[n] );
+    writer->SetInput( newSyntheticImages[n] );
     writer->Update();
     }
 
