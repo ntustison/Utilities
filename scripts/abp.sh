@@ -296,15 +296,15 @@ fi
 
 for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
-  if [[ ! -f $ANATOMICAL_IMAGES[$i] ]];
+  if [[ ! -f ${ANATOMICAL_IMAGES[$i]} ]];
     then
-      echo "The specified image \"$ANATOMICAL_IMAGES[$i]\" does not exist."
+      echo "The specified image \"${ANATOMICAL_IMAGES[$i]}\" does not exist."
       exit 1
     fi
   done
 
 OUTPUT_DIR=${OUTPUT_PREFIX%\/*}
-if [[ ! -e $OUTPUT_DIR ]];
+if [[ ! -e $OUTPUT_PREFIX ]];
   then
     echo "The output directory \"$OUTPUT_DIR\" does not exist. Making it."
     mkdir -p $OUTPUT_DIR
@@ -353,7 +353,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
     N4_CORRECTED_IMAGE=${OUTPUT_PREFIX}N4Corrected${i}.${OUTPUT_SUFFIX}
 
     TMP_FILES=( $TMP_FILES[@] $N4_TRUNCATED_IMAGE )
-    N4_CORRECTED_IMAGES=( $N4_CORRECTED_IMAGES[@] $N4_CORRECTED_IMAGE )
+    N4_CORRECTED_IMAGES=( ${N4_CORRECTED_IMAGES[@]} $N4_CORRECTED_IMAGE )
 
     logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${N4_TRUNCATED_IMAGE} TruncateImageIntensity ${ANATOMICAL_IMAGES[$i]} 0.025 0.975 256
 
@@ -406,8 +406,8 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
     echo
     echo "--------------------------------------------------------------------------------------"
     echo " Brain extraction using the following steps:"
-    echo "   1) Register $EXTRACTION_TEMPLATE to $N4_CORRECTED_IMAGES[0]"
-    echo "   2) Warp $EXTRACTION_PRIOR to $ANATOMICAL_IMAGES[0] using, from 1),"
+    echo "   1) Register $EXTRACTION_TEMPLATE to ${N4_CORRECTED_IMAGES[0]}"
+    echo "   2) Warp $EXTRACTION_PRIOR to ${ANATOMICAL_IMAGES[0]} using, from 1),"
     echo "      ${OUTPUT_PREFIX}BrainExtractionWarp/Affine"
     echo "   3) Refine segmentation results using Atropos"
     echo "--------------------------------------------------------------------------------------"
@@ -438,7 +438,7 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
     ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE='';
     for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
       do
-      ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE="${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -a $N4_CORRECTED_IMAGES[$i]";
+      ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE="${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -a ${N4_CORRECTED_IMAGES[$i]}";
       done
 
     exe_brain_extraction_3="${ATROPOS} -d ${DIMENSION} -o ${EXTRACTION_SEGMENTATION} ${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -x ${EXTRACTION_MASK_TMP} -i ${ATROPOS_BRAIN_EXTRACTION_INITIALIZATION} -c ${ATROPOS_BRAIN_EXTRACTION_CONVERGENCE} -m ${ATROPOS_BRAIN_EXTRACTION_MRF} -k ${ATROPOS_BRAIN_EXTRACTION_LIKELIHOOD}"
@@ -582,8 +582,8 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
     echo
     echo "--------------------------------------------------------------------------------------"
     echo " Brain segmentation using the following steps:"
-    echo "   1) Register $SEGMENTATION_TEMPLATE and $SEGMENTATION_PRIOR to $N4_CORRECTED_IMAGES[0]"
-    echo "   2) Warp priors to $N4_CORRECTED_IMAGES[0]"
+    echo "   1) Register $SEGMENTATION_TEMPLATE and $SEGMENTATION_PRIOR to ${N4_CORRECTED_IMAGES[0]}"
+    echo "   2) Warp priors to ${N4_CORRECTED_IMAGES[0]}"
     echo "   3) N-tissue segmentation using Atropos and N4"
     echo "--------------------------------------------------------------------------------------"
     echo
@@ -595,10 +595,10 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
         echo "   $SEGMENTATION_TEMPLATE"
         exit 1
       fi
-    if [[ ! -f $N4_CORRECTED_IMAGES[0] ]];
+    if [[ ! -f ${N4_CORRECTED_IMAGES[0]} ]];
       then
         echo "The N4 corrected image doesn't exist:"
-        echo "   $N4_CORRECTED_IMAGES[0]"
+        echo "   ${N4_CORRECTED_IMAGES[0]}"
         exit 1
       fi
     if [[ ! -f $EXTRACTION_MASK ]];
@@ -637,7 +637,7 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
 
     for(( i = 0; i < 3; i++ ))
       do
-        for(( j = 0; j < ${#N4_CORRECTED_IMAGES}; j++ ))
+        for(( j = 0; j < ${#N4_CORRECTED_IMAGES[@]}; j++ ))
           do
             SEGMENTATION_BRAIN_N4_IMAGES=( $SEGMENTATION_BRAIN_N4_IMAGES[@] ${BRAIN_OUTPUT}${j}N4.${OUTPUT_PREFIX} )
 

@@ -191,6 +191,14 @@ int UnaryOperateImage( int argc, char * argv[] )
             }
           break;
           }
+        case 't':
+          {
+          if( It.Get() >= atof( argv[6] ) && It.Get() <= atof( argv[7] ) )
+            {
+            It.Set( atof( argv[8] ) );
+            }
+          break;
+          }
         default:
           {
           std::cerr << "Error: Unknown operation." << std::endl;
@@ -234,6 +242,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    b:   bounded reciprocal" << std::endl;
     std::cerr << "    s:   sigmoid function [alpha] [beta]" << std::endl;
     std::cerr << "    r:   replace [oldPixel] [newPixel]" << std::endl;
+    std::cerr << "    t:   threshold/replace [lowPixel] [highPixel] [newPixel]" << std::endl;
     return EXIT_FAILURE;
     }
 

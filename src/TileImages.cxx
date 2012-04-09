@@ -81,7 +81,6 @@ int TileImages( unsigned int argc, char *argv[] )
     }
   filter->Update();
 
-
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( argv[2] );
