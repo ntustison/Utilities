@@ -679,7 +679,10 @@ int MultipleOperateImages( int argc, char * argv[] )
         RealType r = CalculatePearsonCoefficient( corrVector, intensities );
         It.Set( r );
         }
-      It.Set( 0 );
+      else
+        {
+        It.Set( 0 );
+        }
       }
 
     typedef itk::ImageFileWriter<ImageType> WriterType;
