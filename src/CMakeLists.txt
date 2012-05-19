@@ -286,8 +286,8 @@ target_link_libraries(GenerateAttenuationMask ${ITK_LIBRARIES})
 add_executable(GenerateImageFromIndexFile GenerateImageFromIndexFile.cxx )
 target_link_libraries(GenerateImageFromIndexFile ${ITK_LIBRARIES})
 
-add_executable(GeneralToBSplineDeformationField GeneralToBSplineDeformationField.cxx )
-target_link_libraries(GeneralToBSplineDeformationField ${ITK_LIBRARIES})
+add_executable(SmoothDisplacementField SmoothDisplacementField.cxx )
+target_link_libraries(SmoothDisplacementField ${ITK_LIBRARIES})
 
 add_executable(GenerateCooccurrenceMeasures GenerateCooccurrenceMeasures.cxx )
 target_link_libraries(GenerateCooccurrenceMeasures ${ITK_LIBRARIES})
