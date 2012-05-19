@@ -5,7 +5,7 @@ use FindBin qw($Bin);
 use File::Path;
 use File::Spec;
 
-my $ANTSPATH = '/Users/ntustison/Pkg/ANTS/bin/';
+my $ANTSPATH = '/Users/ntustison/Pkg/ANTS/bin/bin/';
 my $UTILITIESPATH = '/Users/ntustison/Pkg/Utilities/bin/';
 
 my $usage = qq{
@@ -207,10 +207,11 @@ my $lastToFirst = "${outputDir}/${outputPrefix}_lastToFirst";
 #             '-f', '4x2x1',
             '-m', "CC[${n4CorrectedImages[0]},${n4CorrectedImages[-1]},1,6]",
             '-t', 'SyN[0.5,3.0,0.0]',
-            '-i', '100x100',
+            '-c', '100x100',
             '-s', '0x0',
             '-f', '2x1'
           );
+print "@args\n";
 system( @args ) == 0 || die "Error:  antsRegistration on first and last images.\n";
 
 
@@ -341,12 +342,12 @@ for( my $iteration = 0; $iteration <= 2; $iteration++ )
 #                 '-w', '[0.025,0.0975]',
 #                 '-m', "MI[${syntheticImages[$i]},${n4CorrectedImages[$i]},1,20]",
 #                 '-t', 'Affine[0.25]',
-#                 '-i', '100x100x100',
+#                 '-c', '100x100x100',
 #                 '-s', '1x0.5x0',
 #                 '-f', '4x2x1',
                 '-m', "CC[${syntheticImages[$i]},${n4CorrectedImages[$i]},1,6]",
                 '-t', 'SyN[0.5,3.0,0.0]',
-                '-i', '100x100',
+                '-c', '100x100',
                 '-s', '0x0',
                 '-f', '2x1'
               );

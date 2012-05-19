@@ -11,6 +11,88 @@
 #include <string>
 #include <vector>
 
+template<class TValue>
+TValue Convert( std::string optionString )
+{
+  TValue value;
+  std::istringstream iss( optionString );
+  iss >> value;
+  return value;
+}
+
+template<class TValue>
+std::vector<TValue> ConvertVector( std::string optionString )
+{
+  std::vector<TValue> values;
+  std::string::size_type crosspos = optionString.find( 'x', 0 );
+
+  if ( crosspos == std::string::npos )
+    {
+    values.push_back( Convert<TValue>( optionString ) );
+    }
+  else
+    {
+    std::string element = optionString.substr( 0, crosspos ) ;
+    TValue value;
+    std::istringstream iss( element );
+    iss >> value;
+    values.push_back( value );
+    while ( crosspos != std::string::npos )
+      {
+      std::string::size_type crossposfrom = crosspos;
+      crosspos = optionString.find( 'x', crossposfrom + 1 );
+      if ( crosspos == std::string::npos )
+        {
+        element = optionString.substr( crossposfrom + 1, optionString.length() );
+        }
+      else
+        {
+        element = optionString.substr( crossposfrom + 1, crosspos ) ;
+        }
+      std::istringstream iss2( element );
+      iss2 >> value;
+      values.push_back( value );
+      }
+    }
+  return values;
+}
+
+typedef float RealType;
+
+RealType CalculatePearsonCoefficient( std::vector<RealType> X, std::vector<RealType> Y )
+{
+  if( X.size() != Y.size() )
+    {
+    std::cerr << "Vectors are not the same size" << std::endl;
+    exit( 1 );
+    }
+
+  RealType N = X.size();
+
+  std::vector<RealType>::const_iterator itX;
+  std::vector<RealType>::const_iterator itY;
+
+  RealType sumX = 0.0;
+  RealType sumY = 0.0;
+  RealType sumX2 = 0.0;
+  RealType sumXY = 0.0;
+  RealType sumY2 = 0.0;
+
+  for( itX = X.begin(), itY = Y.begin(); itX != X.end(); ++itX, ++itY )
+    {
+    sumX  += (*itX);
+    sumY  += (*itY);
+    sumXY += (*itX) * (*itY);
+    sumX2 += (*itX) * (*itX);
+    sumY2 += (*itY) * (*itY);
+    }
+
+  RealType r = ( N * sumXY - sumX*sumY ) / ( ( vcl_sqrt( N *sumX2 - (sumX*sumX) ) ) * ( vcl_sqrt( N *sumY2 - (sumY*sumY) ) ) );
+
+  return r;
+}
+
+
 #include <fstream>
 
 template <unsigned int ImageDimension>
@@ -561,6 +643,50 @@ int MultipleOperateImages( int argc, char * argv[] )
     writer->SetFileName( argv[3] );
     writer->Update();
     }
+  else if( op.compare( 0, 4, std::string( "corr", 0, 4 ) ) == 0 )
+    {
+    std::vector<typename ImageType::Pointer> images;
+    for( unsigned int n = 0; n < filenames.size(); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+      images.push_back( reader->GetOutput() );
+      }
+
+    std::string vectorString = op.substr( 5 );
+
+    std::vector<RealType> corrVector = ConvertVector<RealType>( vectorString );
+
+    if( corrVector.size() != filenames.size() )
+      {
+      std::cerr << "Error: the size of the specified correlation vector does not equal the number of images." << std::endl;
+      return EXIT_FAILURE;
+      }
+
+    itk::ImageRegionIteratorWithIndex<ImageType> It( images[0],
+      images[0]->GetLargestPossibleRegion() );
+    for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+      {
+      if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
+        {
+        std::vector<RealType> intensities;
+        for( unsigned int n = 0; n < filenames.size(); n++ )
+          {
+          intensities.push_back( images[n]->GetPixel( It.GetIndex() ) );
+          }
+
+        RealType r = CalculatePearsonCoefficient( corrVector, intensities );
+        It.Set( r );
+        }
+      }
+
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( images[0] );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+    }
   else if( op.compare( std::string( "sample" ) ) == 0 )
     {
     std::vector<typename ImageType::Pointer> images;
@@ -630,6 +756,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    w:      create probabilistic weight image from label probability images" << std::endl;
     std::cerr << "    seg:    create labe image from label probability images" << std::endl;
     std::cerr << "    ex:     Create expected ventilation from posterior prob. images" << std::endl;
+    std::cerr << "    corr=mxnxoxp...:   Create voxelwise correlation map with vector <m,n,x,o,p>" << std::endl;
     std::cerr << "    sample: Print samples to output text/index files (prefix specified in place of outputImage)" << std::endl;
     return EXIT_FAILURE;
     }
