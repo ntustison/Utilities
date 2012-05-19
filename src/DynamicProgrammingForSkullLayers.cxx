@@ -1,11 +1,13 @@
 #include "itkBinaryThresholdImageFilter.h"
 #include "itkBresenhamLine.h"
+#include "itkGradientImageFilter.h"
 #include "itkImage.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkLabelContourImageFilter.h"
 #include "itkNeighborhoodIterator.h"
+#include "itkSignedMaurerDistanceMapImageFilter.h"
 #include "itkVariableSizeMatrix.h"
 #include "itkVector.h"
 
@@ -16,7 +18,82 @@
 template<class PixelType>
 void DynamicProgramming( std::vector<PixelType> &lineProfile, std::vector<PixelType> mu, std::vector<PixelType> var  )
 {
+  unsigned int lineProfileSize = lineProfile.size();
 
+  if( lineProfileSize < 3 && lineProfileSize > 20 )
+    {
+    lineProfile.resize( 0 );
+    return;
+    }
+
+  std::vector<int> lineProfileLabels;
+  lineProfileLabels.resize( lineProfileSize );
+
+  for( int n = 0; n < lineProfileSize; n++ )
+    {
+    if( lineProfile[n] == 0 )
+      {
+      lineProfile[n] = 1;
+      }
+    else
+      {
+      break;
+      }
+    }
+
+  for( int n = 0; n < lineProfileSize; n++ )
+    {
+    if( lineProfile[lineProfileSize - n - 1] == 0 )
+      {
+      lineProfile[lineProfileSize - n - 1] = 1;
+      }
+    else
+      {
+      break;
+      }
+    }
+
+  unsigned int edgeCount = 0;
+  for( int n = 0; n < lineProfileSize; n++ )
+    {
+    if( lineProfile[n] == 0 && lineProfile[n+1] == 1 )
+      {
+      edgeCount++;
+      }
+    }
+
+  if( edgeCount != 3 )
+    {
+    lineProfile.resize( 0 );
+    return;
+    }
+  else
+    {
+    edgeCount = 0;
+    for( unsigned int n = 0; n < lineProfileSize - 1; n++ )
+      {
+      lineProfileLabels[n] = vnl_math_min( 3, static_cast<int>( edgeCount + 1 ) );
+      if( lineProfile[n] == 0 && lineProfile[n+1] == 1 )
+        {
+        edgeCount++;
+        }
+      }
+    lineProfileLabels[lineProfileSize-1] = 3;
+    }
+
+  for( unsigned int n = 0; n < lineProfileSize; n++ )
+    {
+    lineProfile[n] = lineProfileLabels[n];
+    }
+
+//   for( unsigned int n = 0; n < lineProfile.size(); n++ )
+//     {
+//     std::cout << lineProfile[n] << std::flush;
+//     }
+//   std::cout << std::endl;
+
+
+/*
   itk::VariableSizeMatrix<PixelType> D;
   D.SetSize( mu.size(), lineProfile.size() );
 
@@ -35,9 +112,9 @@ void DynamicProgramming( std::vector<PixelType> &lineProfile, std::vector<PixelT
         }
       else
         {
-        PixelType d_l = vnl_math_sqr( lineProfile[n] - mu[m] );
-//        PixelType d_l = ( 1.0 - 1.0 / vcl_sqrt( 2.0 * vnl_math::pi * var[m] ) *
-//            vcl_exp( -vnl_math_sqr( lineProfile[n] - mu[m] ) / ( 2.0 * var[m] ) ) );
+//         PixelType d_l = vnl_math_sqr( lineProfile[n] - mu[m] );
+       PixelType d_l = ( 1.0 - 1.0 / vcl_sqrt( 2.0 * vnl_math::pi * var[m] ) *
+           vcl_exp( -vnl_math_sqr( lineProfile[n] - mu[m] ) / ( 2.0 * var[m] ) ) );
 
 //        PixelType d_l = 0.0;
 //        for( unsigned int l = 1; l < m; l++ )
@@ -52,9 +129,9 @@ void DynamicProgramming( std::vector<PixelType> &lineProfile, std::vector<PixelT
 
         if( m > 0 )
           {
-          cost2 = D(m-1, n-1) + vnl_math_sqr( lineProfile[n] - mu[m] );
-//          cost2 = D(m-1, n-1) + ( 1.0 - 1.0 / vcl_sqrt( 2.0 * vnl_math::pi * var[m] ) *
-//            vcl_exp( -vnl_math_sqr( lineProfile[n] - mu[m] ) / ( 2.0 * var[m] ) ) );
+//           cost2 = D(m-1, n-1) + vnl_math_sqr( lineProfile[n] - mu[m] );
+         cost2 = D(m-1, n-1) + ( 1.0 - 1.0 / vcl_sqrt( 2.0 * vnl_math::pi * var[m] ) *
+           vcl_exp( -vnl_math_sqr( lineProfile[n] - mu[m] ) / ( 2.0 * var[m] ) ) );
           }
         D(m, n) = vnl_math_min( cost1, cost2 );
         }
@@ -73,14 +150,14 @@ void DynamicProgramming( std::vector<PixelType> &lineProfile, std::vector<PixelT
     unsigned int minN = vnl_math_max(0, n - 1);
     if( D(vnl_math_max(0, m-1), vnl_math_max(0, n-1)) < D(minM, minN) )
       {
-      minM = vnl_math_max(0, m - 1);
-      minN = vnl_math_max(0, n - 1);
+      minM = vnl_math_max( 0, m - 1 );
+      minN = vnl_math_max( 0, n - 1 );
       }
     m = minM;
     n = minN;
     }
-  lineProfile[n] = m+1;
-
+  lineProfile[n] = m + 1;
+*/
 }
 
 template <unsigned int ImageDimension>
@@ -107,33 +184,27 @@ int DrawLayers( int argc, char *argv[] )
   typedef itk::Vector<unsigned int, numberOfLayers> VectorType;
   typedef itk::Image<VectorType, ImageDimension> VectorImageType;
 
-  typename ImageType::IndexType targetIndex;
+  typedef itk::BinaryThresholdImageFilter<LabelImageType, LabelImageType> ThresholderType;
+  typename ThresholderType::Pointer thresholder = ThresholderType::New();
+  thresholder->SetInput( labelReader->GetOutput() );
+  thresholder->SetLowerThreshold( 3 );
+  thresholder->SetUpperThreshold( 3 );
+  thresholder->SetInsideValue( 1 );
+  thresholder->SetOutsideValue( 0 );
 
-  vnl_vector<float> centerOfMass( ImageDimension );
-  centerOfMass.fill( 0.0 );
-  float N = 0.0;
+  typedef itk::SignedMaurerDistanceMapImageFilter<LabelImageType, ImageType> DistancerType;
+  typename DistancerType::Pointer distancer = DistancerType::New();
+  distancer->SetInput( thresholder->GetOutput() );
+  distancer->SetSquaredDistance( false );
+  distancer->SetUseImageSpacing( true );
+  distancer->SetInsideIsPositive( false );
+  distancer->Update();
 
-  itk::ImageRegionIteratorWithIndex<LabelImageType> ItL(
-    labelReader->GetOutput(), labelReader->GetOutput()->GetLargestPossibleRegion() );
-  for( ItL.GoToBegin(); !ItL.IsAtEnd(); ++ItL )
-    {
-    if( ItL.Get() == 1 || ItL.Get() == 3 )
-      {
-      for( unsigned int d = 0; d < ImageDimension; d++ )
-        {
-        centerOfMass[d] += ItL.GetIndex()[d];
-        }
-      N++;
-      }
-    }
-  for( unsigned int d = 0; d < ImageDimension; d++ )
-    {
-    centerOfMass[d] /= N;
-    }
-  for( unsigned int d = 0; d < ImageDimension; d++ )
-    {
-    targetIndex[d] = static_cast<int>( centerOfMass[d] );
-    }
+  typedef itk::GradientImageFilter<ImageType> GradientType;
+  typename GradientType::Pointer grad = GradientType::New();
+  grad->SetInput( distancer->GetOutput() );
+  grad->UseImageDirectionOff();
+  grad->Update();
 
   typedef itk::BinaryThresholdImageFilter<LabelImageType, LabelImageType> FilterType;
   typename FilterType::Pointer filter = FilterType::New();
@@ -180,56 +251,6 @@ int DrawLayers( int argc, char *argv[] )
   std::vector<PixelType> var; var.resize( numberOfLayers );
   std::vector<PixelType> pix; pix.resize( numberOfLayers );
 
-  N = 0.0;
-
-  for( ItF.GoToBegin(); !ItF.IsAtEnd(); ++ItF )
-    {
-    if( ItF.Get() == 1 )
-      {
-      typename ImageType::IndexType startIndex = ItF.GetIndex();
-
-      typename LinerType::IndexArray indices = liner.BuildLine( startIndex, targetIndex );
-
-      std::vector<PixelType> lineProfile;
-
-      lineProfile.push_back( reader->GetOutput()->GetPixel( startIndex ) );
-
-      typename LinerType::IndexArray::const_iterator it;
-      for( it = indices.begin(); it != indices.end(); it++ )
-        {
-        if( labelReader->GetOutput()->GetPixel( *it ) == 2 )
-          {
-          break;
-          }
-        lineProfile.push_back( reader->GetOutput()->GetPixel( *it ) );
-        }
-
-      if( lineProfile.size() > 2 )
-        {
-        pix[0] = 0.5 * ( lineProfile[0] + lineProfile[lineProfile.size()-1] );
-        pix[1] = lineProfile[static_cast<unsigned int>( 0.5*(lineProfile.size()))];
-        pix[2] = pix[0];
-
-        N += 1.0;
-        for( unsigned int d = 0; d < numberOfLayers; d++ )
-          {
-          mu[d] = mu[d] * ( N - 1.0 ) / N + pix[d] / N;
-          }
-        if ( N > 1.0 )
-          {
-          for( unsigned int d = 0; d < numberOfLayers; d++ )
-            {
-            var[d] = var[d] * ( N - 1.0 ) / N + vnl_math_sqr( pix[d] - mu[d] ) / ( N - 1.0 );
-            }
-          }
-        }
-      }
-    }
-
-  for( unsigned int d = 0; d < numberOfLayers; d++ )
-    {
-    std::cout << mu[d] << " " << var[d] << std::endl;
-    }
 
   VectorType zeroVector( 0.0 );
 
@@ -239,11 +260,11 @@ int DrawLayers( int argc, char *argv[] )
   countImage->Allocate();
   countImage->FillBuffer( zeroVector );
 
-  std::fstream str;
-  if( argc > 5 )
-    {
-    str.open( argv[5] );
-    }
+  typename LabelImageType::Pointer output = LabelImageType::New();
+  output->CopyInformation( contours2->GetOutput() );
+  output->SetRegions( contours2->GetOutput()->GetRequestedRegion() );
+  output->Allocate();
+  output->FillBuffer( 0 );
 
   for( ItF.GoToBegin(); !ItF.IsAtEnd(); ++ItF )
     {
@@ -251,80 +272,88 @@ int DrawLayers( int argc, char *argv[] )
       {
       typename ImageType::IndexType startIndex = ItF.GetIndex();
 
-      typename LinerType::IndexArray indices = liner.BuildLine( startIndex, targetIndex );
+      typename GradientType::OutputPixelType vector = grad->GetOutput()->GetPixel( startIndex );
+
+      typename LinerType::LType direction;
+      for( unsigned int d = 0; d < ImageDimension; d++ )
+        {
+        direction[d] = -vector[d];
+        }
+      typename LinerType::OffsetArray offsets = liner.BuildLine( direction, 100 );
 
       std::vector<PixelType> lineProfile;
 
-      float average = 0.0;
+      lineProfile.push_back( reader->GetOutput()->GetPixel( startIndex ) );
 
-      typename LinerType::IndexArray::const_iterator it;
-      for( it = indices.begin(); it != indices.end(); it++ )
+      typename LinerType::OffsetArray::const_iterator it;
+      for( it = offsets.begin(); it != offsets.end(); it++ )
         {
-        if( labelReader->GetOutput()->GetPixel( *it ) == 2 )
+        if( labelReader->GetOutput()->GetPixel( startIndex + *it ) == 2 ||  labelReader->GetOutput()->GetPixel( startIndex + *it ) == 0 )
           {
           break;
           }
-        average += reader->GetOutput()->GetPixel( *it );
-        lineProfile.push_back( reader->GetOutput()->GetPixel( *it ) );
-        }
-      average /= static_cast<float>( lineProfile.size() );
-      if( argc > 5 )
-        {
-        str << average << std::endl;
+        lineProfile.push_back( reader->GetOutput()->GetPixel( startIndex + *it ) );
         }
 
       if( lineProfile.size() >= numberOfLayers )
         {
         DynamicProgramming<PixelType>( lineProfile, mu, var );
 
-        typename LinerType::IndexArray::const_iterator it;
-        for( it = indices.begin(); it != indices.end(); it++ )
+        typename LinerType::OffsetArray::const_iterator it;
+        for( it = offsets.begin(); it != offsets.end(); it++ )
           {
-          if( labelReader->GetOutput()->GetPixel( *it ) == 2 )
+          if( it-offsets.begin() == lineProfile.size() )
             {
             break;
             }
-          VectorType count = countImage->GetPixel( *it );
-          count[static_cast<unsigned int>( lineProfile[it-indices.begin()] )-1] += 1;
-          countImage->SetPixel( *it, count );
+          output->SetPixel( startIndex + *it, lineProfile[it-offsets.begin()] );
           }
         }
       }
     }
-  if( argc > 5 )
-    {
-    str.close();
-    }
 
-  contours2->GetOutput()->FillBuffer( 0 );
 
-  itk::ImageRegionIteratorWithIndex<VectorImageType> ItV(
-    countImage, countImage->GetLargestPossibleRegion() );
-  for( ItF.GoToBegin(), ItV.GoToBegin(); !ItF.IsAtEnd(); ++ItF, ++ItV )
-    {
-    if( labelReader->GetOutput()->GetPixel( ItF.GetIndex() ) == 1 ||
-      labelReader->GetOutput()->GetPixel( ItF.GetIndex() ) == 3 )
-      {
-      VectorType countVector = ItV.Get();
-
-      unsigned int maxCount = countVector[0];
-      LabelType maxLabel = 1;
-
-      for( unsigned int d = 1; d < numberOfLayers; d++ )
-        {
-        if( maxCount < countVector[d] )
-          {
-          maxLabel = static_cast<LabelType>( d + 1 );
-          }
-        }
-      ItF.Set( maxLabel );
-      }
-    }
+//   typedef itk::NeighborhoodIterator<LabelImageType> NIteratorType;
+//   typename NIteratorType::RadiusType radius;
+//   radius.Fill( 1 );
+//
+//   NIteratorType ItN( radius, output, output->GetRequestedRegion() );
+//
+//   for( ItN.GoToBegin(); !ItN.IsAtEnd(); ++ItN )
+//     {
+//     if( ItN.GetCenterPixel() == 0 && labelReader->GetOutput()->GetPixel( ItN.GetIndex() ) == 1  )
+//       {
+//       vnl_vector<unsigned int> count;
+//       count.set_size( 3 );
+//
+//       count.fill( 0.0 );
+//
+//       for( unsigned int n = 0; n < ( ItN.GetNeighborhood() ).Size(); n++ )
+//         {
+//         if( ItN.GetPixel( n ) > 0 )
+//           {
+//           count[ItN.GetPixel( n ) - 1]++;
+//           }
+//         }
+//       if( count[0] != 0 && count[1] == 0 && count[2] == 0 )
+//         {
+//         ItN.SetCenterPixel( 1 );
+//         }
+//       if( count[1] != 0 && count[2] == 0 && count[0] == 0 )
+//         {
+//         ItN.SetCenterPixel( 2 );
+//         }
+//       if( count[2] != 0 && count[0] == 0 && count[1] == 0 )
+//         {
+//         ItN.SetCenterPixel( 3 );
+//         }
+//       }
+//     }
 
   typedef itk::ImageFileWriter<LabelImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( argv[4] );
-  writer->SetInput( contours2->GetOutput() );
+  writer->SetInput( output );
   writer->Update();
 
   return EXIT_SUCCESS;
