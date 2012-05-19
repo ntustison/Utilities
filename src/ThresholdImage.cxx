@@ -67,6 +67,9 @@ switch( atoi( argv[1] ) )
 				case 3:
 						ThresholdImage<3>( argc, argv );
 						break;
+				case 4:
+						ThresholdImage<3>( argc, argv );
+						break;
 				default:
 						std::cerr << "Unsupported dimension" << std::endl;
 						exit( EXIT_FAILURE );

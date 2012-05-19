@@ -231,6 +231,9 @@ target_link_libraries(DrawBresenhamLinesFromMaskToPoint ${ITK_LIBRARIES})
 add_executable( DynamicProgrammingForSkullLayers DynamicProgrammingForSkullLayers.cxx )
 target_link_libraries(DynamicProgrammingForSkullLayers ${ITK_LIBRARIES})
 
+add_executable( LaplacianForSkullLayers LaplacianForSkullLayers.cxx )
+target_link_libraries(LaplacianForSkullLayers ${ITK_LIBRARIES})
+
 add_executable(ExtractLungs ExtractLungs.cxx )
 target_link_libraries(ExtractLungs ${ITK_LIBRARIES})
 
