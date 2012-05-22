@@ -5,11 +5,13 @@
 #include "itkImageRegionIterator.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageFileWriter.h"
+#include "itkMersenneTwisterRandomVariateGenerator.h"
 
 #include <itksys/SystemTools.hxx>
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 template<class TValue>
 TValue Convert( std::string optionString )
@@ -736,6 +738,100 @@ int MultipleOperateImages( int argc, char * argv[] )
         }
       }
     }
+  else if( op.compare( 0, 6, std::string( "cohort", 0, 6 ) ) == 0 )
+    {
+    typename ReaderType::Pointer reader = ReaderType::New();
+    reader->SetFileName( filenames[0].c_str() );
+    reader->Update();
+
+    std::string numberString = op.substr( 7 );
+
+    unsigned int numberOfSubjects = Convert<unsigned int>( numberString );
+
+    typename ImageType::Pointer meanImage = reader->GetOutput();
+
+    float N = 1.0;
+
+    typename ImageType::Pointer variance = ImageType::New();
+    variance->SetOrigin( meanImage->GetOrigin() );
+    variance->SetSpacing( meanImage->GetSpacing() );
+    variance->SetRegions( meanImage->GetLargestPossibleRegion() );
+    variance->SetDirection( meanImage->GetDirection() );
+    variance->Allocate();
+    variance->FillBuffer( 0 );
+
+    for( unsigned int n = 1; n < filenames.size(); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+
+      N += 1.0;
+
+      itk::ImageRegionIteratorWithIndex<ImageType> It( reader->GetOutput(),
+        reader->GetOutput()->GetLargestPossibleRegion() );
+      itk::ImageRegionIterator<ImageType> ItO( variance,
+        variance->GetLargestPossibleRegion() );
+      itk::ImageRegionIterator<ImageType> ItM( meanImage,
+        meanImage->GetLargestPossibleRegion() );
+      for( It.GoToBegin(), ItO.GoToBegin(), ItM.GoToBegin(); !It.IsAtEnd(); ++It, ++ItO, ++ItM )
+        {
+        if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
+          {
+          ItM.Set( ItM.Get() * ( N - 1.0 ) / N + It.Get() / N );
+          if ( N > 1.0 )
+            {
+            ItO.Set( ItO.Get() * ( N - 1.0 )/N +
+              ( It.Get() - ItM.Get() )*( It.Get() - ItM.Get() ) / ( N - 1.0 ) );
+            }
+          }
+        }
+      }
+
+    typedef typename itk::Statistics::MersenneTwisterRandomVariateGenerator RandomizerType;
+    typename RandomizerType::Pointer randomizer = RandomizerType::New();
+    randomizer->Initialize();
+
+    for( unsigned int n = 0; n < numberOfSubjects; n++ )
+      {
+      typename ImageType::Pointer output = ImageType::New();
+      output->SetOrigin( meanImage->GetOrigin() );
+      output->SetSpacing( meanImage->GetSpacing() );
+      output->SetRegions( meanImage->GetLargestPossibleRegion() );
+      output->SetDirection( meanImage->GetDirection() );
+      output->Allocate();
+      output->FillBuffer( 0 );
+
+      std::cout << "Creating subject " << n << std::endl;
+
+      itk::ImageRegionIterator<ImageType> ItV( variance,
+        variance->GetLargestPossibleRegion() );
+      itk::ImageRegionIterator<ImageType> ItM( meanImage,
+        meanImage->GetLargestPossibleRegion() );
+      itk::ImageRegionIteratorWithIndex<ImageType> ItO( output,
+        output->GetLargestPossibleRegion() );
+
+      for( ItO.GoToBegin(), ItM.GoToBegin(), ItV.GoToBegin(); !ItM.IsAtEnd(); ++ItO, ++ItM, ++ItV )
+        {
+        if( !mask || mask->GetPixel( ItO.GetIndex() ) != 0 )
+          {
+          double intensity = randomizer->GetNormalVariate( ItM.Get(), ItV.Get() );
+          ItO.Set( intensity );
+          }
+        }
+      std::ostringstream str;
+      str << n;
+
+      std::string subjectFilename = std::string( argv[3] ) + std::string( "Subject" ) +
+         str.str() + std::string( ".nii.gz" );
+
+      typedef itk::ImageFileWriter<ImageType> WriterType;
+      typename WriterType::Pointer writer = WriterType::New();
+      writer->SetInput( output );
+      writer->SetFileName( subjectFilename.c_str() );
+      writer->Update();
+      }
+    }
   else
     {
     std::cout << "Option not recognized." << std::endl;
@@ -761,6 +857,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    seg:    create labe image from label probability images" << std::endl;
     std::cerr << "    ex:     Create expected ventilation from posterior prob. images" << std::endl;
     std::cerr << "    corr=mxnxoxp...:   Create voxelwise correlation map with vector <m,n,x,o,p>" << std::endl;
+    std::cerr << "    cohort=n...:   Create random cohort of n subjects from sample (gaussian modeling)" << std::endl;
     std::cerr << "    sample: Print samples to output text/index files (prefix specified in place of outputImage)" << std::endl;
     return EXIT_FAILURE;
     }
