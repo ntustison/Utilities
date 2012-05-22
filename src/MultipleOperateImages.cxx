@@ -816,6 +816,8 @@ int MultipleOperateImages( int argc, char * argv[] )
         if( !mask || mask->GetPixel( ItO.GetIndex() ) != 0 )
           {
           double intensity = randomizer->GetNormalVariate( ItM.Get(), ItV.Get() );
+          intensity = vnl_math_min( 1.0, intensity );
+          intensity = vnl_math_max( 0.0, intensity );
           ItO.Set( intensity );
           }
         }
