@@ -9,6 +9,10 @@
 
 #include <itksys/SystemTools.hxx>
 
+#include "vnl/algo/vnl_fft_1d.h"
+#include "vnl/vnl_complex_traits.h"
+#include "vcl_complex.h"
+
 #include <string>
 #include <vector>
 #include <sstream>
@@ -645,6 +649,84 @@ int MultipleOperateImages( int argc, char * argv[] )
     writer->SetFileName( argv[3] );
     writer->Update();
     }
+  else if( op.compare( std::string( "fft" ) ) == 0 )
+    {
+    std::vector<typename ImageType::Pointer> images;
+    std::vector<typename ImageType::Pointer> outputImages;
+    std::vector<std::string> outputFilenames;
+    for( unsigned int n = 0; n < filenames.size(); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+      images.push_back( reader->GetOutput() );
+      }
+
+    unsigned int numberOfImages = filenames.size();
+
+    RealType exponent = vcl_ceil( vcl_log( static_cast<RealType>( numberOfImages ) ) / vcl_log( 2.0 ) );
+    unsigned int paddedSize = static_cast<unsigned int>( vcl_pow( static_cast<RealType>( 2.0 ), exponent ) + 0.5 );
+
+    for( unsigned int n = 0; n < paddedSize; n++ )
+      {
+      std::string leadingZeros = std::string( 4, '0' );
+
+      if( n > 0 )
+        {
+        std::ostringstream str;
+        str << n;
+        leadingZeros = std::string( 4 - static_cast<unsigned int>( vcl_log( n )/vcl_log( 10 ) + 1 ), '0' ).append( str.str() );
+        }
+
+      std::string outname = std::string( argv[3] ) + std::string( "FT" ) + leadingZeros + std::string( ".nii.gz" );
+      outputFilenames.push_back( outname );
+
+      typename ImageType::Pointer outImage = ImageType::New();
+      outImage->CopyInformation( images[0] );
+      outImage->SetRegions( images[0]->GetLargestPossibleRegion() );
+      outImage->Allocate();
+      outImage->FillBuffer( 0 );
+
+      outputImages.push_back( outImage );
+      }
+
+    vnl_fft_1d<RealType> fft( paddedSize );
+
+    itk::ImageRegionIteratorWithIndex<ImageType> It( images[0],
+      images[0]->GetLargestPossibleRegion() );
+    for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+      {
+      if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
+        {
+        vnl_vector< vcl_complex<RealType> > V( paddedSize, vcl_complex<RealType>( 0.0, 0.0 ) );
+
+        for( unsigned int n = 0; n < numberOfImages; n++ )
+          {
+          // Multiply intensity by Hann window
+          V[n] = images[n]->GetPixel( It.GetIndex() ) * 0.5 * ( 1 - vcl_cos( 2 * vnl_math::pi * n / ( numberOfImages - 1 ) ) );
+          }
+        fft.fwd_transform( V );
+
+        for( unsigned int n = 0; n < paddedSize; n++ )
+          {
+          outputImages[n]->SetPixel( It.GetIndex(),  vcl_norm( V[n] ) );
+          }
+        }
+      else
+        {
+        It.Set( 0 );
+        }
+      }
+
+    for( unsigned int n = 0; n < paddedSize; n++ )
+      {
+      typedef itk::ImageFileWriter<ImageType> WriterType;
+      typename WriterType::Pointer writer = WriterType::New();
+      writer->SetInput( outputImages[n] );
+      writer->SetFileName( outputFilenames[n] );
+      writer->Update();
+      }
+    }
   else if( op.compare( 0, 4, std::string( "corr", 0, 4 ) ) == 0 )
     {
     std::vector<typename ImageType::Pointer> images;
@@ -858,6 +940,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    w:      create probabilistic weight image from label probability images" << std::endl;
     std::cerr << "    seg:    create labe image from label probability images" << std::endl;
     std::cerr << "    ex:     Create expected ventilation from posterior prob. images" << std::endl;
+    std::cerr << "    fft:    Perform voxelwise fft" << std::endl;
     std::cerr << "    corr=mxnxoxp...:   Create voxelwise correlation map with vector <m,n,x,o,p>" << std::endl;
     std::cerr << "    cohort=n...:   Create random cohort of n subjects from sample (gaussian modeling)" << std::endl;
     std::cerr << "    sample: Print samples to output text/index files (prefix specified in place of outputImage)" << std::endl;
