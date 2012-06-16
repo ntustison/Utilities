@@ -1,10 +1,15 @@
+#include "itkAddImageFilter.h"
 #include "itkArray.h"
+#include "itkBinaryThresholdImageFilter.h"
+#include "itkDivideByConstantImageFilter.h"
 #include "itkImageDuplicator.h"
 #include "itkImage.h"
+#include "itkImageDuplicator.h"
 #include "itkImageFileReader.h"
 #include "itkImageRegionIterator.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageFileWriter.h"
+#include "itkLabelGeometryImageFilter.h"
 #include "itkMersenneTwisterRandomVariateGenerator.h"
 
 #include <itksys/SystemTools.hxx>
@@ -649,6 +654,103 @@ int MultipleOperateImages( int argc, char * argv[] )
     writer->SetFileName( argv[3] );
     writer->Update();
     }
+  else if( op.compare( std::string( "labelAvg" ) ) == 0 )
+    {
+    typedef unsigned int LabelType;
+
+    std::vector<LabelType> labels;
+    typedef itk::Image<LabelType, ImageDimension> LabelImageType;
+
+    std::vector<typename LabelImageType::Pointer> images;
+    std::vector<typename ImageType::Pointer> outputImages;
+    std::vector<std::string> outputFilenames;
+    for( unsigned int n = 0; n < filenames.size(); n++ )
+      {
+      typename LabelReaderType::Pointer reader = LabelReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+      images.push_back( reader->GetOutput() );
+
+      typedef itk::LabelGeometryImageFilter<LabelImageType, ImageType>  FilterType;
+      typename FilterType::Pointer filter = FilterType::New();
+      filter->SetInput( images[n] );
+      filter->Update();
+
+      std::vector<LabelType> imageLabels = filter->GetLabels();
+
+      std::vector<LabelType>::const_iterator it;
+      for( it = imageLabels.begin(); it != imageLabels.end(); ++it )
+        {
+        if( std::find( labels.begin(), labels.end(), *it ) == labels.end() && *it != 0 )
+          {
+          labels.push_back( *it );
+          }
+        }
+      }
+
+    for( unsigned int n = 0; n < labels.size(); n++ )
+      {
+      std::ostringstream str;
+      str << n;
+
+      std::string outname = std::string( argv[3] ) + std::string( "" ) + str.str() + std::string( ".nii.gz" );
+      outputFilenames.push_back( outname );
+
+      typename ImageType::Pointer outImage = ImageType::New();
+      outImage->CopyInformation( images[0] );
+      outImage->SetRegions( images[0]->GetLargestPossibleRegion() );
+      outImage->Allocate();
+      outImage->FillBuffer( 0 );
+
+      outputImages.push_back( outImage );
+      }
+
+    RealType numberOfImages = static_cast<RealType>( filenames.size() );
+
+    std::vector<LabelType>::const_iterator it;
+    for( it = labels.begin(); it != labels.end(); ++it )
+      {
+      for( unsigned int n = 0; n < filenames.size(); n++ )
+        {
+        typedef itk::BinaryThresholdImageFilter<LabelImageType, ImageType> ThresholderType;
+        typename ThresholderType::Pointer thresholder = ThresholderType::New();
+        thresholder->SetInput( images[n] );
+        thresholder->SetLowerThreshold( *it );
+        thresholder->SetUpperThreshold( *it );
+        thresholder->SetInsideValue( 1.0 );
+        thresholder->SetOutsideValue( 0.0 );
+        thresholder->Update();
+
+        typedef itk::ImageDuplicator<ImageType> DuplicatorType;
+        typename DuplicatorType::Pointer duplicator = DuplicatorType::New();
+        duplicator->SetInputImage( outputImages[it - labels.begin()] );
+        duplicator->Update();
+
+        typedef itk::AddImageFilter<ImageType, ImageType, ImageType> AdderType;
+        typename AdderType::Pointer adder = AdderType::New();
+        adder->SetInput1( thresholder->GetOutput() );
+        adder->SetInput2( duplicator->GetOutput() );
+        adder->Update();
+
+        outputImages[it - labels.begin()] = adder->GetOutput();
+        outputImages[it - labels.begin()]->DisconnectPipeline();
+        }
+      itk::ImageRegionIterator<ImageType> It( outputImages[it - labels.begin()], outputImages[it - labels.begin()]->GetLargestPossibleRegion() );
+      for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+        {
+        It.Set( It.Get() / numberOfImages );
+        }
+      }
+
+    for( unsigned int n = 0; n < labels.size(); n++ )
+      {
+      typedef itk::ImageFileWriter<ImageType> WriterType;
+      typename WriterType::Pointer writer = WriterType::New();
+      writer->SetInput( outputImages[n] );
+      writer->SetFileName( outputFilenames[n] );
+      writer->Update();
+      }
+    }
   else if( op.compare( std::string( "fft" ) ) == 0 )
     {
     std::vector<typename ImageType::Pointer> images;
@@ -703,7 +805,7 @@ int MultipleOperateImages( int argc, char * argv[] )
         for( unsigned int n = 0; n < numberOfImages; n++ )
           {
           // Multiply intensity by Hann window
-          V[n] = images[n]->GetPixel( It.GetIndex() ) * 0.5 * ( 1 - vcl_cos( 2 * vnl_math::pi * n / ( numberOfImages - 1 ) ) );
+          V[n] = images[n]->GetPixel( It.GetIndex() ) * 0.5 * ( 1 - vcl_cos( 2 * vnl_math::pi * n / ( paddedSize - 1 ) ) );
           }
         fft.fwd_transform( V );
 
@@ -941,6 +1043,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    seg:    create labe image from label probability images" << std::endl;
     std::cerr << "    ex:     Create expected ventilation from posterior prob. images" << std::endl;
     std::cerr << "    fft:    Perform voxelwise fft" << std::endl;
+    std::cerr << "    labelAvg:   Perform labelwise averaging." << std::endl;
     std::cerr << "    corr=mxnxoxp...:   Create voxelwise correlation map with vector <m,n,x,o,p>" << std::endl;
     std::cerr << "    cohort=n...:   Create random cohort of n subjects from sample (gaussian modeling)" << std::endl;
     std::cerr << "    sample: Print samples to output text/index files (prefix specified in place of outputImage)" << std::endl;
