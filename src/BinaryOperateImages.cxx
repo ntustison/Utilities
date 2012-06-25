@@ -5,6 +5,56 @@
 #include "itkImageFileWriter.h"
 
 #include <string>
+#include <vector>
+#include <sstream>
+
+template<class TValue>
+TValue Convert( std::string optionString )
+{
+  TValue value;
+  std::istringstream iss( optionString );
+  iss >> value;
+  return value;
+}
+
+template<class TValue>
+std::vector<TValue> ConvertVector( std::string optionString )
+{
+  std::vector<TValue> values;
+  std::string::size_type crosspos = optionString.find( 'x', 0 );
+
+  if ( crosspos == std::string::npos )
+    {
+    values.push_back( Convert<TValue>( optionString ) );
+    }
+  else
+    {
+    std::string element = optionString.substr( 0, crosspos ) ;
+    TValue value;
+    std::istringstream iss( element );
+    iss >> value;
+    values.push_back( value );
+    while ( crosspos != std::string::npos )
+      {
+      std::string::size_type crossposfrom = crosspos;
+      crosspos = optionString.find( 'x', crossposfrom + 1 );
+      if ( crosspos == std::string::npos )
+        {
+        element = optionString.substr( crossposfrom + 1, optionString.length() );
+        }
+      else
+        {
+        element = optionString.substr( crossposfrom + 1, crosspos ) ;
+        }
+      std::istringstream iss2( element );
+      iss2 >> value;
+      values.push_back( value );
+      }
+    }
+  return values;
+}
+
+typedef float RealType;
 
 template <unsigned int ImageDimension>
 int BinaryOperateImages( int argc, char * argv[] )
@@ -22,6 +72,13 @@ int BinaryOperateImages( int argc, char * argv[] )
   reader2->SetFileName( argv[4] );
   reader2->Update();
 
+  typename ReaderType::Pointer reader3 = ReaderType::New();
+  if( argc > 6 )
+    {
+    reader3->SetFileName( argv[6] );
+    reader3->Update();
+    }
+
   typename ImageType::Pointer output = ImageType::New();
   output->SetOrigin( reader1->GetOutput()->GetOrigin() );
   output->SetSpacing( reader1->GetOutput()->GetSpacing() );
@@ -34,6 +91,8 @@ int BinaryOperateImages( int argc, char * argv[] )
 
   typename ImageType::SizeType radius;
   radius.Fill( 1 );
+
+  PixelType delta = -1.0;
 
   itk::NeighborhoodIterator<ImageType> It( radius, output,
     output->GetLargestPossibleRegion() );
@@ -115,6 +174,22 @@ int BinaryOperateImages( int argc, char * argv[] )
       {
       It.SetCenterPixel( vnl_math_min( It1.GetCenterPixel(), It2.GetCenterPixel() ) );
       }
+    else if( op.compare( "zscore" ) == 0 )
+      {
+      if( reader3->GetOutput() == NULL )
+        {
+        std::cerr << "Need to specify third image." << std::endl;
+        return EXIT_FAILURE;
+        }
+
+      RealType mean = It1.GetCenterPixel();
+      RealType std = vcl_sqrt( It2.GetCenterPixel() );
+      RealType pixel = reader3->GetOutput()->GetPixel( It1.GetIndex() );
+      if( std > 0 )
+        {
+        It.SetCenterPixel( ( pixel - mean ) / std );
+        }
+      }
     else if( op.compare( "misc" ) == 0 )
       {
       if( It1.GetCenterPixel() == 0 )
@@ -165,14 +240,15 @@ int main( int argc, char *argv[] )
     {
     std::cerr << "Usage: " << std::endl;
     std::cerr << argv[0] << " imageDimension inputImage1 operation "
-              << " inputImage2 outputImage " << std::endl;
+              << " inputImage2 outputImage [inputImage3]" << std::endl;
     std::cerr << "  operation: " << std::endl;
     std::cerr << "    +:   Add" << std::endl;
     std::cerr << "    -:   Subtract" << std::endl;
     std::cerr << "    x:   Multiply" << std::endl;
     std::cerr << "    /:   Divide" << std::endl;
     std::cerr << "    min: voxel-wise minimum" << std::endl;
-    std::cerr << "    max: voxel-wise maximum'" << std::endl;
+    std::cerr << "    max: voxel-wise maximum" << std::endl;
+    std::cerr << "    zscore:  inputImage1 = meanImage, inputImage2 = varianceImage, z = (pixel - mean)/std" << std::endl;
     std::cerr << "    isgreaterthan: mask (1 if image 1 is greather than image 2, 0 o.w.)" << std::endl;
     std::cerr << "    islessthan: mask (1 if image 1 is greather than image 2, 0 o.w.)" << std::endl;
     std::cerr << "    or:  logical \'or\'" << std::endl;
