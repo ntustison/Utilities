@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-template<class TValue> 
+template<class TValue>
 TValue Convert( std::string optionString )
 			{
 			TValue value;
@@ -21,7 +21,7 @@ std::vector<TValue> ConvertVector( std::string optionString )
 			{
 			std::vector<TValue> values;
 			std::string::size_type crosspos = optionString.find( 'x', 0 );
-			
+
 			if ( crosspos == std::string::npos )
 					{
 					values.push_back( Convert<TValue>( optionString ) );
@@ -32,7 +32,7 @@ std::vector<TValue> ConvertVector( std::string optionString )
 					TValue value;
 					std::istringstream iss( element );
 					iss >> value;
-					values.push_back( value );  
+					values.push_back( value );
 					while ( crosspos != std::string::npos )
 							{
 							std::string::size_type crossposfrom = crosspos;
@@ -47,14 +47,14 @@ std::vector<TValue> ConvertVector( std::string optionString )
 									}
 							std::istringstream iss( element );
 							iss >> value;
-							values.push_back( value );  
-							}           
-					}   
+							values.push_back( value );
+							}
+					}
 			return values;
 			}
 
 
-class CommandProgressUpdate2D : public itk::Command 
+class CommandProgressUpdate2D : public itk::Command
 {
 public:
   typedef  CommandProgressUpdate2D                      Self;
@@ -71,19 +71,19 @@ protected:
     FilterType;
 
   unsigned int m_CurrentProgress;
-    
+
 public:
 
   void Execute(itk::Object *caller, const itk::EventObject & event)
     {
     itk::ProcessObject *po = dynamic_cast<itk::ProcessObject *>( caller );
     if (! po) return;
-//    std::cout << po->GetProgress() << std::endl; 
+//    std::cout << po->GetProgress() << std::endl;
     if( typeid( event ) == typeid ( itk::ProgressEvent )  )
       {
       if( this->m_CurrentProgress < 99 )
-        { 
-        this->m_CurrentProgress++; 
+        {
+        this->m_CurrentProgress++;
         if( this->m_CurrentProgress % 10 == 0 )
           {
           std::cout << this->m_CurrentProgress << std::flush;
@@ -91,22 +91,22 @@ public:
         else
           {
           std::cout << "*" << std::flush;
-          } 
+          }
         }
-      }  
+      }
     }
 
   void Execute(const itk::Object * object, const itk::EventObject & event)
     {
-    itk::ProcessObject *po = dynamic_cast<itk::ProcessObject *>( 
+    itk::ProcessObject *po = dynamic_cast<itk::ProcessObject *>(
       const_cast<itk::Object *>( object ) );
     if (! po) return;
-    
+
     if( typeid( event ) == typeid ( itk::ProgressEvent )  )
       {
       if( this->m_CurrentProgress < 99 )
-        { 
-        this->m_CurrentProgress++; 
+        {
+        this->m_CurrentProgress++;
         if( this->m_CurrentProgress % 10 == 0 )
           {
           std::cout << this->m_CurrentProgress << std::flush;
@@ -114,13 +114,13 @@ public:
         else
           {
           std::cout << "*" << std::flush;
-          } 
+          }
         }
       }
     }
 };
 
-class CommandProgressUpdate3D : public itk::Command 
+class CommandProgressUpdate3D : public itk::Command
 {
 public:
   typedef  CommandProgressUpdate3D                      Self;
@@ -137,19 +137,19 @@ protected:
     FilterType;
 
   unsigned int m_CurrentProgress;
-    
+
 public:
 
   void Execute(itk::Object *caller, const itk::EventObject & event)
     {
     itk::ProcessObject *po = dynamic_cast<itk::ProcessObject *>( caller );
     if (! po) return;
-//    std::cout << po->GetProgress() << std::endl; 
+//    std::cout << po->GetProgress() << std::endl;
     if( typeid( event ) == typeid ( itk::ProgressEvent )  )
       {
       if( this->m_CurrentProgress < 100 )
-        { 
-        this->m_CurrentProgress++; 
+        {
+        this->m_CurrentProgress++;
         if( this->m_CurrentProgress % 10 == 0 )
           {
           std::cout << this->m_CurrentProgress << std::flush;
@@ -157,22 +157,22 @@ public:
         else
           {
           std::cout << "*" << std::flush;
-          } 
+          }
         }
-      }  
+      }
     }
 
   void Execute(const itk::Object * object, const itk::EventObject & event)
     {
-    itk::ProcessObject *po = dynamic_cast<itk::ProcessObject *>( 
+    itk::ProcessObject *po = dynamic_cast<itk::ProcessObject *>(
       const_cast<itk::Object *>( object ) );
     if (! po) return;
-    
+
     if( typeid( event ) == typeid ( itk::ProgressEvent )  )
       {
       if( this->m_CurrentProgress < 99 )
-        { 
-        this->m_CurrentProgress++; 
+        {
+        this->m_CurrentProgress++;
         if( this->m_CurrentProgress % 10 == 0 )
           {
           std::cout << this->m_CurrentProgress << std::flush;
@@ -180,7 +180,7 @@ public:
         else
           {
           std::cout << "*" << std::flush;
-          } 
+          }
         }
       }
     }
@@ -209,16 +209,16 @@ int itkScalarToFractalImageFilterTest( int argc, char *argv[] )
     std::vector<unsigned int> vector
       = ConvertVector<unsigned int>( std::string( argv[4] ) );
     if( vector.size() > 0 && vector.size() != ImageDimension )
-      {  
+      {
       radius.Fill( vector[0] );
       }
-    else  
+    else
       {
       for ( unsigned int d = 0; d < ImageDimension; d++ )
         {
-        radius[d] = vector[d]; 
+        radius[d] = vector[d];
         }
-      }  
+      }
     fractal->SetNeighborhoodRadius( radius );
     }
   if( argc > 5 )
@@ -247,31 +247,31 @@ int itkScalarToFractalImageFilterTest( int argc, char *argv[] )
 
     fractal->SetMaskImage( thresholder->GetOutput() );
     }
-    
+
   if( ImageDimension == 2 )
-    {  
-    typename CommandProgressUpdate2D::Pointer observer 
+    {
+    typename CommandProgressUpdate2D::Pointer observer
       = CommandProgressUpdate2D::New();
     fractal->AddObserver( itk::ProgressEvent(), observer );
     }
   else
     {
-    typename CommandProgressUpdate3D::Pointer observer 
+    typename CommandProgressUpdate3D::Pointer observer
       = CommandProgressUpdate3D::New();
     fractal->AddObserver( itk::ProgressEvent(), observer );
     }
-  
+
   try
     {
-    itk::TimeProbe timer;  
-  
+    itk::TimeProbe timer;
+
     timer.Start();
     std::cout << "/" << std::flush;
     fractal->Update();
     std::cout << "/" << std::flush;
     timer.Stop();
-  
-    std::cout << "   (elapsed time: " << timer.GetMeanTime()
+
+    std::cout << "   (elapsed time: " << timer.GetMean()
       << ")" << std::endl;
     }
   catch( ... )

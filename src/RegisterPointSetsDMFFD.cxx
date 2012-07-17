@@ -510,7 +510,7 @@ int itkDMFFDLabeledPointSetRegistrationFilterTest( itk::CommandLineParser *parse
   if( verbose )
     {
     std::cout << "Registration filter run time = "
-      << timer.GetMeanTime() << std::endl;
+      << timer.GetMean() << std::endl;
     }
 
   /**
