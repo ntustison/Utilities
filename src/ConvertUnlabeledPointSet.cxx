@@ -20,7 +20,7 @@ int ConvertUnlabeledPointSet( unsigned int argc, char *argv[] )
 
   long label = ( argc > 4 ) ? atoi( argv[4] ) : 1;
 
-  std::fstream str( argv[2], ios::in );
+  std::fstream str( argv[2], std::ios::in );
 
   unsigned long count = 0;
   typename PointSetType::PointType point;
