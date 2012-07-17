@@ -4,9 +4,9 @@
 #include "vtkPoints.h"
 #include "vtkPointData.h"
 
-#include <stdio.h>
+#include <stdio>
 #include <vector>
-#include <fstream.h>
+#include <fstream>
 #include <string>
 
 int main( int argc, char *argv[] )
@@ -28,8 +28,8 @@ int main( int argc, char *argv[] )
     {
     format = atoi( argv[4] );
     }
-  typedef float RealType; 
-  
+  typedef float RealType;
+
   RealType x;
   RealType y;
   RealType z;
@@ -39,13 +39,13 @@ int main( int argc, char *argv[] )
   std::vector<RealType> Ym;
   std::vector<RealType> Zm;
   std::vector<int> Lm;
-  ifstream strM( argv[2] );
+  std::ifstream strM( argv[2] );
 
   std::vector<RealType> Xf;
   std::vector<RealType> Yf;
   std::vector<RealType> Zf;
   std::vector<int> Lf;
-  ifstream strF( argv[1] );
+  std::ifstream strF( argv[1] );
 
   if ( format > 1 )
     {
@@ -56,7 +56,7 @@ int main( int argc, char *argv[] )
       Zm.push_back( z );
       Lm.push_back( l );
       }
-       
+
     while ( strF >> x >> y >> z >> l )
       {
       Xf.push_back( x );
@@ -64,8 +64,8 @@ int main( int argc, char *argv[] )
       Zf.push_back( z );
       Lf.push_back( l );
       }
-    }  
-  else 
+    }
+  else
     {
     while ( strM >> x >> y >> z )
       {
@@ -74,7 +74,7 @@ int main( int argc, char *argv[] )
       Zm.push_back( z );
       Lm.push_back( 1 );
       }
-       
+
     while ( strF >> x >> y >> z )
       {
       Xf.push_back( x );
@@ -82,7 +82,7 @@ int main( int argc, char *argv[] )
       Zf.push_back( z );
       Lf.push_back( 1 );
       }
-    }  
+    }
 
   // Write moving points to a file with the vectors pointing
 
@@ -112,16 +112,16 @@ int main( int argc, char *argv[] )
     }
   for ( unsigned int i = begin; i < end; i++ )
     {
-    xM[0] = Xm[i];  
-    xM[1] = Ym[i];  
-    xM[2] = Zm[i];  
+    xM[0] = Xm[i];
+    xM[1] = Ym[i];
+    xM[2] = Zm[i];
     pointsM->InsertPoint( i-1, xM );
     scalarsM->InsertValue( i-1, Lm[i] );
-    
+
     float x, y, z;
     x = y = z = 0.0;
     float N = 0.0;
- 
+
     if ( format == 1 || format == 3 )
       {
       for ( unsigned int j = 1; j < Lf.size()-1; j++ )
@@ -139,8 +139,8 @@ int main( int argc, char *argv[] )
         x /= N;
         y /= N;
         z /= N;
-        v[0] = x - xM[0];  
-        v[1] = y - xM[1];  
+        v[0] = x - xM[0];
+        v[1] = y - xM[1];
         v[2] = z - xM[2];
         }
       else
@@ -154,9 +154,9 @@ int main( int argc, char *argv[] )
       {
       v[0] = Xf[i] - xM[0];
       v[1] = Yf[i] - xM[1];
-      v[2] = Zf[i] - xM[2]; 
+      v[2] = Zf[i] - xM[2];
       }
-    vectorsM->InsertTuple( i-begin, v );  
+    vectorsM->InsertTuple( i-begin, v );
     }
   moving->SetPoints( pointsM );
   moving->GetPointData()->SetScalars( scalarsM );
@@ -164,7 +164,7 @@ int main( int argc, char *argv[] )
 
   pointsM->Delete();
   vectorsM->Delete();
-  scalarsM->Delete();  
+  scalarsM->Delete();
 
   std::string filename = std::string( argv[3] ) + std::string( "Moving.vtk" );
 
@@ -190,9 +190,9 @@ int main( int argc, char *argv[] )
 
   for ( unsigned int i = 1; i < Xf.size()-1; i++ )
     {
-    xF[0] = Xf[i];  
-    xF[1] = Yf[i];  
-    xF[2] = Zf[i];  
+    xF[0] = Xf[i];
+    xF[1] = Yf[i];
+    xF[2] = Zf[i];
     pointsF->InsertPoint( i-1, xF );
     scalarsF->InsertValue( i-1, Lf[i] );
     }
@@ -200,7 +200,7 @@ int main( int argc, char *argv[] )
   fixed->GetPointData()->SetScalars( scalarsF );
 
   pointsF->Delete();
-  scalarsF->Delete();  
+  scalarsF->Delete();
 
   if ( strcmp( argv[1], argv[2] ) != 0 )
     {
@@ -209,7 +209,7 @@ int main( int argc, char *argv[] )
   else
     {
     filename = std::string( argv[3] ) + std::string( ".vtk" );
-    }   
+    }
 
   vtkPolyDataWriter *writerF = vtkPolyDataWriter::New();
   writerF->SetInput( fixed );

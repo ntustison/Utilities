@@ -7,12 +7,10 @@
 #include "itkHistogram.h"
 #include "itkLabelStatisticsImageFilter.h"
 
-#include <fstream.h>
-
 template <unsigned int ImageDimension>
 int CalculateStatistics( int argc, char *argv[] )
 {
-  
+
   typedef int MaskPixelType;
   typedef float RealType;
 
@@ -24,7 +22,7 @@ int CalculateStatistics( int argc, char *argv[] )
 
   typedef itk::Image<MaskPixelType, ImageDimension> MaskImageType;
   typedef itk::Image<RealType, ImageDimension> RealImageType;
- 
+
   typedef itk::ImageFileReader<RealImageType> ReaderType;
   typename ReaderType::Pointer imageReader1 = ReaderType::New();
   imageReader1->SetFileName( argv[2] );
@@ -35,12 +33,12 @@ int CalculateStatistics( int argc, char *argv[] )
   imageReader2->Update();
 
   if( imageReader1->GetOutput()->GetLargestPossibleRegion().GetSize()
-    != imageReader2->GetOutput()->GetLargestPossibleRegion().GetSize() ) 
+    != imageReader2->GetOutput()->GetLargestPossibleRegion().GetSize() )
     {
-    std::cerr << "Error: Images are not the same size." << std::endl; 
-    return EXIT_FAILURE; 
+    std::cerr << "Error: Images are not the same size." << std::endl;
+    return EXIT_FAILURE;
     }
-    
+
   typename MaskImageType::Pointer mask = MaskImageType::New();
   if ( argc > 4 )
     {
@@ -59,7 +57,7 @@ int CalculateStatistics( int argc, char *argv[] )
     mask->Allocate();
     mask->FillBuffer( itk::NumericTraits<MaskPixelType>::One );
     }
- 
+
   MaskPixelType label = itk::NumericTraits<MaskPixelType>::One;
   if ( argc > 5 )
     {
@@ -71,7 +69,7 @@ int CalculateStatistics( int argc, char *argv[] )
 
   /**
    * Calculate Pearson's correlation coefficient
-   */ 
+   */
 
   /**
    * Calculate mean, sigma for image 1
@@ -94,7 +92,7 @@ int CalculateStatistics( int argc, char *argv[] )
         {
         maxValue1 = It1.Get();
         }
-      }  
+      }
     }
 
   typedef itk::LabelStatisticsImageFilter<RealImageType, MaskImageType> HistogramGeneratorType;
@@ -129,7 +127,7 @@ int CalculateStatistics( int argc, char *argv[] )
         {
         maxValue2 = It2.Get();
         }
-      }  
+      }
     }
 
   typename HistogramGeneratorType::Pointer stats2 = HistogramGeneratorType::New();
@@ -144,32 +142,32 @@ int CalculateStatistics( int argc, char *argv[] )
 
   RealType pearson = 0.0;
   RealType numberOfVoxels = 0.0;
-  
+
   It1.GoToBegin();
   It2.GoToBegin();
   ItM.GoToBegin();
   while( !ItM.IsAtEnd() )
     {
     if( ItM.Get() == label )
-      { 
-      pearson += ( ( It1.Get() - mean1 ) / sigma1 ) 
-        * ( ( It2.Get() - mean2 ) / sigma2 );  
+      {
+      pearson += ( ( It1.Get() - mean1 ) / sigma1 )
+        * ( ( It2.Get() - mean2 ) / sigma2 );
 
-      numberOfVoxels++; 
+      numberOfVoxels++;
       }
     ++ItM;
     ++It1;
     ++It2;
     }
-  pearson /= numberOfVoxels;  
+  pearson /= numberOfVoxels;
 
   /**
    * Calculate cooccurrence matrix between the two images
-   */ 
+   */
 
   typedef itk::Statistics::Histogram<RealType, 2> HistogramType;
   typename HistogramType::Pointer histogram = HistogramType::New();
-  
+
   typename HistogramType::SizeType histogramSize;
   typename HistogramType::MeasurementVectorType histogramLowerBounds;
   typename HistogramType::MeasurementVectorType histogramUpperBounds;
@@ -180,7 +178,7 @@ int CalculateStatistics( int argc, char *argv[] )
   histogramLowerBounds[1] = minValue2;
   histogramUpperBounds[0] = maxValue1;
   histogramUpperBounds[1] = maxValue2;
-  
+
   histogram->Initialize( histogramSize, histogramLowerBounds, histogramUpperBounds );
   histogram->SetClipBinsAtEnds( false );
 
@@ -190,11 +188,11 @@ int CalculateStatistics( int argc, char *argv[] )
   while( !ItM.IsAtEnd() )
     {
     if( ItM.Get() == label )
-      { 
+      {
       typename HistogramType::MeasurementVectorType measurement;
       measurement[0] = It1.Get();
       measurement[1] = It2.Get();
-      histogram->IncreaseFrequency( measurement, 
+      histogram->IncreaseFrequency( measurement,
         static_cast<typename HistogramType::FrequencyType>( 1 ) );
       }
     ++ItM;
@@ -218,7 +216,7 @@ int CalculateStatistics( int argc, char *argv[] )
   RealType haralickCorrelation = calculator->GetHaralickCorrelation();
 
   std::cout << "[" << argv[0] << "]" << std::endl;
-  std::cout << pearson << " " 
+  std::cout << pearson << " "
             << energy << " "
             << entropy << " "
             << correlation << " "
@@ -240,7 +238,7 @@ int main( int argc, char *argv[] )
     exit( 1 );
     }
 
-  switch( atoi( argv[1] ) ) 
+  switch( atoi( argv[1] ) )
    {
    case 2:
      CalculateStatistics<2>( argc, argv );

@@ -8,23 +8,27 @@
 #include "itkVectorContainer.h"
 #include "itkVectorImageFileWriter.h"
 
-#include <fstream.h>
-#include <iomanip.h>
+#include <fstream>
+
+#include <iomanip>
+
 
 template <unsigned int ImageDimension>
 int GenerateTPSDeformationField( unsigned int argc, char *argv[] )
+
 {
+
 
   typedef float RealType;
   typedef itk::Point<RealType, ImageDimension> PointType;
-  typedef itk::Matrix<RealType, ImageDimension+1, ImageDimension> 
+  typedef itk::Matrix<RealType, ImageDimension+1, ImageDimension>
     AffineMatrixType;
   typedef itk::Vector<RealType, ImageDimension> VectorType;
-  typedef itk::VectorContainer<unsigned, VectorType> CoefficientContainerType;  
-  
+  typedef itk::VectorContainer<unsigned, VectorType> CoefficientContainerType;
+
   // Read in affine matrix coefficients
-  ifstream tpsAffine( argv[4] );
-  
+  std::ifstream tpsAffine( argv[4] );
+
   AffineMatrixType A;
   A.Fill( 1 );
   for( unsigned int d = 0; d < ImageDimension+1; d++ )
@@ -34,17 +38,17 @@ int GenerateTPSDeformationField( unsigned int argc, char *argv[] )
       tpsAffine >> A( d, e );
       }
     }
-  tpsAffine.close();  
+  tpsAffine.close();
 
   // Read in tps coefficients
-  ifstream tpsDeform( argv[5] );
-  
-  typename CoefficientContainerType::Pointer C = CoefficientContainerType::New();  
+  std::ifstream tpsDeform( argv[5] );
+
+  typename CoefficientContainerType::Pointer C = CoefficientContainerType::New();
   C->Initialize();
   unsigned long count = 0;
   while( !tpsDeform.eof() )
     {
-    bool isEOF = false; 
+    bool isEOF = false;
     VectorType coeff;
     for( unsigned int d = 0; d < ImageDimension; d++ )
       {
@@ -54,15 +58,15 @@ int GenerateTPSDeformationField( unsigned int argc, char *argv[] )
         isEOF = true;
         break;
         }
-      } 
+      }
     if( isEOF )
       {
       break;
-      }  
-    C->InsertElement( count++, coeff );     
+      }
+    C->InsertElement( count++, coeff );
     }
-  tpsDeform.close();  
-  
+  tpsDeform.close();
+
   // Join tps and affine parameters into single matrix
   typedef itk::VariableSizeMatrix<RealType> MatrixType;
   MatrixType params;
@@ -70,7 +74,7 @@ int GenerateTPSDeformationField( unsigned int argc, char *argv[] )
   for( unsigned int n = 0; n < ImageDimension + 1; n++ )
     {
     for( unsigned int d = 0; d < ImageDimension; d++ )
-      { 
+      {
       params( n, d ) = A( n, d );
       }
     }
@@ -78,21 +82,21 @@ int GenerateTPSDeformationField( unsigned int argc, char *argv[] )
     {
     for( unsigned int d = 0; d < ImageDimension; d++ )
       {
-      VectorType V = C->GetElement( n - ImageDimension - 1 ); 
+      VectorType V = C->GetElement( n - ImageDimension - 1 );
       params( n, d ) = V[d];
       }
-    }    
+    }
 
   // Read in control points
 
-  ifstream cpFile( argv[3] );
-  typename CoefficientContainerType::Pointer 
+  std::ifstream cpFile( argv[3] );
+  typename CoefficientContainerType::Pointer
     L = CoefficientContainerType::New();
   L->Initialize();
   count = 0;
   while( !cpFile.eof() )
     {
-    bool isEOF = false; 
+    bool isEOF = false;
     VectorType coeff;
     for( unsigned int d = 0; d < ImageDimension; d++ )
       {
@@ -102,21 +106,21 @@ int GenerateTPSDeformationField( unsigned int argc, char *argv[] )
         isEOF = true;
         break;
         }
-      } 
+      }
     if( isEOF )
       {
       break;
-      }  
-    L->InsertElement( count++, coeff );     
+      }
+    L->InsertElement( count++, coeff );
     }
-  cpFile.close();  
+  cpFile.close();
 
   MatrixType Pn;
-  Pn.SetSize( L->Size(), ImageDimension + 1 ); 
+  Pn.SetSize( L->Size(), ImageDimension + 1 );
   Pn.Fill( 1 );
   for( unsigned int n = 0; n < L->Size(); n++ )
     {
-    VectorType coeff = L->GetElement( n ); 
+    VectorType coeff = L->GetElement( n );
     for( unsigned int d = 0; d < ImageDimension; d++ )
       {
       Pn(n, d + 1) = coeff[d];
@@ -124,15 +128,15 @@ int GenerateTPSDeformationField( unsigned int argc, char *argv[] )
     }
 
   typedef itk::DecomposeTensorFunction<MatrixType> DecomposerType;
-  typename DecomposerType::Pointer decomposer = DecomposerType::New();  
-  
+  typename DecomposerType::Pointer decomposer = DecomposerType::New();
+
   MatrixType Q;
   MatrixType R;
   decomposer->EvaluateQRDecomposition( Pn, Q, R );
 
-  vnl_matrix<RealType> PP = ( Q.GetVnlMatrix() ).extract( 
+  vnl_matrix<RealType> PP = ( Q.GetVnlMatrix() ).extract(
     L->Size(), L->Size() - ImageDimension - 1, 0, ImageDimension + 1 );
-    
+
   // Read in image
   typedef itk::Image<RealType, ImageDimension> ImageType;
   typedef itk::ImageFileReader<ImageType> ReaderType;
@@ -166,13 +170,14 @@ int GenerateTPSDeformationField( unsigned int argc, char *argv[] )
       for( unsigned int d = 0; d < ImageDimension; d++ )
         {
         r += vnl_math_sqr( Pn(n, d+1) - point[d] );
-        }    
-      r = vcl_sqrt( r );  
+        }
+      r = vcl_sqrt( r );
       if( r > 0 )
         {
         if( ImageDimension == 2 )
           {
           U(0, n) = r * r * vcl_log( r );
+
           }
         else
           {
@@ -185,9 +190,9 @@ int GenerateTPSDeformationField( unsigned int argc, char *argv[] )
     basis(0, 0) = 1;
     for( unsigned int d = 0; d < ImageDimension; d++ )
       {
-      basis(0, 1 + d) = point[d]; 
+      basis(0, 1 + d) = point[d];
       }
-      
+
     basis.update( U * PP, static_cast<unsigned int>( 0 ), ImageDimension+1 );
 
     vnl_matrix<RealType> warpedPoint = basis * params.GetVnlMatrix();
@@ -198,29 +203,34 @@ int GenerateTPSDeformationField( unsigned int argc, char *argv[] )
       V[d] = warpedPoint(0, d) - point[d];
       }
     ItV.Set( V );
-    }  
-    
-  typedef itk::Image<RealType, ImageDimension> RealImageType;  
-  
-  typedef itk::VectorImageFileWriter<VectorImageType, RealImageType> 
+    }
+
+  typedef itk::Image<RealType, ImageDimension> RealImageType;
+
+  typedef itk::VectorImageFileWriter<VectorImageType, RealImageType>
     WriterType;
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetInput( output );
   writer->SetFileName( argv[6] );
   writer->Update();
-  
+
   return EXIT_SUCCESS;
-  
+
 }
+
 
 int main( int argc, char *argv[] )
 {
   if ( argc < 6 )
+
     {
+
     std::cout << "Usage: " << argv[0] << " imageDimension domainImage "
-      << "controlPointFile tpsAffineFile tpsDeformFile outputField" << std::endl; 
+      << "controlPointFile tpsAffineFile tpsDeformFile outputField" << std::endl;
     exit( 1 );
+
     }
+
 
   switch( atoi( argv[1] ) )
    {

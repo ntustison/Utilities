@@ -5,7 +5,7 @@
 #include "itkTimeProbe.h"
 
 #include <string>
-#include <fstream.h>
+#include <fstream>
 
 template <unsigned int ImageDimension>
 int STAPLE( unsigned int argc, char *argv[] )

@@ -4,9 +4,9 @@
 #include "itkImageRegionIterator.h"
 #include "itkPointSet.h"
 
-#include <stdio.h>
+#include <stdio>
 #include <vector>
-#include <fstream.h>
+#include <fstream>
 #include <string>
 
 int main( int argc, char *argv[] )
@@ -134,7 +134,7 @@ int main( int argc, char *argv[] )
 
   {
   std::string filename = std::string( argv[2] ) + std::string( ".txt" );
-  ofstream ostr( filename.c_str() );
+  std::ofstream ostr( filename.c_str() );
   ostr << "0 0 0 0" << std::endl;
 
   itk::ImageRegionIterator<CurveImageType> It(
@@ -152,7 +152,7 @@ int main( int argc, char *argv[] )
 
   {
   std::string filename = std::string( argv[2] ) + std::string( "_cps.txt" );
-  ofstream ostr( filename.c_str() );
+  std::ofstream ostr( filename.c_str() );
   ostr << "0 0 0 0" << std::endl;
 
   itk::ImageRegionIterator<CurveImageType> It(

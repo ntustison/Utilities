@@ -8,7 +8,7 @@
 
 #include <string>
 #include <vector>
-#include <fstream.h>
+#include <fstream>
 
 template <unsigned int ImageDimension>
 int GetJointSamples( int argc, char * argv[] )
@@ -50,7 +50,7 @@ int GetJointSamples( int argc, char * argv[] )
     images.push_back( reader->GetOutput() );
     }
 
-  ofstream os( argv[2] );
+  std::ofstream os( argv[2] );
 
   itk::ImageRegionIteratorWithIndex<ImageType> It( images[0],
     images[0]->GetLargestPossibleRegion() );

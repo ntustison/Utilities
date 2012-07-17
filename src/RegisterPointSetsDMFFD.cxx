@@ -30,7 +30,6 @@
 #include "itkVectorImageFileWriter.h"
 
 #include <string>
-#include <fstream.h>
 #include <iostream>
 
 template <unsigned int Dimension>
