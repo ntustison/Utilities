@@ -191,7 +191,7 @@ ThreadedGenerateData(const OutputImageRegionType& windowRegion,
 
   ImageRegionConstIteratorWithIndex< InputImageType >
     image_it( inputImage, windowRegion );
-  image_it.Begin();
+  image_it.GoToBegin();
 
   unsigned int sampling = static_cast< unsigned int >( 1. / m_SamplingRatio );
   unsigned int counter = 1;
