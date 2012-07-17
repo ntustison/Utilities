@@ -4,7 +4,7 @@
 #include "itkImageRegionIterator.h"
 #include "itkPointSet.h"
 
-#include <stdio>
+#include <stdio.h>
 #include <vector>
 #include <fstream>
 #include <string>
