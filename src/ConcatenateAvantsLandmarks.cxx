@@ -1,4 +1,3 @@
-#include <stdio>
 #include <fstream>
 #include <iostream>
 
