@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include "stdio.h"
 #include <fstream>
 #include <iostream>
 
@@ -22,7 +22,7 @@ int main( int argc, char *argv[] )
 
   for ( unsigned int n = 2; n < static_cast<unsigned int>( argc ); n++ )
     {
-    ifstream strF( argv[n] );
+    std::ifstream strF( argv[n] );
 
     RealType x, y, z;
     long l;
