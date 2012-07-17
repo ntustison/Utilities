@@ -3,7 +3,7 @@
 
 #include <fstream>
 
-#include <iomanip.h>
+#include <iomanip>
 
 
 template <unsigned int ImageDimension>
