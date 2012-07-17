@@ -38,7 +38,7 @@ int main( int argc, char *argv[] )
   RealType x, y, z, l;
   RealType totalDistance = 0.0;
 
-  ifstream str( argv[1] );
+  std::ifstream str( argv[1] );
 
   unsigned int count = 0;
   while ( str >> x >> y >> z >> l )
