@@ -283,8 +283,8 @@ ComputeMeanRadiusImage( )
   ImageRegionConstIterator< InternalImageType >  acc_it( m_AccumulatorImage, windowRegion );
   ImageRegionIterator< InternalImageType >  radius_it( m_RadiusImage, windowRegion );
 
-  acc_it.Begin();
-  radius_it.Begin();
+  acc_it.GoToBegin();
+  radius_it.GoToBegin();
 
   while( !acc_it.IsAtEnd() )
     {
