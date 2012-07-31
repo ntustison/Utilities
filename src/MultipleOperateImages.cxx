@@ -1,7 +1,6 @@
 #include "itkAddImageFilter.h"
 #include "itkArray.h"
 #include "itkBinaryThresholdImageFilter.h"
-#include "itkDivideByConstantImageFilter.h"
 #include "itkImageDuplicator.h"
 #include "itkImage.h"
 #include "itkImageDuplicator.h"
@@ -101,6 +100,47 @@ RealType CalculatePearsonCoefficient( std::vector<RealType> X, std::vector<RealT
   RealType r = ( N * sumXY - sumX*sumY ) / ( ( vcl_sqrt( N *sumX2 - (sumX*sumX) ) ) * ( vcl_sqrt( N *sumY2 - (sumY*sumY) ) ) );
 
   return r;
+}
+
+std::vector<RealType> FitRegressionLine(
+  std::vector<RealType> X, std::vector<RealType> Y )
+{
+  if( X.size() != Y.size() )
+    {
+    std::cerr << "Vectors are not the same size" << std::endl;
+    exit( 1 );
+    }
+
+  RealType N = X.size();
+
+  std::vector<RealType>::const_iterator itX;
+  std::vector<RealType>::const_iterator itY;
+
+  RealType sumX = 0.0;
+  RealType sumY = 0.0;
+  RealType sumX2 = 0.0;
+  RealType sumXY = 0.0;
+
+  for( itX = X.begin(), itY = Y.begin(); itX != X.end(); ++itX, ++itY )
+    {
+    sumX  += (*itX);
+    sumY  += (*itY);
+    sumXY += (*itX) * (*itY);
+    sumX2 += (*itX) * (*itX);
+    }
+
+  std::vector<RealType> line( 2 );
+  line[0] = ( N * sumXY - sumX*sumY ) / ( N *sumX2 - sumX*sumX );
+  if( sumX2 == 0 )
+    {
+    line[1] = sumY / N;
+    }
+  else
+    {
+    line[1] = ( sumY - line[0] * sumX ) / N;
+    }
+
+  return line;
 }
 
 
@@ -877,6 +917,56 @@ int MultipleOperateImages( int argc, char * argv[] )
     writer->SetFileName( argv[3] );
     writer->Update();
     }
+  else if( op.compare( 0, 5, std::string( "slope", 0, 5 ) ) == 0 )
+    {
+    std::vector<typename ImageType::Pointer> images;
+    for( unsigned int n = 0; n < filenames.size(); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+      images.push_back( reader->GetOutput() );
+      }
+
+    std::string vectorString = op.substr( 6 );
+
+    std::vector<RealType> corrVector = ConvertVector<RealType>( vectorString );
+
+    std::vector<RealType> line;
+
+    if( corrVector.size() != filenames.size() )
+      {
+      std::cerr << "Error: the size of the specified correlation vector does not equal the number of images." << std::endl;
+      return EXIT_FAILURE;
+      }
+
+    itk::ImageRegionIteratorWithIndex<ImageType> It( images[0],
+      images[0]->GetLargestPossibleRegion() );
+    for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+      {
+      if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
+        {
+        std::vector<RealType> intensities;
+        for( unsigned int n = 0; n < filenames.size(); n++ )
+          {
+          intensities.push_back( images[n]->GetPixel( It.GetIndex() ) );
+          }
+
+        line = FitRegressionLine( corrVector, intensities );
+        It.Set( line[0] );
+        }
+      else
+        {
+        It.Set( 0 );
+        }
+      }
+
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( images[0] );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+    }
   else if( op.compare( std::string( "sample" ) ) == 0 )
     {
     std::vector<typename ImageType::Pointer> images;
@@ -1045,6 +1135,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    fft:    Perform voxelwise fft" << std::endl;
     std::cerr << "    labelAvg:   Perform labelwise averaging." << std::endl;
     std::cerr << "    corr=mxnxoxp...:   Create voxelwise correlation map with vector <m,n,x,o,p>" << std::endl;
+    std::cerr << "    slope=mxnxoxp...:   Create voxelwise regression slope map with vector <m,n,x,o,p>" << std::endl;
     std::cerr << "    cohort=n...:   Create random cohort of n subjects from sample (gaussian modeling)" << std::endl;
     std::cerr << "    sample: Print samples to output text/index files (prefix specified in place of outputImage)" << std::endl;
     return EXIT_FAILURE;
