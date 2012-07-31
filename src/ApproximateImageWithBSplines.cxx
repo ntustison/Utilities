@@ -348,7 +348,7 @@ int ApproximateImageWithBSplines( int argc, char *argv[] )
 
   timer.Stop();
 
-  std::cout << "Elapsed Time:  " << timer.GetMeanTime() << std::endl;
+  std::cout << "Elapsed Time:  " << timer.GetMean() << std::endl;
 
   typename RealImageType::Pointer output = RealImageType::New();
   output->SetOrigin( origin );

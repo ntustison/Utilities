@@ -30,7 +30,6 @@
 #include "itkVectorImageFileWriter.h"
 
 #include <string>
-#include <fstream.h>
 #include <iostream>
 
 template <unsigned int Dimension>
@@ -511,7 +510,7 @@ int itkDMFFDLabeledPointSetRegistrationFilterTest( itk::CommandLineParser *parse
   if( verbose )
     {
     std::cout << "Registration filter run time = "
-      << timer.GetMeanTime() << std::endl;
+      << timer.GetMean() << std::endl;
     }
 
   /**

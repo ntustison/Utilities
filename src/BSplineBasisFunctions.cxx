@@ -1,7 +1,7 @@
 #include "itkCoxDeBoorBSplineKernelFunction.h"
 
-#include <fstream.h>
-#include <iomanip.h>
+#include <fstream>
+#include <iomanip>
 
 int main( int argc, char *argv[] )
 {
@@ -18,7 +18,7 @@ int main( int argc, char *argv[] )
   KernelType::Pointer kernel = KernelType::New();
   kernel->SetSplineOrder( order );
 
-  ofstream str( argv[4] );
+  std::ofstream str( argv[4] );
 
   float delta = ( argc > 5 ) ? atof( argv[5] ) : 0.01;
   unsigned int whichDer = ( argc > 6 ) ?

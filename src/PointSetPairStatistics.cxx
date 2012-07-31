@@ -1,9 +1,7 @@
 #include "itkLabeledPointSetFileReader.h"
 #include "itkLabeledPointSetFileWriter.h"
 
-#include <fstream.h>
-
-#include <iomanip.h>
+#include <iomanip>
 
 
 template <unsigned int ImageDimension>

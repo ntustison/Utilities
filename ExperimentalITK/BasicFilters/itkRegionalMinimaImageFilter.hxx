@@ -9,8 +9,8 @@
   Copyright (c) Insight Software Consortium. All rights reserved.
   See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
 
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+     This software is distributed WITHOUT ANY WARRANTY; without even
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
@@ -38,13 +38,13 @@ RegionalMinimaImageFilter<TInputImage, TOutputImage>
 }
 
 template <class TInputImage, class TOutputImage>
-void 
+void
 RegionalMinimaImageFilter<TInputImage, TOutputImage>
 ::GenerateInputRequestedRegion()
 {
   // call the superclass' implementation of this method
   Superclass::GenerateInputRequestedRegion();
-  
+
   // We need all the input.
   InputImagePointer input = const_cast<InputImageType *>(this->GetInput());
   if ( !input )
@@ -54,7 +54,7 @@ RegionalMinimaImageFilter<TInputImage, TOutputImage>
 
 
 template <class TInputImage, class TOutputImage>
-void 
+void
 RegionalMinimaImageFilter<TInputImage, TOutputImage>
 ::EnlargeOutputRequestedRegion(DataObject *)
 {
@@ -89,7 +89,7 @@ RegionalMinimaImageFilter<TInputImage, TOutputImage>
     ImageRegionIterator< TOutputImage > outIt(this->GetOutput(), this->GetOutput()->GetRequestedRegion() );
     if( m_FlatIsMinima )
       {
-      for( outIt.Begin(); !outIt.IsAtEnd(); ++outIt )
+      for( outIt.GoToBegin(); !outIt.IsAtEnd(); ++outIt )
         {
         outIt.Set( m_ForegroundValue );
         progress2.CompletedPixel();
@@ -97,7 +97,7 @@ RegionalMinimaImageFilter<TInputImage, TOutputImage>
       }
     else
       {
-      for( outIt.Begin(); !outIt.IsAtEnd(); ++outIt )
+      for( outIt.GoToBegin(); !outIt.IsAtEnd(); ++outIt )
         {
         outIt.Set( m_BackgroundValue );
         progress2.CompletedPixel();
@@ -133,6 +133,6 @@ RegionalMinimaImageFilter<TInputImage, TOutputImage>
   os << indent << "FullyConnected: "  << m_FullyConnected << std::endl;
   os << indent << "FlatIsMinima: "  << m_FlatIsMinima << std::endl;
 }
-  
+
 }// end namespace itk
 #endif

@@ -5,7 +5,6 @@
 #include "itkTimeProbe.h"
 
 #include <string>
-#include <fstream.h>
 
 template<class TValue>
 TValue Convert( std::string optionString )

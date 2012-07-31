@@ -3,7 +3,7 @@
 #include "itkNearestNeighborInterpolateImageFunction.h"
 
 #include "string.h"
-#include <fstream.h>
+#include <fstream>
 
 #define isnan(x) ((x) != (x))
 
@@ -59,9 +59,9 @@ int ConvertDeformationFieldToAvantsLandmarkFiles( int argc, char *argv[] )
   interpolator->SetInputImage( mask );
 
   std::string filenameM = std::string( argv[3] ) + std::string( "Moving.txt" );
-  ofstream strM( filenameM.c_str() );
+  std::ofstream strM( filenameM.c_str() );
   std::string filenameF = std::string( argv[3] ) + std::string( "Fixed.txt" );
-  ofstream strF( filenameF.c_str() );
+  std::ofstream strF( filenameF.c_str() );
 
   strM << "0 0 0 0" << std::endl;
   strF << "0 0 0 0" << std::endl;

@@ -1,9 +1,9 @@
 #include "itkLabeledPointSetFileReader.h"
 #include "itkLabeledPointSetFileWriter.h"
 
-#include <fstream.h>
+#include <fstream>
 
-#include <iomanip.h>
+#include <iomanip>
 
 
 template <unsigned int ImageDimension>
@@ -119,7 +119,7 @@ int ConvertLabeledPointSet( unsigned int argc, char *argv[] )
     {
     if( argc > 5 && atof( argv[5] ) < 0 )
       {
-      ofstream str( argv[3] );
+      std::ofstream str( argv[3] );
       str.precision( 7 );
       typename PointSetType::PointsContainerConstIterator ItP =
         reader->GetOutput()->GetPoints()->Begin();

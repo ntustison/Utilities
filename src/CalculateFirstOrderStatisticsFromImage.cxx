@@ -5,7 +5,7 @@
 
 #include "itkLabelStatisticsImageFilter.h"
 
-#include <fstream.h>
+#include <fstream>
 
 template <unsigned int ImageDimension>
 int CalculateFirstOrderStatistics( int argc, char *argv[] )
@@ -174,7 +174,7 @@ int CalculateFirstOrderStatistics( int argc, char *argv[] )
 //       }
 //     str.close();
 
-				ofstream str( argv[6] );
+				std::ofstream str( argv[6] );
 				for ( ItM.GoToBegin(), ItI.GoToBegin(); !ItI.IsAtEnd(); ++ItM, ++ItI )
 						{
 						if ( ItM.Get() == 1 )

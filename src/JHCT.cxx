@@ -6,7 +6,7 @@
 #include "itkPointSet.h"
 #include "itkVector.h"
 
-#include <fstream.h>
+#include <fstream>
 #include <string>
 
 template<class TValue>
@@ -189,8 +189,8 @@ int JHCT( int argc, char *argv[] )
   std::string target = std::string( argv[2] )
     + std::string( "FixedTarget.txt" );
 
-  ofstream sourceStr( source.c_str() );
-  ofstream targetStr( target.c_str() );
+  std::ofstream sourceStr( source.c_str() );
+  std::ofstream targetStr( target.c_str() );
 
   sourceStr << "0 0 0 0" << std::endl;
   targetStr << "0 0 0 0" << std::endl;
@@ -400,8 +400,8 @@ int JHCT( int argc, char *argv[] )
   std::string target = std::string( argv[2] )
     + std::string( "MovingTarget.txt" );
 
-  ofstream sourceStr( source.c_str() );
-  ofstream targetStr( target.c_str() );
+  std::ofstream sourceStr( source.c_str() );
+  std::ofstream targetStr( target.c_str() );
 
   sourceStr << "0 0 0 0" << std::endl;
   targetStr << "0 0 0 0" << std::endl;

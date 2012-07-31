@@ -14,8 +14,6 @@
 #include "itkRelabelComponentImageFilter.h"
 #include "itkStatisticsImageFilter.h"
 
-#include <fstream.h>
-
 int main( int argc, char *argv[] )
 {
   itk::MultiThreader::SetGlobalDefaultNumberOfThreads( 1 );

@@ -7,9 +7,9 @@
 #include "vtkPolyDataWriter.h"
 #include "vtkUnsignedIntArray.h"
 
-#include <stdio.h>
+#include <stdio>
 #include <vector>
-#include <fstream.h>
+#include <fstream>
 
 int main( int argc, char *argv[] )
 {
@@ -44,37 +44,37 @@ int main( int argc, char *argv[] )
   vtkIdList *id = vtkIdList::New();
   id->Initialize();
 
-  ifstream str( argv[1] );
+  std::ifstream str( argv[1] );
   while ( str >> x >> y >> z >> l )
     {
-    //std::cout << x << ' ' << y << ' ' << z << ' ' << l << std::endl;  
+    //std::cout << x << ' ' << y << ' ' << z << ' ' << l << std::endl;
     if ( x == 0 && y == 0 && z == 0 && l == 0 )
       {
       if ( id->GetNumberOfIds() > 0 )
         {
         lines->InsertNextCell( id );
-        }   
+        }
       continue;
-      }    
+      }
 
     points->InsertPoint( count, x, y, z );
     scalars->InsertNextValue( l );
     if ( l != currentL )
-      { 
+      {
       if ( id->GetNumberOfIds() > 0 )
         {
         lines->InsertNextCell( id );
-        }   
+        }
       id->Delete();
       id = vtkIdList::New();
       id->Initialize();
       id->InsertNextId( count );
-      currentL = l; 
+      currentL = l;
       }
     else
-      {  
+      {
       id->InsertNextId( count );
-      }  
+      }
     count++;
     }
   str.close();
@@ -87,7 +87,7 @@ int main( int argc, char *argv[] )
   lines->Delete();
   scalars->Delete();
   id->Delete();
- 
+
   vtkPolyDataWriter *writer = vtkPolyDataWriter::New();
   writer->SetInput( data );
 //  writer->SetFileTypeToBinary();

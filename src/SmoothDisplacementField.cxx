@@ -157,7 +157,7 @@ int SmoothDisplacementField( int argc, char *argv[] )
         }
       }
     timer.Stop();
-    elapsedTime = timer.GetMeanTime();
+    elapsedTime = timer.GetMean();
 
     }
   else if( var.size() == ImageDimension )
@@ -194,7 +194,7 @@ int SmoothDisplacementField( int argc, char *argv[] )
     timer.Start();
     bspliner->Update();
     timer.Stop();
-    elapsedTime = timer.GetMeanTime();
+    elapsedTime = timer.GetMean();
 
     smoothField = bspliner->GetOutput();
     smoothField->DisconnectPipeline();

@@ -1,18 +1,18 @@
-#include <stdio.h>
-#include <fstream.h>
+#include "stdio.h"
+#include <fstream>
 #include <iostream>
 
 #include <vector>
 
-int main( int argc, char *argv[] )        
+int main( int argc, char *argv[] )
 {
   if ( argc < 4 )
     {
     std::cout << argv[0] << " outputPointSet inputPointSet1 inputPointSet2 ... [inputPointSetN]" << std::endl;
-    exit( 0 );
-    } 
+    return 1;
+    }
 
-  typedef double RealType; 
+  typedef double RealType;
   unsigned long count = 0;
   std::vector<RealType> X;
   std::vector<RealType> Y;
@@ -22,7 +22,7 @@ int main( int argc, char *argv[] )
 
   for ( unsigned int n = 2; n < static_cast<unsigned int>( argc ); n++ )
     {
-    ifstream strF( argv[n] );
+    std::ifstream strF( argv[n] );
 
     RealType x, y, z;
     long l;
@@ -30,28 +30,28 @@ int main( int argc, char *argv[] )
       {
       if ( x == 0 && y == 0 && z == 0 && l == 0 )
         {
-        continue; 
+        continue;
         }
-      X.push_back( x );  
-      Y.push_back( y );  
-      Z.push_back( z );  
-      L.push_back( l );  
+      X.push_back( x );
+      Y.push_back( y );
+      Z.push_back( z );
+      L.push_back( l );
       count++;
-      } 
-    strF.close();  
-    } 
+      }
+    strF.close();
+    }
 
-  ofstream str( argv[1] );
+  std::ofstream str( argv[1] );
   str << "0 0 0 0" << std::endl;
   for ( unsigned long i = 0; i < count; i++ )
     {
-    str << X[i] << " " << Y[i] << " " << Z[i] << " " << L[i] << std::endl; 
+    str << X[i] << " " << Y[i] << " " << Z[i] << " " << L[i] << std::endl;
     }
   str << "0 0 0 0" << std::endl;
   str.close();
 
   std::cout << count << " total points. " << std::endl;
 
-  return EXIT_SUCCESS;
-}     
+  return 1;
+}
 

@@ -6,9 +6,9 @@
 #include <string>
 #include <vector>
 
-#include <fstream.h>
+#include <fstream>
 
-template<class TValue> 
+template<class TValue>
 TValue Convert( std::string optionString )
 			{
 			TValue value;
@@ -22,7 +22,7 @@ std::vector<TValue> ConvertVector( std::string optionString )
 			{
 			std::vector<TValue> values;
 			std::string::size_type crosspos = optionString.find( 'x', 0 );
-			
+
 			if ( crosspos == std::string::npos )
 					{
 					values.push_back( Convert<TValue>( optionString ) );
@@ -33,7 +33,7 @@ std::vector<TValue> ConvertVector( std::string optionString )
 					TValue value;
 					std::istringstream iss( element );
 					iss >> value;
-					values.push_back( value );  
+					values.push_back( value );
 					while ( crosspos != std::string::npos )
 							{
 							std::string::size_type crossposfrom = crosspos;
@@ -48,9 +48,9 @@ std::vector<TValue> ConvertVector( std::string optionString )
 									}
 							std::istringstream iss( element );
 							iss >> value;
-							values.push_back( value );  
-							}           
-					}   
+							values.push_back( value );
+							}
+					}
 			return values;
 			}
 
@@ -59,7 +59,7 @@ int MinimalPath( unsigned int argc, char *argv[] )
 {
   typedef float PixelType;
   typedef unsigned char PathPixelType;
- 
+
   typedef itk::Image<PixelType, ImageDimension> ImageType;
   typedef itk::Image<PathPixelType, ImageDimension> PathImageType;
   typedef typename ImageType::IndexType IndexType;
@@ -68,7 +68,7 @@ int MinimalPath( unsigned int argc, char *argv[] )
   typename ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName( argv[2] );
   reader->Update();
-  
+
   typename PathImageType::Pointer pathImage = PathImageType::New();
   pathImage->SetDirection( reader->GetOutput()->GetDirection() );
   pathImage->SetOrigin( reader->GetOutput()->GetOrigin() );
@@ -77,11 +77,11 @@ int MinimalPath( unsigned int argc, char *argv[] )
   pathImage->Allocate();
   pathImage->FillBuffer( itk::NumericTraits<PathPixelType>::Zero );
 
-  std::vector<unsigned int> anchor 
+  std::vector<unsigned int> anchor
     = ConvertVector<unsigned int>( std::string( argv[4] ) );
-  std::vector<unsigned int> free 
+  std::vector<unsigned int> free
     = ConvertVector<unsigned int>( std::string( argv[5] ) );
-  
+
   IndexType anchorIndex;
   IndexType freeIndex;
   for( unsigned int d = 0; d < ImageDimension; d++ )
@@ -92,39 +92,39 @@ int MinimalPath( unsigned int argc, char *argv[] )
 
   typedef itk::MinimalPathImageFunction<ImageType> FunctionType;
   typename FunctionType::Pointer function = FunctionType::New();
-  function->SetUseFaceConnectedness( argc > 6 ? 
+  function->SetUseFaceConnectedness( argc > 6 ?
     static_cast<bool>( atoi( argv[6] ) ) : true );
   function->SetUseImageSpacing( true );
   function->SetInputImage( reader->GetOutput() );
   function->SetAnchorSeed( anchorIndex );
 
   std::string txtFileName = std::string( argv[3] ) + std::string( ".txt" );
-  ofstream str( txtFileName.c_str() );
+  std::ofstream str( txtFileName.c_str() );
   str << "0 0 0 0" << std::endl;
 
-  typedef itk::PathIterator<ImageType, 
+  typedef itk::PathIterator<ImageType,
     typename FunctionType::OutputType> IteratorType;
 
-  typename FunctionType::OutputType::Pointer path 
+  typename FunctionType::OutputType::Pointer path
     = function->EvaluateAtIndex( freeIndex );
   IteratorType It( reader->GetOutput(), path );
   It.GoToBegin();
   while ( !It.IsAtEnd() )
     {
     typename PathImageType::PointType point;
-    pathImage->TransformIndexToPhysicalPoint( It.GetIndex(), point ); 
+    pathImage->TransformIndexToPhysicalPoint( It.GetIndex(), point );
     str << point[0] << " " << point[1];
     if( ImageDimension == 3 )
       {
-      str << " " << point[2]; 
-      } 
+      str << " " << point[2];
+      }
     else
       {
-      str << " 0"; 
-      }  
+      str << " 0";
+      }
     str << " 1" << std::endl;
-      
-    pathImage->SetPixel( It.GetIndex(), 
+
+    pathImage->SetPixel( It.GetIndex(),
       itk::NumericTraits<PathPixelType>::One );
     ++It;
     }
@@ -138,21 +138,26 @@ int MinimalPath( unsigned int argc, char *argv[] )
   writer->SetFileName( imageFileName.c_str() );
   writer->SetInput( pathImage );
   writer->Update();
-  
+
   return EXIT_SUCCESS;
 }
 
 int main( int argc, char *argv[] )
 {
   if( argc < 6 )
+
     {
-    std::cout << "Usage: "<< argv[0] 
-      << " imageDimension inputImage outputPrefix anchorIndex" 
+
+    std::cout << "Usage: "<< argv[0]
+      << " imageDimension inputImage outputPrefix anchorIndex"
       << " freeIndex [useFaceConnectedness]" << std::endl;
+
     exit( 1 );
+
     }
 
-  switch( atoi( argv[1] ) ) 
+
+  switch( atoi( argv[1] ) )
    {
    case 2:
      MinimalPath<2>( argc, argv );

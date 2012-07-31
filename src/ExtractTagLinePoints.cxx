@@ -5,7 +5,6 @@
 #include "itkTimeProbe.h"
 
 #include <string>
-#include <fstream.h>
 
 template <unsigned int ImageDimension>
 int ExtractTagLinePoints3D( int argc, char *argv[] )
@@ -28,20 +27,20 @@ int ExtractTagLinePoints3D( int argc, char *argv[] )
   reader->SetFileName( argv[2] );
   reader->Update();
 
-  /** 
-   * do each of the three sets of tag planes 
+  /**
+   * do each of the three sets of tag planes
    */
-  for ( unsigned int d = 0; d < ImageDimension; d++ )  
-    {  
-    std::cout << "Analyzing tag plane set " << d << std::endl; 
+  for ( unsigned int d = 0; d < ImageDimension; d++ )
+    {
+    std::cout << "Analyzing tag plane set " << d << std::endl;
 
     /**
      * Calculate initial segmentation with Gabor filter bank
      */
-    
+
     itk::TimeProbe timer1;
     timer1.Start();
-    std::cout << "      Calculating initial segmentation with Gabor filter bank.   " << std::flush;    
+    std::cout << "      Calculating initial segmentation with Gabor filter bank.   " << std::flush;
     typedef itk::GaborFilterBankTaggingImageFilter<RealImageType, LabelImageType> GaborFilterType;
     typename GaborFilterType::Pointer gaborFilter = GaborFilterType::New();
 //    gaborFilter->DebugOn();
@@ -53,30 +52,30 @@ int ExtractTagLinePoints3D( int argc, char *argv[] )
       if ( atof( argv[6] ) < 0.0 )
         {
         gaborFilter->SetUseAutomaticThresholding( true );
-        } 
+        }
       else
         {
         gaborFilter->SetThresholdPercentage( atof( argv[6] ) );
         gaborFilter->SetUseAutomaticThresholding( false );
-        } 
-      }  
+        }
+      }
     else
-      { 
+      {
       gaborFilter->SetUseAutomaticThresholding( true );
 //      gaborFilter->SetThresholdPercentage( 0.9 );
-      }  
+      }
 
     RealType angleOffset = 10.0 * vnl_math::pi/180.0;
     if ( argc > 9 )
       {
       angleOffset = atof( argv[9] ) * vnl_math::pi/180.0;;
-      }  
+      }
 
     RealType tagSpacingFactor = 0.25;
     if ( argc > 10 )
       {
       tagSpacingFactor = atof( argv[10] );
-      } 
+      }
 
     gaborFilter->SetTagSpacingMinimum( ( 1.0 - tagSpacingFactor ) * atof( argv[5] ) );
     gaborFilter->SetTagSpacingMaximum( ( 1.0 + tagSpacingFactor ) * atof( argv[5] ) );
@@ -84,16 +83,16 @@ int ExtractTagLinePoints3D( int argc, char *argv[] )
     if ( argc > 8 )
       {
       gaborFilter->SetNumberOfTagSpacingSteps( atoi( argv[8] ) );
-      }  
+      }
     else
       {
       gaborFilter->SetNumberOfTagSpacingSteps( 3 );
-      }  
-  
+      }
+
     /**
      * Rotation[0, 1, 2] = [theta, psi, phi] = [rot_x, rot_y, rot_z]
      * where imaging plane is parallel to x-y plane
-     */  
+     */
 
     typename GaborFilterType::ArrayType beginRotation;
     beginRotation.Fill( 0.0 );
@@ -101,11 +100,11 @@ int ExtractTagLinePoints3D( int argc, char *argv[] )
     endRotation.Fill( 0.0 );
     typename GaborFilterType::UnsignedIntArrayType samples;
     samples.Fill( 0 );
-    unsigned int numberOfSamples = 3;  
+    unsigned int numberOfSamples = 3;
     if ( argc > 7 )
       {
       numberOfSamples = atoi( argv[7] );
-      }  
+      }
 
     switch ( d )
       {
@@ -142,7 +141,7 @@ int ExtractTagLinePoints3D( int argc, char *argv[] )
         samples[1] = numberOfSamples;
         samples[2] = 1;
         break;
-      } 
+      }
 
     gaborFilter->SetRotationAngleMinimum( beginRotation );
     gaborFilter->SetRotationAngleMaximum( endRotation );
@@ -154,12 +153,12 @@ int ExtractTagLinePoints3D( int argc, char *argv[] )
 
     itk::OStringStream buf_d;
     buf_d << d;
-    
+
     std::string filename;
 
 //    filename = std::string( argv[4] ) + std::string( "GaborPoints." )
 //      + buf_d.str() + std::string( ".txt" );
-// 
+//
 //    ofstream str( filename.c_str() );
 //    str << "0 0 0 0" << std::endl;
 //
@@ -173,21 +172,21 @@ int ExtractTagLinePoints3D( int argc, char *argv[] )
 //        gaborFilter->GetOutput()->TransformIndexToPhysicalPoint( ItL.GetIndex(), point );
 //        if ( ImageDimension == 2 )
 //          {
-//          str << point[0] << " " << point[1] << " 0 " << ItL.Get() << std::endl;   
-//          } 
+//          str << point[0] << " " << point[1] << " 0 " << ItL.Get() << std::endl;
+//          }
 //        else if ( ImageDimension == 3 )
 //          {
-//          str << point[0] << " " << point[1] << " " << point[2] << " " << ItL.Get() << std::endl;   
-//          } 
-//        } 
-//      }  
+//          str << point[0] << " " << point[1] << " " << point[2] << " " << ItL.Get() << std::endl;
+//          }
+//        }
+//      }
 //
 //    str << "0 0 0 0" << std::endl;
 //    str.close();
 
     filename = std::string( argv[4] ) + std::string( "GaborMaximalResponse." )
       + buf_d.str() + std::string( ".nii.gz" );
-  
+
     typedef itk::ImageFileWriter<typename GaborFilterType::RealImageType> WriterType;
     typename WriterType::Pointer writer = WriterType::New();
     writer->SetFileName( filename.c_str() );
@@ -203,7 +202,7 @@ int ExtractTagLinePoints3D( int argc, char *argv[] )
 //    labelwriter->SetInput( gaborFilter->GetOutput() );
 //    labelwriter->Update();
 //
-    }       
+    }
   return 0;
 }
 
@@ -228,20 +227,20 @@ int ExtractTagLinePoints2D( int argc, char *argv[] )
   reader->SetFileName( argv[2] );
   reader->Update();
 
-  /** 
-   * do each of the three sets of tag planes 
+  /**
+   * do each of the three sets of tag planes
    */
-  for ( unsigned int d = 0; d < ImageDimension; d++ )  
-    {  
-    std::cout << "Analyzing tag plane set " << d << std::endl; 
+  for ( unsigned int d = 0; d < ImageDimension; d++ )
+    {
+    std::cout << "Analyzing tag plane set " << d << std::endl;
 
     /**
      * Calculate initial segmentation with Gabor filter bank
      */
-    
+
     itk::TimeProbe timer1;
     timer1.Start();
-    std::cout << "      Calculating initial segmentation with Gabor filter bank.   " << std::flush;    
+    std::cout << "      Calculating initial segmentation with Gabor filter bank.   " << std::flush;
     typedef itk::GaborFilterBankTagging2DImageFilter<RealImageType, LabelImageType> GaborFilterType;
     typename GaborFilterType::Pointer gaborFilter = GaborFilterType::New();
 //    gaborFilter->DebugOn();
@@ -253,24 +252,24 @@ int ExtractTagLinePoints2D( int argc, char *argv[] )
       if ( atof( argv[6] ) < 0.0 )
         {
         gaborFilter->SetUseAutomaticThresholding( true );
-        } 
+        }
       else
         {
         gaborFilter->SetThresholdPercentage( atof( argv[6] ) );
         gaborFilter->SetUseAutomaticThresholding( false );
-        } 
-      }  
+        }
+      }
     else
-      { 
+      {
       gaborFilter->SetUseAutomaticThresholding( true );
 //      gaborFilter->SetThresholdPercentage( 0.9 );
-      }  
+      }
 
     RealType tagSpacingFactor = 0.25;
     if ( argc > 10 )
       {
       tagSpacingFactor = atof( argv[10] );
-      } 
+      }
 
     gaborFilter->SetTagSpacingMinimum( ( 1.0 - tagSpacingFactor ) * atof( argv[5] ) );
     gaborFilter->SetTagSpacingMaximum( ( 1.0 + tagSpacingFactor ) * atof( argv[5] ) );
@@ -278,30 +277,30 @@ int ExtractTagLinePoints2D( int argc, char *argv[] )
     if ( argc > 8 )
       {
       gaborFilter->SetNumberOfTagSpacingSteps( atoi( argv[8] ) );
-      }  
+      }
     else
       {
       gaborFilter->SetNumberOfTagSpacingSteps( 3 );
-      }  
-  
+      }
+
     RealType angleOffset = 10.0 * vnl_math::pi/180.0;
     if ( argc > 9 )
       {
       angleOffset = atof( argv[9] ) * vnl_math::pi/180.0;;
-      }  
+      }
 
     /**
      * Rotation[0, 1, 2] = [theta, psi, phi] = [rot_x, rot_y, rot_z]
      * where imaging plane is parallel to x-y plane
-     */  
+     */
 
     typename GaborFilterType::ArrayType beginRotation, endRotation;
     typename GaborFilterType::UnsignedIntArrayType samples;
-    unsigned int numberOfSamples = 3;  
+    unsigned int numberOfSamples = 3;
     if ( argc > 7 )
       {
       numberOfSamples = atoi( argv[7] );
-      }  
+      }
 
     switch ( d )
       {
@@ -321,7 +320,7 @@ int ExtractTagLinePoints2D( int argc, char *argv[] )
         samples[0] = numberOfSamples;
         samples[1] = 1;
         break;
-      } 
+      }
 
     gaborFilter->SetRotationAngleMinimum( beginRotation );
     gaborFilter->SetRotationAngleMaximum( endRotation );
@@ -333,12 +332,12 @@ int ExtractTagLinePoints2D( int argc, char *argv[] )
 
     itk::OStringStream buf_d;
     buf_d << d;
-    
+
     std::string filename;
 
 //    filename = std::string( argv[4] ) + std::string( "GaborPoints." )
 //      + buf_d.str() + std::string( ".txt" );
-// 
+//
 //    ofstream str( filename.c_str() );
 //    str << "0 0 0 0" << std::endl;
 //
@@ -352,14 +351,14 @@ int ExtractTagLinePoints2D( int argc, char *argv[] )
 //        gaborFilter->GetOutput()->TransformIndexToPhysicalPoint( ItL.GetIndex(), point );
 //        if ( ImageDimension == 2 )
 //          {
-//          str << point[0] << " " << point[1] << " 0 " << ItL.Get() << std::endl;   
-//          } 
+//          str << point[0] << " " << point[1] << " 0 " << ItL.Get() << std::endl;
+//          }
 //        else if ( ImageDimension == 3 )
 //          {
-//          str << point[0] << " " << point[1] << " " << point[2] << " " << ItL.Get() << std::endl;   
-//          } 
-//        } 
-//      }  
+//          str << point[0] << " " << point[1] << " " << point[2] << " " << ItL.Get() << std::endl;
+//          }
+//        }
+//      }
 //
 //    str << "0 0 0 0" << std::endl;
 //    str.close();
@@ -367,7 +366,7 @@ int ExtractTagLinePoints2D( int argc, char *argv[] )
 
     filename = std::string( argv[4] ) + std::string( "GaborMaximalResponse." )
       + buf_d.str() + std::string( ".nii.gz" );
-  
+
     typedef itk::ImageFileWriter<typename GaborFilterType::RealImageType> WriterType;
     typename WriterType::Pointer writer = WriterType::New();
     writer->SetFileName( filename.c_str() );
@@ -382,9 +381,9 @@ int ExtractTagLinePoints2D( int argc, char *argv[] )
 //    labelwriter->SetFileName( filename.c_str() );
 //    labelwriter->SetInput( gaborFilter->GetOutput() );
 //    labelwriter->Update();
-  
 
-    }       
+
+    }
   return 0;
 }
 
@@ -393,11 +392,11 @@ int main( int argc, char *argv[] )
   if ( argc < 7 )
     {
     std::cout << "Usage: " << argv[0] << " imageDimension inputImage maskImage outputPrefix tagSpacing "
-              << "[thresholdPercentage] [numberOfAngleSteps] [numberOfTagSpacingSteps] [angleOffset] [tagSpacingFactor]" << std::endl;     
+              << "[thresholdPercentage] [numberOfAngleSteps] [numberOfTagSpacingSteps] [angleOffset] [tagSpacingFactor]" << std::endl;
     exit( 0 );
-    }   
+    }
 
-  switch( atoi( argv[1] ) ) 
+  switch( atoi( argv[1] ) )
    {
    case 2:
      ExtractTagLinePoints2D<2>( argc, argv );
