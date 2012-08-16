@@ -138,7 +138,7 @@ int GetImageInformation( int argc, char *argv[] )
     {
     typename ImageType::PointType point;
     typename ImageType::PointType center;
-    for( unsigned int d = 0; d < 4; d++ )
+    for( unsigned int d = 0; d < ImageDimension; d++ )
       {
       point[d] = static_cast<float>(
         reader->GetOutput()->GetLargestPossibleRegion().GetSize()[d] - 1 )
