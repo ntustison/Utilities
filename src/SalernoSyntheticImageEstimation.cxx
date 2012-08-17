@@ -115,7 +115,7 @@ CalculateEnergy( std::vector<typename ImageType::Pointer> images,
     {
     typedef itk::GradientMagnitudeRecursiveGaussianImageFilter<ImageType, ImageType> GradientFilterType;
     typename GradientFilterType::Pointer gradFilter = GradientFilterType::New();
-    gradFilter->SetSigma( 2.0 );
+    gradFilter->SetSigma( 1.2 );
     gradFilter->SetInput( images[n] );
     gradFilter->SetNormalizeAcrossScale( false );
     gradFilter->Update();
@@ -218,7 +218,9 @@ int main( unsigned int argc, char *argv[] )
   float newEnergy = itk::NumericTraits<float>::max();
   float epsilon = itk::NumericTraits<float>::max();
 
-  while( epsilon > 1e-3 )
+  unsigned int numberOfIterations = 0;
+
+  while( epsilon > 1e-3 || numberOfIterations++ > 30 )
     {
     energy = newEnergy;
 
