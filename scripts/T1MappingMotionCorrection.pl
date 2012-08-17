@@ -78,7 +78,7 @@ if( ! -d $outputDir )
 my $alpha = 5.0;
 my $beta = 12.0;
 my $deltaK = 0.1;
-my $numberOfPDEIterations = 30;
+my $numberOfIterations = 2;
 
 my $performBiasCorrection = 1;
 my $medianFilterSignalImages = 1;
@@ -284,7 +284,7 @@ print "========================================================\n\n";
 
 my @inputImages = @n4CorrectedImages;
 
-for( my $iteration = 0; $iteration <= $numberOfPDEIterations; $iteration++ )
+for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
   {
   print "Iteration $iteration\n";
 
