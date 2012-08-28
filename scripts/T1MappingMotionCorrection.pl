@@ -30,6 +30,28 @@ Usage: T1MappingMotionCorrection.pl <input_dir> <output_dir> <output_file_root>
   T1 Mapping Using Image Registration with Synthetic Image Estimation",
   Magnetic Resonance in Medicine,
 
+
+Regarding the parameters, the
+
+alpha = 5.0;
+beta = 12.0;
+
+There are few other parameters which may be relevant:
+
+// the temporal step size for solving the PDE
+deltaT = 0.1;
+
+// maximal number of iterations for solving the PDE
+maxPDEIter = 30;
+
+// the threshold for the minimal changes of cost function values
+tol = 1e-3;
+
+// the derivative of synthetic images is computed by convolving with the derivative of Gaussian function
+// the sigma for the guassian kernel in the unit of pixel
+sigmaForDerivative = 1.2;
+
+
 };
 
 
@@ -373,7 +395,15 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
 
   my $minResidual = 1e10;
   my $minResidualIndex = -1;
-  for( my $i = 0; $i < @inputImages; $i++ )
+
+  # only try the first 5 images;
+  my $numberOfImagesForSearch = 5;
+  if( $numberOfImagesForSearch > @inputImages )
+    {
+    $numberOfImagesForSearch = @inputImages;
+    }
+
+  for( my $i = 0; $i < $numberOFImagesForSearch; $i++ )
     {
     my @signedInputImages = @inputImages;
 

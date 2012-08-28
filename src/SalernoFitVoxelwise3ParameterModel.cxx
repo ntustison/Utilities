@@ -165,16 +165,23 @@ int main( unsigned int argc, char *argv[] )
     {
     ImageType::IndexType index = It.GetIndex();
 
+    unsigned int min_n = 0;
+    float min_intensity = itk::NumericTraits<float>::max();
     for( unsigned int n = 0; n < inputImages.size(); n++ )
       {
       intensities[n] = inputImages[n]->GetPixel( index );
+      if( intensities[n] < min_intensity )
+        {
+        min_intensity = intensities[n];
+        min_n = n;
+        }
       }
     costFunction->SetConstants( inversionTimes, intensities );
 
     OptimizerType::ParametersType initialPosition( 3 );
     initialPosition[0] = intensities[max_n];
     initialPosition[1] = 2 * initialPosition[0];
-    initialPosition[2] = inversionTimes[max_n] / vnl_math::ln2;
+    initialPosition[2] = inversionTimes[min_n] / vnl_math::ln2;
 
     optimizer->SetInitialPosition( initialPosition );
 
