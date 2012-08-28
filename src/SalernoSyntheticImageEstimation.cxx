@@ -229,7 +229,7 @@ int main( unsigned int argc, char *argv[] )
       {
       typedef itk::LaplacianRecursiveGaussianImageFilter<ImageType> LogFilterType;
       LogFilterType::Pointer logFilter = LogFilterType::New();
-      logFilter->SetSigma( 2.0 );
+      logFilter->SetSigma( 1.2 );
       logFilter->SetInput( syntheticImages[n] );
       logFilter->SetNormalizeAcrossScale( true );
       logFilter->Update();

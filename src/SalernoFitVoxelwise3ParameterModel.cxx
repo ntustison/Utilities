@@ -170,9 +170,9 @@ int main( unsigned int argc, char *argv[] )
     for( unsigned int n = 0; n < inputImages.size(); n++ )
       {
       intensities[n] = inputImages[n]->GetPixel( index );
-      if( intensities[n] < min_intensity )
+      if( vnl_math_abs( intensities[n] ) < min_intensity )
         {
-        min_intensity = intensities[n];
+        min_intensity = vnl_math_abs( intensities[n] );
         min_n = n;
         }
       }
