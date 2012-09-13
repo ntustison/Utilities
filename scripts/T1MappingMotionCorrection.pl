@@ -100,9 +100,9 @@ if( ! -d $outputDir )
 my $alpha = 5.0;
 my $beta = 12.0;
 my $deltaK = 0.1;
-my $numberOfIterations = 2;
+my $numberOfIterations = 1;
 
-my $performBiasCorrection = 1;
+my $performBiasCorrection = 0;
 my $medianFilterSignalImages = 1;
 
 my @args = ();
@@ -203,7 +203,15 @@ if( $performBiasCorrection )
   }
 else
   {
-  @n4CorrectedImages = @originalImages;
+  foreach my $image ( @originalImages )
+    {
+    my $corrected = $image;
+    $corrected =~ s/$inputDir/$outputDir/;
+    $corrected .= "_original.nii.gz";
+
+    `ConvertImage 2 $image $corrected 0`;
+    push( @n4CorrectedImages, $corrected );
+    }
   }
 
 ############################################################
@@ -229,12 +237,13 @@ my $lastToFirst = "${outputDir}/${outputPrefix}_lastToFirst";
 #             '-s', '1x0.5x0',
 #             '-f', '4x2x1',
             '-m', "CC[${n4CorrectedImages[0]},${n4CorrectedImages[-1]},1,6]",
-            '-t', 'SyN[0.5,3.0,0.0]',
-            '-c', '100x100',
+            '-t', 'SyN[0.0001,3.0,0.0]',
+            '-c', '0x1',
+#             '-t', 'SyN[0.5,3.0,0.0]',
+#             '-c', '100x100',
             '-s', '0x0',
             '-f', '2x1'
           );
-print "@args\n";
 system( @args ) == 0 || die "Error:  antsRegistration on first and last images.\n";
 
 
@@ -369,8 +378,10 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
 #                 '-s', '1x0.5x0',
 #                 '-f', '4x2x1',
                 '-m', "CC[${syntheticImages[$i]},${n4CorrectedImages[$i]},1,6]",
-                '-t', 'SyN[0.5,3.0,0.0]',
-                '-c', '100x100',
+#                 '-t', 'SyN[0.25,3.0,0.0]',
+#                 '-c', '100x100',
+            '-t', 'SyN[0.0001,3.0,0.0]',
+            '-c', '0x1',
                 '-s', '0x0',
                 '-f', '2x1'
               );
@@ -403,7 +414,7 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
     $numberOfImagesForSearch = @inputImages;
     }
 
-  for( my $i = 0; $i < $numberOFImagesForSearch; $i++ )
+  for( my $i = 0; $i < $numberOfImagesForSearch; $i++ )
     {
     my @signedInputImages = @inputImages;
 
@@ -473,6 +484,8 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
       }
     }
 
+  print "$minResidualIndex: $minResidual\n";
+
   ############################################################
   #
   #  7.  New signal images are created.
@@ -481,7 +494,7 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
 
   my @signedInputImages = @inputImages;
 
-  for( my $i = 0; $i < $minResidualIndex; $i++ )
+  for( my $i = 0; $i <= $minResidualIndex; $i++ )
     {
     my $negativeImage = $inputImages[$i];
     $negativeImage =~ s/\.nii\.gz/Negative\.nii\.gz/;
@@ -498,6 +511,8 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
     push( @parameters, $signedInputImages[$i] );
     push( @parameters, $inversionTimes[$i] );
     }
+
+  print "@signedInputImages\n";
 
   @args = ( "${UTILITIESPATH}/SalernoFitVoxelwise3ParameterModel",
     "${outputDir}/${outputPrefix}",
