@@ -54,7 +54,7 @@ std::vector<TValue> ConvertVector( std::string optionString )
   return values;
 }
 
-int main( unsigned int argc, char *argv[] )
+int main( int argc, char *argv[] )
 {
   if ( argc < 7 )
     {

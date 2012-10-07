@@ -2,7 +2,7 @@
 #include "itkImageFileWriter.h"
 #include "itkImageRegionIteratorWithIndex.h"
 
-int main( unsigned int argc, char *argv[] )
+int main( int argc, char *argv[] )
 {
   if ( argc < 6 )
     {

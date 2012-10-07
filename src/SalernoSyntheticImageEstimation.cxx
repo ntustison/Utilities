@@ -157,7 +157,7 @@ CalculateEnergy( std::vector<typename ImageType::Pointer> images,
   return summation;
 }
 
-int main( unsigned int argc, char *argv[] )
+int main( int argc, char *argv[] )
 {
   if ( argc < 6 )
     {

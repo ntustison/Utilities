@@ -79,7 +79,7 @@ private:
    VectorType               m_Intensities;
 };
 
-int main( unsigned int argc, char *argv[] )
+int main( int argc, char *argv[] )
 {
   if ( argc < 6 )
     {

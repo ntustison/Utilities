@@ -4,7 +4,6 @@
 #include "vtkPoints.h"
 #include "vtkPointData.h"
 
-#include <stdio>
 #include <vector>
 #include <fstream>
 #include <string>

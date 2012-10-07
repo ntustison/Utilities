@@ -9,8 +9,8 @@
   Copyright (c) Insight Software Consortium. All rights reserved.
   See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
 
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+     This software is distributed WITHOUT ANY WARRANTY; without even
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
@@ -19,6 +19,8 @@
 #include "itkBinaryDiamondStructuringElement.h"
 
 #include "itkNumericTraits.h"
+
+#include "vnl/vnl_math.h"
 
 namespace itk
 {
@@ -36,7 +38,7 @@ BinaryDiamondStructuringElement<TPixel, VDimension, TAllocator>
     if ( minRadius > this->GetRadius( d ) )
       {
       minRadius = this->GetRadius( d );
-      }    
+      }
     }
 
   for ( unsigned int n = 0; n < this->Size(); n++ )
@@ -46,16 +48,16 @@ BinaryDiamondStructuringElement<TPixel, VDimension, TAllocator>
     for ( unsigned int d = 0; d < NeighborhoodDimension; d++ )
       {
       manhattanDistance += vnl_math_abs( offset[d] );
-      } 
+      }
     if ( manhattanDistance <= minRadius )
       {
       this->operator[]( n ) = NumericTraits<TPixel>::One;
-      } 
+      }
     else
       {
       this->operator[]( n ) = NumericTraits<TPixel>::Zero;
       }
-    }  
+    }
 }
 
 } // namespace itk
