@@ -423,9 +423,9 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
       then
 
       basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${EXTRACTION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},1]"
-      stage1="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
-      stage2="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
-      stage3="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [30x0x0,1e-9,15] -t SyN[0.25,3,0] -f 4x2x1 -s 2x1x0";
+      stage1="-m MI[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},1,32,Regular,0.05] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
+      stage2="-m MI[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},1,32,Regular,0.05] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
+      stage3="-m CC[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},1,4] -c [30x0x0,1e-9,15] -t SyN[0.25,3,0] -f 4x2x1 -s 2x1x0";
 
       exe_brain_extraction_1="${basecall} ${stage1} ${stage2} ${stage3}"
       logCmd $exe_brain_extraction_1
@@ -630,9 +630,9 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
       then
 
       basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${SEGMENTATION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${SEGMENTATION_TEMPLATE},1]"
-      stage1="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
-      stage2="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
-      stage3="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 4x2x1 -s 2x1x0";
+      stage1="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},1,32,Regular,0.05] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
+      stage2="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},1,32,Regular,0.05] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
+      stage3="-m CC[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 4x2x1 -s 2x1x0";
 
       exe_brain_segmentation_1="${basecall} ${stage1} ${stage2} ${stage3}"
       logCmd $exe_brain_segmentation_1
@@ -798,13 +798,19 @@ if [[ -f ${REGISTRATION_TEMPLATE} ]];
 
         time_start_template_registration=`date +%s`
 
-        exe_template_registration_1="${ANTS} ${DIMENSION} -m ${ANTS_METRIC}[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_METRIC_PARAMS}] -i ${ANTS_MAX_ITERATIONS} -t ${ANTS_TRANSFORMATION} -r ${ANTS_REGULARIZATION} -o ${REGISTRATION_TEMPLATE_OUTPUT_PREFIX}.${OUTPUT_SUFFIX} --use-Histogram-Matching"
+        basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${SEGMENTATION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${SEGMENTATION_TEMPLATE},1]"
+        stage1="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},1,32,Regular,0.05] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
+        stage2="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},1,32,Regular,0.05] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
+        stage3="-m CC[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 4x2x1 -s 2x1x0";
+
+        exe_template_segmentation_1="${basecall} ${stage1} ${stage2} ${stage3}"
+
         if [[ ! -f ${REGISTRATION_TEMPLATE_WARP} ]];
           then
             logCmd $exe_template_registration_1
           fi
 
-        exe_template_registration_2="${WARP} -d 3 ${DIMENSION} -i ${N4_CORRECTED_IMAGES[0]} -o ${REGISTRATION_TEMPLATE_OUTPUT_PREFIX}Warped.${OUTPUT_SUFFIX} -r ${REGISTRATION_TEMPLATE} -n Gaussian -t ${REGISTRATION_TEMPLATE_WARP}-t ${REGISTRATION_TEMPLATE_AFFINE}"
+        exe_template_registration_2="${WARP} -d 3 ${DIMENSION} -i ${N4_CORRECTED_IMAGES[0]} -o ${REGISTRATION_TEMPLATE_OUTPUT_PREFIX}Warped.${OUTPUT_SUFFIX} -r ${REGISTRATION_TEMPLATE} -n Gaussian -t ${REGISTRATION_TEMPLATE_WARP} -t ${REGISTRATION_TEMPLATE_AFFINE}"
         logCmd $exe_template_registration_2
 
         if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
