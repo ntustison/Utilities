@@ -632,7 +632,7 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
       basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${SEGMENTATION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${SEGMENTATION_TEMPLATE},1]"
       stage1="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},1,32,Regular,0.05] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
       stage2="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},1,32,Regular,0.05] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
-      stage3="-m CC[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 4x2x1 -s 2x1x0";
+      stage3="-m CC[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 6x4x2x1 -s 3x2x1x0";
 
       exe_brain_segmentation_1="${basecall} ${stage1} ${stage2} ${stage3}"
       logCmd $exe_brain_segmentation_1
