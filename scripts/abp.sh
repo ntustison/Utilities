@@ -2,12 +2,12 @@
 
 VERSION="0.0"
 
-if [[ ! -s ${ANTSPATH}/ANTS ]]; then
-  echo we cant find the ANTS program -- does not seem to exist.  please \(re\)define \$ANTSPATH in your environment.
+if [[ ! -s ${ANTSPATH}/antsRegistration ]]; then
+  echo we cant find the antsRegistration program -- does not seem to exist.  please \(re\)define \$ANTSPATH in your environment.
   exit
 fi
-if [[ ! -s ${ANTSPATH}/WarpImageMultiTransform ]]; then
-  echo we cant find the WarpImageMultiTransform program -- does not seem to exist.  please \(re\)define \$ANTSPATH in your environment.
+if [[ ! -s ${ANTSPATH}/antsApplyTransforms ]]; then
+  echo we cant find the antsApplyTransforms program -- does not seem to exist.  please \(re\)define \$ANTSPATH in your environment.
   exit
 fi
 if [[ ! -s ${ANTSPATH}/N4BiasFieldCorrection ]]; then
@@ -122,7 +122,6 @@ echoParameters() {
        likelihood             = ${ATROPOS_BRAIN_EXTRACTION_LIKELIHOOD}
        initialization         = ${ATROPOS_BRAIN_EXTRACTION_INITIALIZATION}
        mrf                    = ${ATROPOS_BRAIN_EXTRACTION_MRF}
-       ants iterations        = ${ANTS_BRAIN_EXTRACTION_MAX_ITERATIONS}
     Atropos parameters (segmentation):
        convergence            = ${ATROPOS_SEGMENTATION_CONVERGENCE}
        likelihood             = ${ATROPOS_SEGMENTATION_LIKELIHOOD}
@@ -185,16 +184,13 @@ GRAY_MATTER_LABEL=2
 #
 ################################################################################
 
-ANTS=${ANTSPATH}ANTS
-ANTS_MAX_ITERATIONS="50x100x20"
-ANTS_REGULARIZATION="Gauss[3.0,0.0]"
-ANTS_TRANSFORMATION="SyN[0.25]"
+ANTS=${ANTSPATH}antsRegistration
+ANTS_MAX_ITERATIONS="100x100x70x20"
+ANTS_TRANSFORMATION="SyN[0.15,3.0,0.0]"
 ANTS_METRIC="CC"
 ANTS_METRIC_PARAMS="1,4"
 
-ANTS_BRAIN_EXTRACTION_MAX_ITERATIONS="30x0x0"
-
-WARP=${ANTSPATH}WarpImageMultiTransform
+WARP=${ANTSPATH}antsApplyTransforms
 
 N4=${ANTSPATH}N4BiasFieldCorrection
 N4_CONVERGENCE_1="[50x50x50x50,0.0000001]"
@@ -391,8 +387,10 @@ echo
 
 BRAIN_EXTRACTION_OUTPUT=${OUTPUT_PREFIX}BrainExtraction
 EXTRACTION_WARP_OUTPUT_PREFIX=${BRAIN_EXTRACTION_OUTPUT}Prior
-EXTRACTION_WARP=${EXTRACTION_WARP_OUTPUT_PREFIX}Warp.${OUTPUT_SUFFIX}
-EXTRACTION_AFFINE=${EXTRACTION_WARP_OUTPUT_PREFIX}Affine.txt
+EXTRACTION_WARP=${EXTRACTION_WARP_OUTPUT_PREFIX}3Warp.nii.gz
+EXTRACTION_AFFINE=${EXTRACTION_WARP_OUTPUT_PREFIX}2Affine.mat
+EXTRACTION_RIGID=${EXTRACTION_WARP_OUTPUT_PREFIX}1Rigid.mat
+EXTRACTION_TRANSLATION=${EXTRACTION_WARP_OUTPUT_PREFIX}0DerivedInitialMovingTranslation.mat
 EXTRACTION_MASK_PRIOR_WARPED=${EXTRACTION_WARP_OUTPUT_PREFIX}Warped.${OUTPUT_SUFFIX}
 EXTRACTION_MASK=$BRAIN_EXTRACTION_MASK
 EXTRACTION_SEGMENTATION=${BRAIN_EXTRACTION_OUTPUT}Segmentation.${OUTPUT_SUFFIX}
@@ -423,12 +421,18 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
     ## Step 1 ##
     if [[ ! -f ${EXTRACTION_AFFINE} ]];
       then
-      exe_brain_extraction_1="${ANTS} ${DIMENSION} -m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -i ${ANTS_BRAIN_EXTRACTION_MAX_ITERATIONS} -t ${ANTS_TRANSFORMATION} -r ${ANTS_REGULARIZATION} -o ${EXTRACTION_WARP_OUTPUT_PREFIX}.${OUTPUT_SUFFIX} --use-Histogram-Matching"
+
+      basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${EXTRACTION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},1]"
+      stage1="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1]";
+      stage2="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Affine[0.1]";
+      stage3="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [30x0x0,1e-9,15] -t SyN[0.1,3,0]";
+
+      exe_brain_extraction_1="${basecall} ${stage1} ${stage2} ${stage3}"
       logCmd $exe_brain_extraction_1
       fi
 
     ## Step 2 ##
-    exe_brain_extraction_2="${WARP} ${DIMENSION} ${EXTRACTION_PRIOR} ${EXTRACTION_MASK_PRIOR_WARPED} -R ${ANATOMICAL_IMAGES[0]} ${EXTRACTION_WARP} ${EXTRACTION_AFFINE}"
+    exe_brain_extraction_2="${WARP} -d ${DIMENSION} -i ${EXTRACTION_PRIOR} -o ${EXTRACTION_MASK_PRIOR_WARPED} -r ${ANATOMICAL_IMAGES[0]} -n Gaussian -t ${EXTRACTION_WARP} -t ${EXTRACTION_AFFINE} -t ${EXTRACTION_RIGID} -t ${EXTRACTION_TRANSLATION}"
     logCmd $exe_brain_extraction_2
 
     ## superstep 1b ##
@@ -509,8 +513,10 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
 BRAIN_SEGMENTATION_OUTPUT=${OUTPUT_PREFIX}BrainSegmentation
 SEGMENTATION_WARP_OUTPUT_PREFIX=${BRAIN_SEGMENTATION_OUTPUT}Prior
 SEGMENTATION_PRIOR_WARPED=${SEGMENTATION_WARP_OUTPUT_PREFIX}Warped
-SEGMENTATION_WARP=${SEGMENTATION_WARP_OUTPUT_PREFIX}Warp.${OUTPUT_SUFFIX}
-SEGMENTATION_AFFINE=${SEGMENTATION_WARP_OUTPUT_PREFIX}Affine.txt
+SEGMENTATION_WARP=${SEGMENTATION_WARP_OUTPUT_PREFIX}3Warp.nii.gz
+SEGMENTATION_AFFINE=${SEGMENTATION_WARP_OUTPUT_PREFIX}2Affine.mat
+SEGMENTATION_RIGID=${SEGMENTATION_WARP_OUTPUT_PREFIX}1Rigid.mat
+SEGMENTATION_TRANSLATION=${SEGMENTATION_WARP_OUTPUT_PREFIX}0DerivedInitialMovingTranslation.mat
 SEGMENTATION_WHITE_MATTER_MASK=${EXTRACTION_WM}
 SEGMENTATION_BRAIN=${EXTRACTION_BRAIN}
 SEGMENTATION_BRAIN_N4_IMAGES=()
@@ -622,15 +628,21 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
     ## Step 1 ##
     if [[ ! -f ${SEGMENTATION_AFFINE} ]];
       then
-        exe_brain_segmentation_1="${ANTS} ${DIMENSION} -m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -i ${ANTS_MAX_ITERATIONS} -t ${ANTS_TRANSFORMATION} -r ${ANTS_REGULARIZATION} -o ${SEGMENTATION_WARP_OUTPUT_PREFIX}.${OUTPUT_SUFFIX} --use-Histogram-Matching"
-        logCmd $exe_brain_segmentation_1
+
+      basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${SEGMENTATION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${SEGMENTATION_TEMPLATE},1]"
+      stage1="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1]";
+      stage2="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Affine[0.1]";
+      stage3="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION}";
+
+      exe_brain_segmentation_1="${basecall} ${stage1} ${stage2} ${stage3}"
+      logCmd $exe_brain_segmentation_1
       fi
 
     ## Step 2 ##
 
     for (( i = 0; i < ${NUMBER_OF_PRIOR_IMAGES}; i++ ))
       do
-        exe_brain_segmentation_2="${WARP} ${DIMENSION} ${PRIOR_IMAGE_FILENAMES[$i]} ${WARPED_PRIOR_IMAGE_FILENAMES[$i]} -R ${N4_CORRECTED_IMAGES[0]} ${SEGMENTATION_WARP} ${SEGMENTATION_AFFINE}"
+        exe_brain_segmentation_2="${WARP} -d ${DIMENSION} -i ${PRIOR_IMAGE_FILENAMES[$i]} -o ${WARPED_PRIOR_IMAGE_FILENAMES[$i]} -r ${N4_CORRECTED_IMAGES[0]} -n Gaussian  -t ${SEGMENTATION_WARP} -t ${SEGMENTATION_AFFINE} -t ${SEGMENTATION_RIGID} -t ${SEGMENTATION_TRANSLATION}"
         logCmd $exe_brain_segmentation_2
       done
 
@@ -792,7 +804,7 @@ if [[ -f ${REGISTRATION_TEMPLATE} ]];
             logCmd $exe_template_registration_1
           fi
 
-        exe_template_registration_2="${WARP} ${DIMENSION} ${N4_CORRECTED_IMAGES[0]} ${REGISTRATION_TEMPLATE_OUTPUT_PREFIX}Warped.${OUTPUT_SUFFIX} -R ${REGISTRATION_TEMPLATE} ${REGISTRATION_TEMPLATE_WARP} ${REGISTRATION_TEMPLATE_AFFINE}"
+        exe_template_registration_2="${WARP} -d 3 ${DIMENSION} -i ${N4_CORRECTED_IMAGES[0]} -o ${REGISTRATION_TEMPLATE_OUTPUT_PREFIX}Warped.${OUTPUT_SUFFIX} -r ${REGISTRATION_TEMPLATE} -n Gaussian -t ${REGISTRATION_TEMPLATE_WARP}-t ${REGISTRATION_TEMPLATE_AFFINE}"
         logCmd $exe_template_registration_2
 
         if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
