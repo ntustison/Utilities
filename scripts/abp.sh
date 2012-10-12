@@ -423,9 +423,9 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
       then
 
       basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${EXTRACTION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},1]"
-      stage1="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1]";
-      stage2="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Affine[0.1]";
-      stage3="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [30x0x0,1e-9,15] -t SyN[0.1,3,0]";
+      stage1="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
+      stage2="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
+      stage3="-m ${ANTS_METRIC}[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [30x0x0,1e-9,15] -t SyN[0.25,3,0] -f 4x2x1 -s 2x1x0";
 
       exe_brain_extraction_1="${basecall} ${stage1} ${stage2} ${stage3}"
       logCmd $exe_brain_extraction_1
@@ -630,9 +630,9 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
       then
 
       basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${SEGMENTATION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${SEGMENTATION_TEMPLATE},1]"
-      stage1="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1]";
-      stage2="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Affine[0.1]";
-      stage3="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION}";
+      stage1="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
+      stage2="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
+      stage3="-m ${ANTS_METRIC}[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_METRIC_PARAMS}] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 4x2x1 -s 2x1x0";
 
       exe_brain_segmentation_1="${basecall} ${stage1} ${stage2} ${stage3}"
       logCmd $exe_brain_segmentation_1
