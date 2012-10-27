@@ -214,13 +214,17 @@ for( It.GoToBegin(); !It.IsAtEnd(); ++It )
 
     if( !overlap )
       {
-      for( it = indices.begin(); it != indices.end(); it++ )
+      if( output->GetLargestPossibleRegion().IsInside( indices[0] ) )
         {
-        if( output->GetLargestPossibleRegion().IsInside( *it ) )
-          {
-          output->SetPixel( *it, 1 );
-          }
+        output->SetPixel( indices[1], 1 );
         }
+//       for( it = indices.begin(); it != indices.end(); it++ )
+//         {
+//         if( output->GetLargestPossibleRegion().IsInside( *it ) )
+//           {
+//           output->SetPixel( *it, 1 );
+//           }
+//         }
       }
     }
   }
