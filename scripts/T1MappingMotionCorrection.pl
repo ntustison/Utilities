@@ -100,10 +100,10 @@ if( ! -d $outputDir )
 my $alpha = 5.0;
 my $beta = 12.0;
 my $deltaK = 0.1;
-my $numberOfIterations = 1;
+my $numberOfIterations = 3;
 
 my $performBiasCorrection = 0;
-my $medianFilterSignalImages = 1;
+my $medianFilterSignalImages = 0;
 
 my @args = ();
 my @motionCorrectedImages = ();
@@ -237,10 +237,8 @@ my $lastToFirst = "${outputDir}/${outputPrefix}_lastToFirst";
 #             '-s', '1x0.5x0',
 #             '-f', '4x2x1',
             '-m', "CC[${n4CorrectedImages[0]},${n4CorrectedImages[-1]},1,6]",
-            '-t', 'SyN[0.0001,3.0,0.0]',
-            '-c', '0x1',
-#             '-t', 'SyN[0.5,3.0,0.0]',
-#             '-c', '100x100',
+            '-t', 'BSplineSyN[0.1,32x32,0x0]',
+            '-c', '100x100',
             '-s', '0x0',
             '-f', '2x1'
           );
@@ -263,6 +261,11 @@ system( @args ) == 0 || die "Error: @args.\n";
 my $Aimage = "${outputDir}/${outputPrefix}A.nii.gz";
 my $Bimage = "${outputDir}/${outputPrefix}B.nii.gz";
 my $T1image = "${outputDir}/${outputPrefix}T1.nii.gz";
+my $T1mask = "${outputDir}/${outputPrefix}T1mask.nii.gz";
+
+`ThresholdImage 3 $T1image $T1mask 0 4500 1 0`;
+`BinaryOperateImages 3 $T1image x $T1mask $T1image`;
+unlink( $T1mask );
 
 print "========================================================\n\n";
 
@@ -378,10 +381,8 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
 #                 '-s', '1x0.5x0',
 #                 '-f', '4x2x1',
                 '-m', "CC[${syntheticImages[$i]},${n4CorrectedImages[$i]},1,6]",
-#                 '-t', 'SyN[0.25,3.0,0.0]',
-#                 '-c', '100x100',
-            '-t', 'SyN[0.0001,3.0,0.0]',
-            '-c', '0x1',
+                '-t', 'BSplineSyN[0.1,32x32,0x0]',
+                '-c', '100x100',
                 '-s', '0x0',
                 '-f', '2x1'
               );
@@ -462,7 +463,7 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
         `SmoothImage 2 $signalImages[$j] 1 $signalImages[$j] 0 1`;
         }
 
-      my $tmpResidualImage = "${outputDir}/${outputPrefix}_tmpResidual.nii.gz";
+      my $tmpResidualImage = "${outputDir}/${outputPrefix}_tmpResidual${j}.nii.gz";
 
       `${UTILITIESPATH}/BinaryOperateImages 2 $signalImages[$j] - $signedInputImages[$j] $tmpResidualImage`;
       `${UTILITIESPATH}/UnaryOperateImage 2 $tmpResidualImage ^ 2 $tmpResidualImage`;
@@ -472,10 +473,10 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
 
       $currentResidual += $stats[0];
 
-      unlink( $tmpResidualImage );
+#       unlink( $tmpResidualImage );
       }
 
-
+    print "$i: $currentResidual $minResidual\n";
 
     if( $currentResidual < $minResidual )
       {
@@ -519,6 +520,10 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
     @parameters
     );
   system( @args ) == 0 || die "Error: @args.\n";
+
+  `ThresholdImage 3 $T1image $T1mask 0 4500 1 0`;
+  `BinaryOperateImages 3 $T1image x $T1mask $T1image`;
+  unlink( $T1mask );
 
   for( my $i = 0; $i < @inversionTimes; $i++ )
     {

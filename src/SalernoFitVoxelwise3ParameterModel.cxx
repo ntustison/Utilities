@@ -160,6 +160,8 @@ int main( int argc, char *argv[] )
 
   optimizer->SetCostFunction( costFunction.GetPointer() );
 
+//   std::ofstream str( "nickSamples.txt" );
+
   itk::ImageRegionConstIteratorWithIndex<ImageType> It( inputImages[0], inputImages[0]->GetLargestPossibleRegion() );
   for( It.GoToBegin(); !It.IsAtEnd(); ++It )
     {
@@ -207,7 +209,19 @@ int main( int argc, char *argv[] )
     B->SetPixel( index, currentPosition[1] );
     T1->SetPixel( index, currentPosition[2] );
 
+//     if( vnl_math_abs( intensities[0] ) > 0.0 )
+//       {
+//       str << currentPosition[0] << "," << currentPosition[1] << "," << currentPosition[2] << ",";
+//       for( unsigned int q = 0; q < intensities.size()-1; q++ )
+//         {
+//         str << intensities[q] << ",";
+//         }
+//       str << intensities[intensities.size()-1] << std::endl;
+//       }
     }
+//   str.close();
+
+//   exit( 0 );
 
   std::string filenameA = std::string( argv[1] ) + std::string( "A.nii.gz" );
   std::string filenameB = std::string( argv[1] ) + std::string( "B.nii.gz" );
