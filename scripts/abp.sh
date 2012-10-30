@@ -98,6 +98,8 @@ echoParameters() {
       extraction prior        = ${EXTRACTION_PRIOR}
       segmentation template   = ${SEGMENTATION_TEMPLATE}
       segmentation prior      = ${SEGMENTATION_PRIOR}
+      gray matter label       = ${GRAY_MATTER_LABEL}
+      white matter label      = ${WHITE_MATTER_LABEL}
       output prefix           = ${OUTPUT_PREFIX}
       output image suffix     = ${OUTPUT_SUFFIX}
       registration template   = ${REGISTRATION_TEMPLATE}
@@ -206,7 +208,7 @@ ATROPOS_BRAIN_EXTRACTION_CONVERGENCE="[3,0.0001]"
 ATROPOS_BRAIN_EXTRACTION_MRF="[0.2,1x1x1]";
 
 ATROPOS_SEGMENTATION_INITIALIZATION="PriorProbabilityImages"
-ATROPOS_SEGMENTATION_PRIOR_WEIGHT=0.25
+ATROPOS_SEGMENTATION_PRIOR_WEIGHT=0.0
 ATROPOS_SEGMENTATION_LIKELIHOOD="Gaussian"
 ATROPOS_SEGMENTATION_CONVERGENCE="[12,0.0001]"
 ATROPOS_SEGMENTATION_POSTERIOR_FORMULATION="Socrates"
@@ -366,7 +368,7 @@ time_elapsed_n4_correction=$((time_end_n4_correction - time_start_n4_correction)
 if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
   then
 
-  for f in "${TMP_FILES[@]}"
+  for f in "${#TMP_FILES[@]}"
     do
       logCmd rm $f
     done
@@ -400,6 +402,8 @@ EXTRACTION_GM=${BRAIN_EXTRACTION_OUTPUT}GM.${OUTPUT_SUFFIX}
 EXTRACTION_CSF=${BRAIN_EXTRACTION_OUTPUT}CSF.${OUTPUT_SUFFIX}
 EXTRACTION_TMP=${BRAIN_EXTRACTION_OUTPUT}Tmp.${OUTPUT_SUFFIX}
 EXTRACTION_MASK_TMP=${BRAIN_EXTRACTION_OUTPUT}MaskTmp.${OUTPUT_SUFFIX}
+EXTRACTION_SKULL_TOP=${BRAIN_EXTRACTION_OUTPUT}SkullTop.${OUTPUT_SUFFIX}
+EXTRACTION_TEMPLATE_SKULL_TOP=${BRAIN_EXTRACTION_OUTPUT}TemplateSkullTop.${OUTPUT_SUFFIX}
 
 if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
   then
@@ -416,13 +420,19 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
 
     time_start_brain_extraction=`date +%s`
 
-    TMP_FILES=( $EXTRACTION_MASK_PRIOR_WARPED $EXTRACTION_WARP $EXTRACTION_AFFINE $EXTRACTION_TMP $EXTRACTION_GM $EXTRACTION_CSF $EXTRACTION_SEGMENTATION )
+    TMP_FILES=( $EXTRACTION_MASK_PRIOR_WARPED $EXTRACTION_WARP $EXTRACTION_AFFINE $EXTRACTION_TMP $EXTRACTION_GM $EXTRACTION_CSF $EXTRACTION_SEGMENTATION $EXTRACTION_SKULL_TOP $EXTRACTION_TEMPLATE_SKULL_TOP )
 
     ## Step 1 ##
     if [[ ! -f ${EXTRACTION_AFFINE} ]];
       then
 
-      basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${EXTRACTION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},1]"
+      exe_get_skull_top="GetSkullTop ${N4_CORRECTED_IMAGES[0]} ${EXTRACTION_SKULL_TOP}"
+      exe_get_template_skull_top="GetSkullTop ${EXTRACTION_TEMPLATE} ${EXTRACTION_TEMPLATE_SKULL_TOP}"
+
+      logCmd $exe_get_skull_top
+      logCmd $exe_get_template_skull_top
+
+      basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${EXTRACTION_WARP_OUTPUT_PREFIX} -r [${EXTRACTION_SKULL_TOP},${EXTRACTION_TEMPLATE_SKULL_TOP},1]"
       stage1="-m MI[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},1,32,Regular,0.05] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
       stage2="-m MI[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},1,32,Regular,0.05] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
       stage3="-m CC[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},1,4] -c [30x0x0,1e-9,15] -t SyN[0.25,3,0] -f 4x2x1 -s 2x1x0";
@@ -486,7 +496,7 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
       then
 
-      for f in "${TMP_FILES[@]}"
+      for f in "${#TMP_FILES[@]}"
         do
           logCmd rm $f
         done
@@ -689,7 +699,7 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
       then
 
-      for f in "${TMP_FILES[@]}"
+      for f in "${sh ~/Pkg/Utilities/scripts/abp.sh -d 3 -a IXI441-HH-2154-T1.nii.gz -o /Users/ntustison/Data/Public/MICCAI-2012-Multi-Atlas-Challenge-Data/ABP2a/abp -e /Users/ntustison/Data/Public/MICCAI-2012-Multi-Atlas-Challenge-Data/template/T_template0.nii.gz -m /Users/ntustison/Data/Public/MICCAI-2012-Multi-Atlas-Challenge-Data/template/T_template0ProbabilityBrainMask.nii.gz -l /Users/ntustison/Data/Public/MICCAI-2012-Multi-Atlas-Challenge-Data/template/T_template0SkullStripped.nii.gz -p /Users/ntustison/Data/Public/MICCAI-2012-Multi-Atlas-Challenge-Data/template/Priors/priors%d.nii.gz -w 3 -g 2TMP_FILES[@]}"
         do
           logCmd rm $f
         done
@@ -754,7 +764,7 @@ if [[ ! -f ${CORTICAL_THICKNESS_IMAGE} ]];
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
       then
 
-      for f in "${TMP_FILES[@]}"
+      for f in "${#TMP_FILES[@]}"
         do
           logCmd rm $f
         done
@@ -816,7 +826,7 @@ if [[ -f ${REGISTRATION_TEMPLATE} ]];
         if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
           then
 
-          for f in "${TMP_FILES[@]}"
+          for f in "${#TMP_FILES[@]}"
             do
               logCmd rm $f
             done
