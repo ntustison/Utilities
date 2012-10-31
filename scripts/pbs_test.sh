@@ -3,8 +3,8 @@
 #PBS -l walltime=24:00:00
 #PBS -m ea
 #PBS -V
-#PBS -M ntustison@gmail.com
-#    #PBS -q nopreempt
+# # PBS -M ntustison@gmail.com
+# # PBS -q nopreempt
 
 # variables that change between calls
 T1=${HOME}/share/Data/dp04_001_x_t1.nii.gz
@@ -13,7 +13,7 @@ OUTPUT_DATA_DIR=${HOME}/share/Data/TestOutput2/
 
 # ants brain processing script
 
-ABP=${HOME}/Pkg/Utilities/scripts/abp.sh
+ABP=${HOME}/share/Pkg/Utilities/scripts/abp.sh
 
 # Define variable for local storage on compute nodes associated with the job
 LS="/jobtmp/pbstmp.$PBS_JOBID"
@@ -22,10 +22,10 @@ LS="/jobtmp/pbstmp.$PBS_JOBID"
 # master compute node
 
 cd $LS
-/bin/cp -R ${HOME}/Pkg/ANTS/bin/ .
+/bin/cp -R ${HOME}/Pkg/ANTS/bin/bin .
 /bin/cp $ABP .
 
-export ANTSPATH="${LS}/bin/"
+export ANTSPATH="${HOME}/share/Pkg/ANTS/bin/bin/"
 
 
 if [[ ! -d "$OUTPUT_DATA_DIR" ]];
