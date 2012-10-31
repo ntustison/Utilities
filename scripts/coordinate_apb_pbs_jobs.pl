@@ -17,7 +17,7 @@ if( ! -e $outputScriptDir )
   }
 
 
-my $registrationTemplate = "/home/njt4n/share/Data/Stone/BreacherPhaseI/T_templateTotal.nii.gz";
+my $registrationTemplate = "/home/njt4n/share/Data/Public/fsl/MNI152_t1_1mm.nii.gz";
 
 find( \&wanted, $inputDataDir );
 
@@ -27,26 +27,18 @@ sub wanted
 
   my @comps = split( '/', $directories );
 
-  if( $filename =~ m/t1\.nii\.gz$/ )
+  if( $filename =~ m/WarpedToTemplate\.nii\.gz$/ )
     {
 
-    my $baseScript = "/home/njt4n/Pkg/Utilities/scripts/pbs_test.sh";
+    my $baseScript = "/home/njt4n/share/Pkg/Utilities/scripts/pbs_test.sh";
     open( BASEFILE, "<$baseScript" );
     my @baseScriptContents = <BASEFILE>;
     close( BASEFILE );
 
-    my @incomps = split( '/', $inputDataDir );
+    my $subjectname = $filename;
+    $subjectname =~ s/WarpedToTemplate\.nii\.gz//;
 
-    my $localOutputDir = '';
-    for( $i = 0; $i < @comps-1; $i++ )
-      {
-      if( $i >= @incomps || $incomps[$i] !~ m/^${comps[$i]}$/ )
-        {
-        $localOutputDir .= "$comps[$i]/";
-        }
-      }
-    $localOutputDir .= "ABP";
-    $localOutputDir = "${outputDataDir}/${localOutputDir}/";
+    my $localOutputDir = "${outputDataDir}/${subjectname}/";
     if( !-e $localOutputDir )
       {
       mkpath( $localOutputDir, {verbose => 0, mode => 0755} ) or
@@ -63,7 +55,7 @@ sub wanted
     print FILE @baseScriptContents;
     close( FILE );
 
-#     system( "qsub $pbsFile" );
+    system( "qsub $pbsFile" );
 
     }
   }
