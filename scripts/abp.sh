@@ -368,7 +368,7 @@ time_elapsed_n4_correction=$((time_end_n4_correction - time_start_n4_correction)
 if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
   then
 
-  for f in "${#TMP_FILES[@]}"
+  for f in ${TMP_FILES[@]}
     do
       logCmd rm $f
     done
@@ -390,6 +390,7 @@ echo
 BRAIN_EXTRACTION_OUTPUT=${OUTPUT_PREFIX}BrainExtraction
 EXTRACTION_WARP_OUTPUT_PREFIX=${BRAIN_EXTRACTION_OUTPUT}Prior
 EXTRACTION_WARP=${EXTRACTION_WARP_OUTPUT_PREFIX}3Warp.nii.gz
+EXTRACTION_INVERSE_WARP=${EXTRACTION_WARP_OUTPUT_PREFIX}3InverseWarp.nii.gz
 EXTRACTION_AFFINE=${EXTRACTION_WARP_OUTPUT_PREFIX}2Affine.mat
 EXTRACTION_RIGID=${EXTRACTION_WARP_OUTPUT_PREFIX}1Rigid.mat
 EXTRACTION_TRANSLATION=${EXTRACTION_WARP_OUTPUT_PREFIX}0DerivedInitialMovingTranslation.mat
@@ -420,7 +421,7 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
 
     time_start_brain_extraction=`date +%s`
 
-    TMP_FILES=( $EXTRACTION_MASK_PRIOR_WARPED $EXTRACTION_WARP $EXTRACTION_AFFINE $EXTRACTION_TMP $EXTRACTION_GM $EXTRACTION_CSF $EXTRACTION_SEGMENTATION $EXTRACTION_SKULL_TOP $EXTRACTION_TEMPLATE_SKULL_TOP )
+    TMP_FILES=( $EXTRACTION_MASK_PRIOR_WARPED $EXTRACTION_WARP $EXTRACTION_INVERSE_WARP $EXTRACTION_RIGID $EXTRACTION_AFFINE $EXTRACTION_TRANSLATION $EXTRACTION_TMP $EXTRACTION_MASK_TMP $EXTRACTION_GM $EXTRACTION_CSF $EXTRACTION_SEGMENTATION $EXTRACTION_SKULL_TOP $EXTRACTION_TEMPLATE_SKULL_TOP )
 
     ## Step 1 ##
     if [[ ! -f ${EXTRACTION_AFFINE} ]];
@@ -496,7 +497,7 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
       then
 
-      for f in "${#TMP_FILES[@]}"
+      for f in ${TMP_FILES[@]}
         do
           logCmd rm $f
         done
@@ -524,6 +525,7 @@ BRAIN_SEGMENTATION_OUTPUT=${OUTPUT_PREFIX}BrainSegmentation
 SEGMENTATION_WARP_OUTPUT_PREFIX=${BRAIN_SEGMENTATION_OUTPUT}Prior
 SEGMENTATION_PRIOR_WARPED=${SEGMENTATION_WARP_OUTPUT_PREFIX}Warped
 SEGMENTATION_WARP=${SEGMENTATION_WARP_OUTPUT_PREFIX}3Warp.nii.gz
+SEGMENTATION_INVERSE_WARP=${SEGMENTATION_WARP_OUTPUT_PREFIX}3InverseWarp.nii.gz
 SEGMENTATION_AFFINE=${SEGMENTATION_WARP_OUTPUT_PREFIX}2Affine.mat
 SEGMENTATION_RIGID=${SEGMENTATION_WARP_OUTPUT_PREFIX}1Rigid.mat
 SEGMENTATION_TRANSLATION=${SEGMENTATION_WARP_OUTPUT_PREFIX}0DerivedInitialMovingTranslation.mat
@@ -692,14 +694,14 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
         logCmd $exe_brain_segmentation_3
       done
 
-    TMP_FILES=( $SEGMENTATION_WARP $SEGMENTATION_AFFINE $SEGMENTATION_WHITE_MATTER_MASK $SEGMENTATION_BRAIN ${SEGMENTATION_BRAIN_N4_IMAGES[@]} )
+    TMP_FILES=( $EXTRACTION_WM $SEGMENTATION_WARP $SEGMENTATION_INVERSE_WARP $SEGMENTATION_AFFINE $SEGMENTATION_RIGID $SEGMENTATION_TRANSLATION $SEGMENTATION_WHITE_MATTER_MASK $SEGMENTATION_BRAIN ${SEGMENTATION_BRAIN_N4_IMAGES[@]} )
 
     TMP_FILES=( ${TMP_FILES[@]} ${WARPED_PRIOR_IMAGE_FILENAMES[@]} )
 
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
       then
 
-      for f in "${sh ~/Pkg/Utilities/scripts/abp.sh -d 3 -a IXI441-HH-2154-T1.nii.gz -o /Users/ntustison/Data/Public/MICCAI-2012-Multi-Atlas-Challenge-Data/ABP2a/abp -e /Users/ntustison/Data/Public/MICCAI-2012-Multi-Atlas-Challenge-Data/template/T_template0.nii.gz -m /Users/ntustison/Data/Public/MICCAI-2012-Multi-Atlas-Challenge-Data/template/T_template0ProbabilityBrainMask.nii.gz -l /Users/ntustison/Data/Public/MICCAI-2012-Multi-Atlas-Challenge-Data/template/T_template0SkullStripped.nii.gz -p /Users/ntustison/Data/Public/MICCAI-2012-Multi-Atlas-Challenge-Data/template/Priors/priors%d.nii.gz -w 3 -g 2TMP_FILES[@]}"
+      for f in TMP_FILES[@]}
         do
           logCmd rm $f
         done
@@ -764,7 +766,7 @@ if [[ ! -f ${CORTICAL_THICKNESS_IMAGE} ]];
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
       then
 
-      for f in "${#TMP_FILES[@]}"
+      for f in ${TMP_FILES[@]}
         do
           logCmd rm $f
         done
@@ -826,7 +828,7 @@ if [[ -f ${REGISTRATION_TEMPLATE} ]];
         if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
           then
 
-          for f in "${#TMP_FILES[@]}"
+          for f in ${TMP_FILES[@]}
             do
               logCmd rm $f
             done
