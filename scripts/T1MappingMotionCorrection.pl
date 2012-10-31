@@ -30,6 +30,28 @@ Usage: T1MappingMotionCorrection.pl <input_dir> <output_dir> <output_file_root>
   T1 Mapping Using Image Registration with Synthetic Image Estimation",
   Magnetic Resonance in Medicine,
 
+
+Regarding the parameters, the
+
+alpha = 5.0;
+beta = 12.0;
+
+There are few other parameters which may be relevant:
+
+// the temporal step size for solving the PDE
+deltaT = 0.1;
+
+// maximal number of iterations for solving the PDE
+maxPDEIter = 30;
+
+// the threshold for the minimal changes of cost function values
+tol = 1e-3;
+
+// the derivative of synthetic images is computed by convolving with the derivative of Gaussian function
+// the sigma for the guassian kernel in the unit of pixel
+sigmaForDerivative = 1.2;
+
+
 };
 
 
@@ -78,10 +100,10 @@ if( ! -d $outputDir )
 my $alpha = 5.0;
 my $beta = 12.0;
 my $deltaK = 0.1;
-my $numberOfIterations = 2;
+my $numberOfIterations = 3;
 
-my $performBiasCorrection = 1;
-my $medianFilterSignalImages = 1;
+my $performBiasCorrection = 0;
+my $medianFilterSignalImages = 0;
 
 my @args = ();
 my @motionCorrectedImages = ();
@@ -181,7 +203,15 @@ if( $performBiasCorrection )
   }
 else
   {
-  @n4CorrectedImages = @originalImages;
+  foreach my $image ( @originalImages )
+    {
+    my $corrected = $image;
+    $corrected =~ s/$inputDir/$outputDir/;
+    $corrected .= "_original.nii.gz";
+
+    `ConvertImage 2 $image $corrected 0`;
+    push( @n4CorrectedImages, $corrected );
+    }
   }
 
 ############################################################
@@ -207,12 +237,11 @@ my $lastToFirst = "${outputDir}/${outputPrefix}_lastToFirst";
 #             '-s', '1x0.5x0',
 #             '-f', '4x2x1',
             '-m', "CC[${n4CorrectedImages[0]},${n4CorrectedImages[-1]},1,6]",
-            '-t', 'SyN[0.5,3.0,0.0]',
+            '-t', 'BSplineSyN[0.1,32x32,0x0]',
             '-c', '100x100',
             '-s', '0x0',
             '-f', '2x1'
           );
-print "@args\n";
 system( @args ) == 0 || die "Error:  antsRegistration on first and last images.\n";
 
 
@@ -232,6 +261,11 @@ system( @args ) == 0 || die "Error: @args.\n";
 my $Aimage = "${outputDir}/${outputPrefix}A.nii.gz";
 my $Bimage = "${outputDir}/${outputPrefix}B.nii.gz";
 my $T1image = "${outputDir}/${outputPrefix}T1.nii.gz";
+my $T1mask = "${outputDir}/${outputPrefix}T1mask.nii.gz";
+
+`ThresholdImage 3 $T1image $T1mask 0 4500 1 0`;
+`BinaryOperateImages 3 $T1image x $T1mask $T1image`;
+unlink( $T1mask );
 
 print "========================================================\n\n";
 
@@ -347,7 +381,7 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
 #                 '-s', '1x0.5x0',
 #                 '-f', '4x2x1',
                 '-m', "CC[${syntheticImages[$i]},${n4CorrectedImages[$i]},1,6]",
-                '-t', 'SyN[0.5,3.0,0.0]',
+                '-t', 'BSplineSyN[0.1,32x32,0x0]',
                 '-c', '100x100',
                 '-s', '0x0',
                 '-f', '2x1'
@@ -373,7 +407,15 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
 
   my $minResidual = 1e10;
   my $minResidualIndex = -1;
-  for( my $i = 0; $i < @inputImages; $i++ )
+
+  # only try the first 5 images;
+  my $numberOfImagesForSearch = 5;
+  if( $numberOfImagesForSearch > @inputImages )
+    {
+    $numberOfImagesForSearch = @inputImages;
+    }
+
+  for( my $i = 0; $i < $numberOfImagesForSearch; $i++ )
     {
     my @signedInputImages = @inputImages;
 
@@ -421,7 +463,7 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
         `SmoothImage 2 $signalImages[$j] 1 $signalImages[$j] 0 1`;
         }
 
-      my $tmpResidualImage = "${outputDir}/${outputPrefix}_tmpResidual.nii.gz";
+      my $tmpResidualImage = "${outputDir}/${outputPrefix}_tmpResidual${j}.nii.gz";
 
       `${UTILITIESPATH}/BinaryOperateImages 2 $signalImages[$j] - $signedInputImages[$j] $tmpResidualImage`;
       `${UTILITIESPATH}/UnaryOperateImage 2 $tmpResidualImage ^ 2 $tmpResidualImage`;
@@ -431,10 +473,10 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
 
       $currentResidual += $stats[0];
 
-      unlink( $tmpResidualImage );
+#       unlink( $tmpResidualImage );
       }
 
-
+    print "$i: $currentResidual $minResidual\n";
 
     if( $currentResidual < $minResidual )
       {
@@ -442,6 +484,8 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
       $minResidualIndex = $i;
       }
     }
+
+  print "$minResidualIndex: $minResidual\n";
 
   ############################################################
   #
@@ -451,7 +495,7 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
 
   my @signedInputImages = @inputImages;
 
-  for( my $i = 0; $i < $minResidualIndex; $i++ )
+  for( my $i = 0; $i <= $minResidualIndex; $i++ )
     {
     my $negativeImage = $inputImages[$i];
     $negativeImage =~ s/\.nii\.gz/Negative\.nii\.gz/;
@@ -469,11 +513,17 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
     push( @parameters, $inversionTimes[$i] );
     }
 
+  print "@signedInputImages\n";
+
   @args = ( "${UTILITIESPATH}/SalernoFitVoxelwise3ParameterModel",
     "${outputDir}/${outputPrefix}",
     @parameters
     );
   system( @args ) == 0 || die "Error: @args.\n";
+
+  `ThresholdImage 3 $T1image $T1mask 0 4500 1 0`;
+  `BinaryOperateImages 3 $T1image x $T1mask $T1image`;
+  unlink( $T1mask );
 
   for( my $i = 0; $i < @inversionTimes; $i++ )
     {

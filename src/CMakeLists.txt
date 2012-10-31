@@ -334,6 +334,9 @@ target_link_libraries(GetJointSamples ${ITK_LIBRARIES})
 add_executable(GetPhysicalToImageAffineTransform GetPhysicalToImageAffineTransform.cxx )
 target_link_libraries(GetPhysicalToImageAffineTransform ${ITK_LIBRARIES})
 
+add_executable(GetSkullTop GetSkullTop.cxx )
+target_link_libraries(GetSkullTop ${ITK_LIBRARIES})
+
 #add_executable(GradientAnisotropicDiffusionImageFilter GradientAnisotropicDiffusionImageFilter.cxx )
 #target_link_libraries(GradientAnisotropicDiffusionImageFilter ${ITK_LIBRARIES})
 
@@ -477,6 +480,9 @@ target_link_libraries( StatsForSkullThickness ${ITK_LIBRARIES})
 
 add_executable(BSplineCalc BSplineCalc.cxx )
 target_link_libraries(BSplineCalc ${ITK_LIBRARIES})
+
+add_executable(testRegulItkBspline testRegulItkBspline.cxx )
+target_link_libraries(testRegulItkBspline ${ITK_LIBRARIES} ${VTK_LIBRARIES} )
 
 add_executable(ThresholdImage ThresholdImage.cxx )
 target_link_libraries(ThresholdImage ${ITK_LIBRARIES})

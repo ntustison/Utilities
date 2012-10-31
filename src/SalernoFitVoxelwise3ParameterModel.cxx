@@ -79,7 +79,7 @@ private:
    VectorType               m_Intensities;
 };
 
-int main( unsigned int argc, char *argv[] )
+int main( int argc, char *argv[] )
 {
   if ( argc < 6 )
     {
@@ -160,21 +160,30 @@ int main( unsigned int argc, char *argv[] )
 
   optimizer->SetCostFunction( costFunction.GetPointer() );
 
+//   std::ofstream str( "nickSamples.txt" );
+
   itk::ImageRegionConstIteratorWithIndex<ImageType> It( inputImages[0], inputImages[0]->GetLargestPossibleRegion() );
   for( It.GoToBegin(); !It.IsAtEnd(); ++It )
     {
     ImageType::IndexType index = It.GetIndex();
 
+    unsigned int min_n = 0;
+    float min_intensity = itk::NumericTraits<float>::max();
     for( unsigned int n = 0; n < inputImages.size(); n++ )
       {
       intensities[n] = inputImages[n]->GetPixel( index );
+      if( vnl_math_abs( intensities[n] ) < min_intensity )
+        {
+        min_intensity = vnl_math_abs( intensities[n] );
+        min_n = n;
+        }
       }
     costFunction->SetConstants( inversionTimes, intensities );
 
     OptimizerType::ParametersType initialPosition( 3 );
     initialPosition[0] = intensities[max_n];
     initialPosition[1] = 2 * initialPosition[0];
-    initialPosition[2] = inversionTimes[max_n] / vnl_math::ln2;
+    initialPosition[2] = inversionTimes[min_n] / vnl_math::ln2;
 
     optimizer->SetInitialPosition( initialPosition );
 
@@ -200,7 +209,19 @@ int main( unsigned int argc, char *argv[] )
     B->SetPixel( index, currentPosition[1] );
     T1->SetPixel( index, currentPosition[2] );
 
+//     if( vnl_math_abs( intensities[0] ) > 0.0 )
+//       {
+//       str << currentPosition[0] << "," << currentPosition[1] << "," << currentPosition[2] << ",";
+//       for( unsigned int q = 0; q < intensities.size()-1; q++ )
+//         {
+//         str << intensities[q] << ",";
+//         }
+//       str << intensities[intensities.size()-1] << std::endl;
+//       }
     }
+//   str.close();
+
+//   exit( 0 );
 
   std::string filenameA = std::string( argv[1] ) + std::string( "A.nii.gz" );
   std::string filenameB = std::string( argv[1] ) + std::string( "B.nii.gz" );
