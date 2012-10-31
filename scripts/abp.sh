@@ -701,7 +701,7 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
       then
 
-      for f in TMP_FILES[@]}
+      for f in ${TMP_FILES[@]}
         do
           logCmd rm $f
         done
