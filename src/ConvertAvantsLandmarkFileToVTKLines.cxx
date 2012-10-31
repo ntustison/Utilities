@@ -7,7 +7,7 @@
 #include "vtkPolyDataWriter.h"
 #include "vtkUnsignedIntArray.h"
 
-#include <stdio>
+#include "stdio.h"
 #include <vector>
 #include <fstream>
 
