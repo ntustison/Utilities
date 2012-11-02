@@ -49,7 +49,7 @@ Example:
 
   bash $0 -d 3 -i t1.nii.gz -e brainWithSkullTemplate.nii.gz -m brainPrior.nii.gz -l corticalLabels.nii.gz -p corticalLabelPriors.nii.gz -o output
 
-Compulsory arguments:
+Required arguments:
 
      -d:  ImageDimension                        2 or 3 (for 2 or 3 dimensional single image)
      -a:  Anatomical image                      Structural image, typically T1.  If more than one
@@ -76,6 +76,8 @@ Compulsory arguments:
 
 Optional arguments:
 
+     -f:  Brain extraction registration mask    Mask used for registration to limit the metric computation to
+                                                a specific region.
      -s:  image file suffix                     Any of the standard ITK IO formats e.g. nrrd, nii.gz (default), mhd
      -t:  template for t1 registration
      -k:  keep temporary files                  Keep brain extraction/segmentation warps, etc (default = false).
@@ -95,6 +97,7 @@ echoParameters() {
       image dimension         = ${DIMENSION}
       anatomical image        = ${ANATOMICAL_IMAGES[@]}
       extraction template     = ${EXTRACTION_TEMPLATE}
+      extraction reg. mask    = ${EXTRACTION_REGISTRATION_MASK}
       extraction prior        = ${EXTRACTION_PRIOR}
       segmentation template   = ${SEGMENTATION_TEMPLATE}
       segmentation prior      = ${SEGMENTATION_PRIOR}
@@ -174,6 +177,7 @@ ANATOMICAL_IMAGES=()
 REGISTRATION_TEMPLATE=""
 
 EXTRACTION_TEMPLATE=""
+EXTRACTION_REGISTRATION_MASK=""
 EXTRACTION_PRIOR=""
 SEGMENTATION_TEMPLATE=""
 SEGMENTATION_PRIOR=""
@@ -189,7 +193,8 @@ GRAY_MATTER_LABEL=2
 ANTS=${ANTSPATH}antsRegistration
 ANTS_MAX_ITERATIONS="100x100x70x20"
 ANTS_TRANSFORMATION="SyN[0.15,3.0,0.0]"
-ANTS_LINEAR_METRIC_PARAMS="1,32,Regular,0.1";
+ANTS_LINEAR_METRIC_PARAMS="1,32,Regular,0.1"
+ANTS_LINEAR_CONVERGENCE="[1000x1000x1000,1e-8,15]"
 ANTS_METRIC="CC"
 ANTS_METRIC_PARAMS="1,4"
 
@@ -225,7 +230,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:d:e:g:h:i:k:l:m:p:o:s:t:v:w:" OPT
+  while getopts "a:d:e:f:g:h:i:k:l:m:p:o:s:t:v:w:" OPT
     do
       case $OPT in
           a) #anatomical t1 image
@@ -241,6 +246,9 @@ else
        ;;
           e) #brain extraction anatomical image
        EXTRACTION_TEMPLATE=$OPTARG
+       ;;
+          f) #brain extraction registration mask
+       EXTRACTION_REGISTRATION_MASK=$OPTARG
        ;;
           g) #white matter label
        GRAY_MATTER_LABEL=$OPTARG
@@ -432,17 +440,21 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
       logCmd $exe_get_skull_top
       logCmd $exe_get_template_skull_top
 
-      basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${EXTRACTION_WARP_OUTPUT_PREFIX} -r [${EXTRACTION_SKULL_TOP},${EXTRACTION_TEMPLATE_SKULL_TOP},1] -z 1"
-      stage1="-m MI[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_LINEAR_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
-      stage2="-m MI[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},${ANTS_LINEAR_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
-      stage3="-m CC[${N4_CORRECTED_IMAGES[0]},${EXTRACTION_TEMPLATE},1,4] -c [30x0x0,1e-9,15] -t SyN[0.25,3,0] -f 4x2x1 -s 2x1x0";
+      basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${EXTRACTION_WARP_OUTPUT_PREFIX} -r [${EXTRACTION_TEMPLATE_SKULL_TOP},${EXTRACTION_SKULL_TOP},1] -z 1"
+      if [[ -f ${EXTRACTION_REGISTRATION_MASK} ]];
+        then
+        basecall="${basecall} -x [${EXTRACTION_REGISTRATION_MASK}]"
+        fi
+      stage1="-m MI[${EXTRACTION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
+      stage2="-m MI[${EXTRACTION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Affine[0.1] -f 4x2x1 -s 2x1x0";
+      stage3="-m CC[${EXTRACTION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},1,4] -c [30x0x0,1e-9,15] -t SyN[0.25,3,0] -f 4x2x1 -s 2x1x0";
 
       exe_brain_extraction_1="${basecall} ${stage1} ${stage2} ${stage3}"
       logCmd $exe_brain_extraction_1
       fi
 
     ## Step 2 ##
-    exe_brain_extraction_2="${WARP} -d ${DIMENSION} -i ${EXTRACTION_PRIOR} -o ${EXTRACTION_MASK_PRIOR_WARPED} -r ${ANATOMICAL_IMAGES[0]} -n Gaussian -t ${EXTRACTION_WARP} -t ${EXTRACTION_MATRIX_OFFSET}"
+    exe_brain_extraction_2="${WARP} -d ${DIMENSION} -i ${EXTRACTION_PRIOR} -o ${EXTRACTION_MASK_PRIOR_WARPED} -r ${ANATOMICAL_IMAGES[0]} -n Gaussian -t [${EXTRACTION_MATRIX_OFFSET},1] -t ${EXTRACTION_INVERSE_WARP}"
     logCmd $exe_brain_extraction_2
 
     ## superstep 1b ##
@@ -528,6 +540,7 @@ SEGMENTATION_INVERSE_WARP=${SEGMENTATION_WARP_OUTPUT_PREFIX}1InverseWarp.nii.gz
 SEGMENTATION_MATRIX_OFFSET=${SEGMENTATION_WARP_OUTPUT_PREFIX}0MatrixOffset.mat
 SEGMENTATION_WHITE_MATTER_MASK=${EXTRACTION_WM}
 SEGMENTATION_BRAIN=${EXTRACTION_BRAIN}
+SEGMENTATION_MASK_DILATED=${BRAIN_SEGMENTATION_OUTPUT}MaskDilated.nii.gz
 SEGMENTATION_BRAIN_N4_IMAGES=()
 SEGMENTATION_BRAIN_WEIGHT_MASK=${BRAIN_SEGMENTATION_OUTPUT}WeightMask.nii.gz
 
@@ -619,13 +632,13 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
         echo "   ${N4_CORRECTED_IMAGES[0]}"
         exit 1
       fi
-    if [[ ! -f $EXTRACTION_MASK ]];
+    if [[ ! -f ${EXTRACTION_MASK} ]];
       then
         echo "The brain mask doesn't exist:"
         echo "   $EXTRACTION_MASK"
         exit 1
       fi
-    if [[ ! -f $SEGMENTATION_BRAIN ]];
+    if [[ ! -f ${SEGMENTATION_BRAIN} ]];
       then
         echo "The extracted brain doesn't exist:"
         echo "   $SEGMENTATION_BRAIN"
@@ -638,10 +651,13 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
     if [[ ! -f ${SEGMENTATION_WARP} ]];
       then
 
+      logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_MASK_DILATED} MD ${EXTRACTION_MASK} 10
+
       basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${SEGMENTATION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${SEGMENTATION_TEMPLATE},1] -z 1"
-      stage1="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_LINEAR_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
-      stage2="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_LINEAR_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
-      stage3="-m CC[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 6x4x2x1 -s 3x2x1x0";
+      basecall="${basecall} -x [${SEGMENTATION_MASK_DILATED}]"
+      stage1="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Rigid[0.1] -f 4x2x1 -s 2x1x0"
+      stage2="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Affine[0.1] -f 4x2x1 -s 2x1x0"
+      stage3="-m CC[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 6x4x2x1 -s 3x2x1x0"
 
       exe_brain_segmentation_1="${basecall} ${stage1} ${stage2} ${stage3}"
       logCmd $exe_brain_segmentation_1
@@ -691,7 +707,7 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
         logCmd $exe_brain_segmentation_3
       done
 
-    TMP_FILES=( $SEGMENTATION_WARP $SEGMENTATION_INVERSE_WARP $SEGMENTATION_MATRIX_OFFSET $SEGMENTATION_WHITE_MATTER_MASK $SEGMENTATION_BRAIN ${SEGMENTATION_BRAIN_N4_IMAGES[@]} )
+    TMP_FILES=( $SEGMENTATION_WARP $SEGMENTATION_INVERSE_WARP $SEGMENTATION_MATRIX_OFFSET $SEGMENTATION_WHITE_MATTER_MASK $SEGMENTATION_BRAIN ${SEGMENTATION_BRAIN_N4_IMAGES[@]} $SEGMENTATION_MASK_DILATED )
     TMP_FILES=( ${TMP_FILES[@]} ${WARPED_PRIOR_IMAGE_FILENAMES[@]} )
 
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
@@ -807,8 +823,8 @@ if [[ -f ${REGISTRATION_TEMPLATE} ]];
         time_start_template_registration=`date +%s`
 
         basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${SEGMENTATION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${SEGMENTATION_TEMPLATE},1] -z 1"
-        stage1="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
-        stage2="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c [1000x1000x1000,1e-9,15] -t Affine[0.1] -f 4x2x1 -s 2x1x0";
+        stage1="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
+        stage2="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Affine[0.1] -f 4x2x1 -s 2x1x0";
         stage3="-m CC[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 4x2x1 -s 2x1x0";
 
         exe_template_segmentation_1="${basecall} ${stage1} ${stage2} ${stage3}"
