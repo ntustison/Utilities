@@ -9,7 +9,9 @@
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageFileWriter.h"
 #include "itkLabelGeometryImageFilter.h"
+#include "itkLabelStatisticsImageFilter.h"
 #include "itkMersenneTwisterRandomVariateGenerator.h"
+#include "itkRescaleIntensityImageFilter.h"
 
 #include <itksys/SystemTools.hxx>
 
@@ -1108,6 +1110,167 @@ int MultipleOperateImages( int argc, char * argv[] )
       writer->Update();
       }
     }
+  else if( op.compare( 0, 9, std::string( "normalize", 0, 9 ) ) == 0 )
+    {
+    std::string paramString = op.substr( 10 );
+    std::vector<RealType> params = ConvertVector<RealType>( paramString );
+
+    if( params.size() != 3 )
+      {
+      std::cerr << "Incorrect number of parameters.  Please see option for \"normalize\"." << std::endl;
+      return EXIT_FAILURE;
+      }
+
+    RealType p1 = params[0];
+    RealType p2 = params[1];
+    unsigned int nInnerQuantiles = static_cast<unsigned int>( params[2] );
+
+    if( !mask )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[0].c_str() );
+      reader->Update();
+
+      mask = LabelImageType::New();
+      mask->CopyInformation( reader->GetOutput() );
+      mask->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
+      mask->Allocate();
+      mask->FillBuffer( 1 );
+      }
+
+    vnl_vector<RealType> p1_n( filenames.size(), 0.0 );
+    vnl_vector<RealType> p2_n( filenames.size(), 0.0 );
+    std::vector<vnl_vector<RealType> > IQs_n;
+    IQs_n.resize( filenames.size() );
+
+    vnl_vector<RealType> avgIQ( nInnerQuantiles, 0.0 );
+
+    // Calculate the average quantile values from all the images.
+
+    for( unsigned int n = 0; n < filenames.size(); n++ )
+      {
+      IQs_n[n].set_size( nInnerQuantiles );
+      IQs_n[n].fill( 0.0 );
+
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+
+      RealType maxValue = itk::NumericTraits<RealType>::min();
+      RealType minValue = itk::NumericTraits<RealType>::max();
+
+      typename ImageType::Pointer image = reader->GetOutput();
+      itk::ImageRegionConstIteratorWithIndex<ImageType> ItI( image, image->GetRequestedRegion() );
+      for( ItI.GoToBegin(); !ItI.IsAtEnd(); ++ItI )
+        {
+        if( mask->GetPixel( ItI.GetIndex() ) == 1 )
+          {
+          if( ItI.Get() < minValue )
+            {
+            minValue = ItI.Get();
+            }
+          else if( ItI.Get() > maxValue )
+            {
+            maxValue = ItI.Get();
+            }
+          }
+        }
+      typedef itk::LabelStatisticsImageFilter<ImageType, LabelImageType> HistogramGeneratorType;
+      typename HistogramGeneratorType::Pointer stats = HistogramGeneratorType::New();
+      stats->SetInput( reader->GetOutput() );
+      stats->SetLabelInput( mask );
+      stats->SetUseHistograms( true );
+      stats->SetHistogramParameters( 255, minValue, maxValue );
+      stats->Update();
+
+      typedef typename HistogramGeneratorType::HistogramType  HistogramType;
+      const HistogramType *histogram = stats->GetHistogram( 1 );
+
+      p1_n[n] = histogram->Quantile( 0, p1 );
+      p2_n[n] = histogram->Quantile( 0, p2 );
+
+      RealType deltaQ = static_cast<RealType>( ( p2 - p1 ) / ( nInnerQuantiles + 2 - 1 ) );
+      for( unsigned int q = 0; q < nInnerQuantiles; q++ )
+        {
+        double quantileValue = histogram->Quantile( 0, p1 + ( q + 1 ) * deltaQ );
+        avgIQ[q] += quantileValue;
+        IQs_n[n][q] = quantileValue;
+        }
+      }
+
+    // Renormalize images based on quantile values
+
+    RealType avgP1 = p1_n.mean();
+    RealType avgP2 = p2_n.mean();
+    for( unsigned int q = 0; q < nInnerQuantiles; q++ )
+      {
+      avgIQ[q] /= static_cast<RealType>( filenames.size() );
+      }
+
+    for( unsigned int n = 0; n < filenames.size(); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+
+      typename ImageType::Pointer output = ImageType::New();
+      output->CopyInformation( reader->GetOutput() );
+      output->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
+      output->Allocate();
+      output->FillBuffer( 0 );
+
+      typename ImageType::Pointer image = reader->GetOutput();
+      itk::ImageRegionConstIteratorWithIndex<ImageType> ItI( image, image->GetRequestedRegion() );
+      for( ItI.GoToBegin(); !ItI.IsAtEnd(); ++ItI )
+        {
+        if( mask->GetPixel( ItI.GetIndex() ) == 1 )
+          {
+          RealType x = vnl_math_max( vnl_math_min( ItI.Get(), p2_n[n] ), p1_n[n] );
+
+          RealType x1 = p1_n[n];
+          RealType x2 = IQs_n[n][0];
+          RealType y1 = avgP1;
+          RealType y2 = avgIQ[0];
+          if( x > IQs_n[n][0] )
+            {
+            if( x >= IQs_n[n][nInnerQuantiles-1] )
+              {
+              x1 = IQs_n[n][nInnerQuantiles-1];
+              x2 = p2_n[n];
+              y1 = avgIQ[nInnerQuantiles-1];
+              y2 = avgP2;
+              }
+            else
+              {
+              for( unsigned int q = 0; q < nInnerQuantiles-1; q++ )
+                {
+                if( x >= IQs_n[n][q] && x < IQs_n[n][q+1] )
+                  {
+                  x1 = IQs_n[n][q];
+                  x2 = IQs_n[n][q+1];
+                  y1 = avgIQ[q];
+                  y2 = avgIQ[q+1];
+                  }
+                }
+              }
+            }
+          RealType y = ( y2 - y1 ) / ( x2 - x1 ) * ( x - x1 ) + y1;
+          output->SetPixel( ItI.GetIndex(), y );
+          }
+        }
+
+      std::string path = itksys::SystemTools::GetFilenamePath( filenames[n] );
+      std::string filenameRoot = itksys::SystemTools::GetFilenameName( filenames[n] );
+
+      std::string outputName = path + std::string( "/" ) + std::string( argv[3] ) + filenameRoot;
+
+      typedef itk::ImageFileWriter<ImageType> WriterType;
+      typename WriterType::Pointer writer = WriterType::New();
+      writer->SetInput( output );
+      writer->SetFileName( outputName.c_str() );
+      writer->Update();
+      }
+    }
   else
     {
     std::cout << "Option not recognized." << std::endl;
@@ -1121,7 +1284,7 @@ int main( int argc, char *argv[] )
   if( argc < 6 )
     {
     std::cerr << "Usage: " << std::endl;
-    std::cerr << argv[0] << " imageDimension operation outputImage [maskImage] "
+    std::cerr << argv[0] << " imageDimension operation outputImage [mask] "
               << "image-list-via-wildcard " << std::endl;
     std::cerr << "  operations: " << std::endl;
     std::cerr << "    s:      Create speed image from atlas" << std::endl;
@@ -1137,6 +1300,8 @@ int main( int argc, char *argv[] )
     std::cerr << "    corr=mxnxoxp...:   Create voxelwise correlation map with vector <m,n,x,o,p>" << std::endl;
     std::cerr << "    slope=mxnxoxp...:   Create voxelwise regression slope map with vector <m,n,x,o,p>" << std::endl;
     std::cerr << "    cohort=n...:   Create random cohort of n subjects from sample (gaussian modeling)" << std::endl;
+    std::cerr << "    normalize=p1xp2xn:   Create normalized image set.  0 <= p1 < p2 <= 1.0 percentile min/max input intensity" << std::endl;
+    std::cerr << "                         n is number of inner quantiles. " << std::endl;
     std::cerr << "    sample: Print samples to output text/index files (prefix specified in place of outputImage)" << std::endl;
     return EXIT_FAILURE;
     }
