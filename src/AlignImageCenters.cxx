@@ -1,4 +1,3 @@
-#include <stdio.h>
 
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
@@ -56,7 +55,7 @@ int main( int argc, char *argv[] )
     exit( 1 );
     }
 
-  switch( atoi( argv[1] ) ) 
+  switch( atoi( argv[1] ) )
    {
    case 2:
      AlignImageCenters<2>( argc, argv );
