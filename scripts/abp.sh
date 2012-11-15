@@ -823,18 +823,18 @@ if [[ -f ${REGISTRATION_TEMPLATE} ]];
         time_start_template_registration=`date +%s`
 
         basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${SEGMENTATION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${SEGMENTATION_TEMPLATE},1] -z 1"
-        stage1="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
-        stage2="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Affine[0.1] -f 4x2x1 -s 2x1x0";
-        stage3="-m CC[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 4x2x1 -s 2x1x0";
+        stage1="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Rigid[0.1] -f 4x2x1 -s 2x1x0"
+        stage2="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Affine[0.1] -f 4x2x1 -s 2x1x0"
+        stage3="-m CC[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 4x2x1 -s 2x1x0"
 
-        exe_template_segmentation_1="${basecall} ${stage1} ${stage2} ${stage3}"
+        exe_template_registration_1="${basecall} ${stage1} ${stage2} ${stage3}"
 
         if [[ ! -f ${REGISTRATION_TEMPLATE_WARP} ]];
           then
             logCmd $exe_template_registration_1
           fi
 
-        exe_template_registration_2="${WARP} -d 3 ${DIMENSION} -i ${N4_CORRECTED_IMAGES[0]} -o ${REGISTRATION_TEMPLATE_OUTPUT_PREFIX}Warped.${OUTPUT_SUFFIX} -r ${REGISTRATION_TEMPLATE} -n Gaussian -t ${REGISTRATION_TEMPLATE_WARP} -t ${REGISTRATION_TEMPLATE_MATRIX_OFFSET}"
+        exe_template_registration_2="${WARP} -d ${DIMENSION} -i ${N4_CORRECTED_IMAGES[0]} -o ${REGISTRATION_TEMPLATE_OUTPUT_PREFIX}Warped.${OUTPUT_SUFFIX} -r ${REGISTRATION_TEMPLATE} -n Gaussian -t ${REGISTRATION_TEMPLATE_WARP} -t ${REGISTRATION_TEMPLATE_MATRIX_OFFSET}"
         logCmd $exe_template_registration_2
 
         if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
