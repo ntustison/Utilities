@@ -1259,7 +1259,7 @@ int MultipleOperateImages( int argc, char * argv[] )
           }
         }
 
-      std::string path = itksys::SystemTools::GetFilenamePath( filenames[n] );
+      std::string path = itksys::SystemTools::GetFilenamePath( argv[3] );
       std::string filenameRoot = itksys::SystemTools::GetFilenameName( filenames[n] );
 
       std::string outputName = path + std::string( "/" ) + std::string( argv[3] ) + filenameRoot;
