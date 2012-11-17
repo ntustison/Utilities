@@ -193,8 +193,8 @@ GRAY_MATTER_LABEL=2
 ANTS=${ANTSPATH}antsRegistration
 ANTS_MAX_ITERATIONS="100x100x70x20"
 ANTS_TRANSFORMATION="SyN[0.15,3.0,0.0]"
-ANTS_LINEAR_METRIC_PARAMS="1,32,Regular,0.1"
-ANTS_LINEAR_CONVERGENCE="[1000x1000x1000,1e-8,15]"
+ANTS_LINEAR_METRIC_PARAMS="1,32,Regular,0.25"
+ANTS_LINEAR_CONVERGENCE="[1000x1000x1000x1000,1e-8,15]"
 ANTS_METRIC="CC"
 ANTS_METRIC_PARAMS="1,4"
 
@@ -445,8 +445,8 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
         then
         basecall="${basecall} -x [${EXTRACTION_REGISTRATION_MASK}]"
         fi
-      stage1="-m MI[${EXTRACTION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Rigid[0.1] -f 4x2x1 -s 2x1x0";
-      stage2="-m MI[${EXTRACTION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Affine[0.1] -f 4x2x1 -s 2x1x0";
+      stage1="-m MI[${EXTRACTION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Rigid[0.1] -f 8x4x2x1 -s 4x2x1x0";
+      stage2="-m MI[${EXTRACTION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Affine[0.1] -f 8x4x2x1 -s 4x2x1x0";
       stage3="-m CC[${EXTRACTION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},1,4] -c [30x0x0,1e-9,15] -t SyN[0.25,3,0] -f 4x2x1 -s 2x1x0";
 
       exe_brain_extraction_1="${basecall} ${stage1} ${stage2} ${stage3}"
@@ -525,6 +525,50 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
     echo
 
   fi
+
+exit 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ################################################################################
 #
@@ -655,8 +699,8 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
 
       basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${SEGMENTATION_WARP_OUTPUT_PREFIX} -r [${N4_CORRECTED_IMAGES[0]},${SEGMENTATION_TEMPLATE},1] -z 1"
       basecall="${basecall} -x [${SEGMENTATION_MASK_DILATED}]"
-      stage1="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Rigid[0.1] -f 4x2x1 -s 2x1x0"
-      stage2="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Affine[0.1] -f 4x2x1 -s 2x1x0"
+      stage1="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Rigid[0.1] -f 8x4x2x1 -s 4x2x1x0"
+      stage2="-m MI[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Affine[0.1] -f 8x4x2x1 -s 4x2x1x0"
       stage3="-m CC[${SEGMENTATION_BRAIN},${SEGMENTATION_TEMPLATE},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 6x4x2x1 -s 3x2x1x0"
 
       exe_brain_segmentation_1="${basecall} ${stage1} ${stage2} ${stage3}"

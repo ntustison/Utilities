@@ -237,10 +237,10 @@ my $lastToFirst = "${outputDir}/${outputPrefix}_lastToFirst";
 #             '-s', '1x0.5x0',
 #             '-f', '4x2x1',
             '-m', "CC[${n4CorrectedImages[0]},${n4CorrectedImages[-1]},1,6]",
-            '-t', 'BSplineSyN[0.1,32x32,0x0]',
-            '-c', '100x100',
-            '-s', '0x0',
-            '-f', '2x1'
+            '-t', 'BSplineSyN[0.15,4x4,0x0]',
+            '-c', '[100x50x20,1e-9,15]',
+            '-s', '2x1x0',
+            '-f', '4x2x1'
           );
 system( @args ) == 0 || die "Error:  antsRegistration on first and last images.\n";
 
@@ -381,10 +381,10 @@ for( my $iteration = 0; $iteration <= $numberOfIterations; $iteration++ )
 #                 '-s', '1x0.5x0',
 #                 '-f', '4x2x1',
                 '-m', "CC[${syntheticImages[$i]},${n4CorrectedImages[$i]},1,6]",
-                '-t', 'BSplineSyN[0.1,32x32,0x0]',
-                '-c', '100x100',
-                '-s', '0x0',
-                '-f', '2x1'
+                '-t', 'BSplineSyN[0.15,4x4,0x0]',
+                '-c', '[100x50x20,1e-9,15]',
+                '-s', '2x1x0',
+                '-f', '4x2x1'
               );
     system( @args ) == 0 || die "Error:  antsRegistration on pairs.\n";
 
