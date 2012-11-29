@@ -9,8 +9,8 @@
   Copyright (c) Insight Software Consortium. All rights reserved.
   See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
 
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+     This software is distributed WITHOUT ANY WARRANTY; without even
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
@@ -20,9 +20,9 @@
 #include "itkNeighborhood.h"
 
 namespace itk {
-  
+
 /** \class BinaryBoxStructuringElement
- * \brief A Neighborhood that represents a box structuring element 
+ * \brief A Neighborhood that represents a box structuring element
  *        with binary elements.
  *
  *
@@ -30,7 +30,7 @@ namespace itk {
  * \sa MorphologyImageFilter
  * \sa BinaryDilateImageFilter
  * \sa BinaryErodeImageFilter
- * 
+ *
  * \ingroup Operators
  * \ingroup ImageIterators
  */
@@ -50,16 +50,16 @@ public:
 
   /** External support for dimensionality. */
   itkStaticConstMacro(NeighborhoodDimension, unsigned int, VDimension);
-  
+
   /** External support for pixel type. */
   typedef TPixel PixelType;
-  
+
   /** Iterator typedef support. Note the naming is intentional, i.e.,
   * ::iterator and ::const_iterator, because the allocator may be a
   * vnl object or other type, which uses this form. */
   typedef typename AllocatorType::iterator       Iterator;
   typedef typename AllocatorType::const_iterator ConstIterator;
-  
+
   /** Size and value typedef support. */
   typedef typename Superclass::SizeType      SizeType;
   typedef typename Superclass::SizeValueType SizeValueType;
@@ -67,19 +67,19 @@ public:
   /** Offset and value typedef support. */
   typedef typename Superclass::OffsetType      OffsetType;
   typedef typename OffsetType::OffsetValueType OffsetValueType;
-  
+
   /** Radius typedef support. */
   typedef typename Superclass::RadiusType RadiusType;
 
   /** External slice iterator type typedef support. */
   typedef SliceIterator<TPixel, Self> SliceIteratorType;
-  
+
   /** Default constructor. */
   BinaryBoxStructuringElement() {}
 
   /** Default destructor. */
   virtual ~BinaryBoxStructuringElement() {}
-    
+
   /** Copy constructor. */
   BinaryBoxStructuringElement(const Self& other)
     : Neighborhood<TPixel, VDimension, TAllocator>(other)
@@ -94,10 +94,10 @@ public:
     }
 
   /** Build the structuring element */
-  void CreateStructuringElement();   
-  
+  void CreateStructuringElement();
+
 protected:
-  
+
 private:
 
 };
@@ -112,11 +112,11 @@ private:
   }
 
 #if ITK_TEMPLATE_EXPLICIT
-# include "Templates/itkBinaryBoxStructuringElement+-.h"
+#include "Templates/itkBinaryBoxStructuringElement+-.h"
 #endif
 
-#if ITK_TEMPLATE_TXX
-# include "itkBinaryBoxStructuringElement.hxx"
+#ifndef ITK_MANUAL_INSTANTIATION
+#include "itkBinaryBoxStructuringElement.hxx"
 #endif
 
 #endif
