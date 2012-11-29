@@ -419,6 +419,26 @@ EXTRACTION_INITIAL_AFFINE_MOVING=${BRAIN_EXTRACTION_OUTPUT}InitialAffineMoving.$
 if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
   then
 
+    # Check inputs
+    if [[ ! -f $EXTRACTION_TEMPLATE ]];
+      then
+        echo "The extraction template doesn't exist:"
+        echo "   $EXTRACTION_TEMPLATE"
+        exit 1
+      fi
+    if [[ ! -f $N4_CORRECTED_IMAGES[0] ]];
+      then
+        echo "The N4 corrected image doesn't exist:"
+        echo "   ${N4_CORRECTED_IMAGES[0]}"
+        exit 1
+      fi
+    if [[ ! -f $EXTRACTION_PRIOR ]];
+      then
+        echo "The brain mask doesn't exist:"
+        echo "   $EXTRACTION_PRIOR"
+        exit 1
+      fi
+
     echo
     echo "--------------------------------------------------------------------------------------"
     echo " Brain extraction using the following steps:"
@@ -443,8 +463,8 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
 #       logCmd $exe_get_template_skull_top
 #       basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${EXTRACTION_WARP_OUTPUT_PREFIX} -r [${EXTRACTION_TEMPLATE_SKULL_TOP},${EXTRACTION_SKULL_TOP},1] -z 1"
 
-      logCmd ${ANTSPATH}/ResampleImageBySpacing 3 $EXTRACTION_TEMPLATE $EXTRACTION_INITIAL_AFFINE_FIXED 6 6 6 1
-      logCmd ${ANTSPATH}/ResampleImageBySpacing 3 $N4_CORRECTED_IMAGES[0] $EXTRACTION_INITIAL_AFFINE_MOVING 6 6 6 1
+      logCmd ${ANTSPATH}/ResampleImageBySpacing 3 ${EXTRACTION_TEMPLATE} ${EXTRACTION_INITIAL_AFFINE_FIXED} 6 6 6 1
+      logCmd ${ANTSPATH}/ResampleImageBySpacing 3 ${N4_CORRECTED_IMAGES[0]} ${EXTRACTION_INITIAL_AFFINE_MOVING} 6 6 6 1
 
       exe_initial_align="${ANTSPATH}/antsAffineInitializer ${DIMENSION} ${EXTRACTION_INITIAL_AFFINE_FIXED} ${EXTRACTION_INITIAL_AFFINE_MOVING} ${EXTRACTION_INITIAL_AFFINE} 15 0.5"
       logCmd $exe_initial_align
@@ -679,29 +699,34 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
         echo "   $SEGMENTATION_TEMPLATE"
         exit 1
       fi
-    if [[ ! -f ${N4_CORRECTED_IMAGES[0]} ]];
+    if [[ ! -f $N4_CORRECTED_IMAGES[0] ]];
       then
         echo "The N4 corrected image doesn't exist:"
         echo "   ${N4_CORRECTED_IMAGES[0]}"
         exit 1
       fi
-    if [[ ! -f ${EXTRACTION_MASK} ]];
+    if [[ ! -f $EXTRACTION_MASK ]];
       then
         echo "The brain mask doesn't exist:"
         echo "   $EXTRACTION_MASK"
         exit 1
       fi
-    if [[ ! -f ${SEGMENTATION_BRAIN} ]];
+    if [[ ! -f $SEGMENTATION_BRAIN ]];
       then
         echo "The extracted brain doesn't exist:"
         echo "   $SEGMENTATION_BRAIN"
+        exit 1
+      fi
+    if [[ ${NUMBER_OF_PRIOR_IMAGES} -eq 0 ]];
+      then
+        echo "There are no prior images.  Check the command line specification."
         exit 1
       fi
 
     time_start_brain_segmentation=`date +%s`
 
     ## Step 1 ##
-    if [[ ! -f ${SEGMENTATION_WARP} ]];
+    if [[ ! -f $SEGMENTATION_WARP ]];
       then
 
       logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_MASK_DILATED} MD ${EXTRACTION_MASK} 10
@@ -720,6 +745,13 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
 
     for (( i = 0; i < ${NUMBER_OF_PRIOR_IMAGES}; i++ ))
       do
+        if [[ ! -f $PRIOR_IMAGE_FILENAMES[$i] ]];
+          then
+            echo "The prior image file name does not exist:"
+            echo "   ${PRIOR_IMAGE_FILENAMES[$i]}"
+            exit 1
+          fi
+
         exe_brain_segmentation_2="${WARP} -d ${DIMENSION} -i ${PRIOR_IMAGE_FILENAMES[$i]} -o ${WARPED_PRIOR_IMAGE_FILENAMES[$i]} -r ${N4_CORRECTED_IMAGES[0]} -n Gaussian  -t ${SEGMENTATION_WARP} -t ${SEGMENTATION_MATRIX_OFFSET}"
         logCmd $exe_brain_segmentation_2
       done
