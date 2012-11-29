@@ -717,6 +717,11 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
         echo "   $SEGMENTATION_BRAIN"
         exit 1
       fi
+    if [[ ${NUMBER_OF_PRIOR_IMAGES} -eq 0 ]];
+      then
+        echo "There are no prior images.  Check the command line specification."
+        exit 1
+      fi
 
     time_start_brain_segmentation=`date +%s`
 
@@ -740,6 +745,13 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
 
     for (( i = 0; i < ${NUMBER_OF_PRIOR_IMAGES}; i++ ))
       do
+        if [[ ! -f $PRIOR_IMAGE_FILENAMES[$i] ]];
+          then
+            echo "The prior image file name does not exist:"
+            echo "   ${PRIOR_IMAGE_FILENAMES[$i]}"
+            exit 1
+          fi
+
         exe_brain_segmentation_2="${WARP} -d ${DIMENSION} -i ${PRIOR_IMAGE_FILENAMES[$i]} -o ${WARPED_PRIOR_IMAGE_FILENAMES[$i]} -r ${N4_CORRECTED_IMAGES[0]} -n Gaussian  -t ${SEGMENTATION_WARP} -t ${SEGMENTATION_MATRIX_OFFSET}"
         logCmd $exe_brain_segmentation_2
       done
