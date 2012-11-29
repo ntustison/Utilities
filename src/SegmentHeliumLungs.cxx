@@ -249,7 +249,7 @@ int SegmentHeliumLungs3D( int argc, char *argv[] )
     extracter->Update();
 
 
-    typedef itk::MinimalPathImageFunction<RealSliceType> FunctionType;
+    typedef itk::MinimalPathImageFunction<RealSliceType, typename itk::PolyLineParametricPath<2>::Pointer > FunctionType;
     typename FunctionType::Pointer function = FunctionType::New();
 
     typename SliceType::IndexType anchor;

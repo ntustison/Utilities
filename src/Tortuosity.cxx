@@ -246,14 +246,14 @@ int Tortuosity( unsigned int argc, char *argv[] )
       VectorType T = V / V.GetNorm();
 
       VectorType VxA;
-      VxA.Set_vnl_vector( vnl_cross_3d<float>( V.GetVnlVector(), A.GetVnlVector() ) );
+      VxA.SetVnlVector( vnl_cross_3d<float>( V.GetVnlVector(), A.GetVnlVector() ) );
 
       VectorType N;
-      N.Set_vnl_vector( vnl_cross_3d<float>( VxA.GetVnlVector(), V.GetVnlVector() ) );
+      N.SetVnlVector( vnl_cross_3d<float>( VxA.GetVnlVector(), V.GetVnlVector() ) );
       N /= N.GetNorm();
 
       VectorType B;
-      B.Set_vnl_vector( vnl_cross_3d<float>( T.GetVnlVector(), N.GetVnlVector() ) );
+      B.SetVnlVector( vnl_cross_3d<float>( T.GetVnlVector(), N.GetVnlVector() ) );
 
       Ns.push_back( N );
       }
@@ -304,9 +304,9 @@ int Tortuosity( unsigned int argc, char *argv[] )
       VectorType T3 = ItN.GetPixel( p2offset ) - ItN.GetPixel( poffset );
 
       VectorType T1xT2;
-      T1xT2.Set_vnl_vector( vnl_cross_3d( T1.GetVnlVector(), T2.GetVnlVector() ) );
+      T1xT2.SetVnlVector( vnl_cross_3d( T1.GetVnlVector(), T2.GetVnlVector() ) );
       VectorType T2xT3;
-      T2xT3.Set_vnl_vector( vnl_cross_3d( T2.GetVnlVector(), T3.GetVnlVector() ) );
+      T2xT3.SetVnlVector( vnl_cross_3d( T2.GetVnlVector(), T3.GetVnlVector() ) );
 
       VectorType T1norm = T1 / T1.GetNorm();
       VectorType T2norm = T2 / T2.GetNorm();

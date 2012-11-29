@@ -27,8 +27,11 @@ int Hilbert( int argc, char *argv[] )
       }
     str << 1 << std::endl;
     }
+
   str << "0 0 0 0" << std::endl;
   str.close();
+
+  return EXIT_SUCCESS;
 }
 
 int main( int argc, char *argv[] )
@@ -42,14 +45,21 @@ int main( int argc, char *argv[] )
   switch( atoi( argv[1] ) )
    {
    case 2:
+     {
      Hilbert<2>( argc, argv );
      break;
+     }
    case 3:
+     {
      Hilbert<3>( argc, argv );
      break;
+     }
    default:
-      std::cerr << "Unsupported dimension" << std::endl;
-      exit( EXIT_FAILURE );
+     {
+     std::cerr << "Unsupported dimension" << std::endl;
+     exit( EXIT_FAILURE );
+     }
    }
+  return EXIT_SUCCESS;
 }
 

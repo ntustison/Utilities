@@ -61,8 +61,8 @@ target_link_libraries( itkTimeAndMemoryProbeTest ${ITK_LIBRARIES})
 #add_executable( BSplineExample BSplineExample.cxx )
 #target_link_libraries( BSplineExample ${ITK_LIBRARIES})
 
-add_executable( Test Test.cxx )
-target_link_libraries( Test ${ITK_LIBRARIES})
+# add_executable( Test Test.cxx )
+# target_link_libraries( Test ${ITK_LIBRARIES})
 
 add_executable( BSplineTest BSplineTest.cxx )
 target_link_libraries( BSplineTest ${ITK_LIBRARIES})
@@ -385,8 +385,8 @@ target_link_libraries(MakeCheckerBoardImage ${ITK_LIBRARIES})
 add_executable(MakeHilbertPath MakeHilbertPath.cxx )
 target_link_libraries(MakeHilbertPath ${ITK_LIBRARIES})
 
-add_executable( MinimalPath MinimalPath.cxx )
-target_link_libraries( MinimalPath ${ITK_LIBRARIES} )
+# add_executable( MinimalPath MinimalPath.cxx )
+# target_link_libraries( MinimalPath ${ITK_LIBRARIES} )
 
 add_executable( STAPLEAnalysis STAPLEAnalysis.cxx )
 target_link_libraries( STAPLEAnalysis ${ITK_LIBRARIES} )
@@ -451,14 +451,14 @@ target_link_libraries(SalernoSyntheticImageEstimation ${ITK_LIBRARIES})
 add_executable(SegmentAirways SegmentAirways.cxx )
 target_link_libraries(SegmentAirways ${ITK_LIBRARIES})
 
-add_executable(SegmentHeliumLungs SegmentHeliumLungs.cxx )
-target_link_libraries(SegmentHeliumLungs ${ITK_LIBRARIES})
+# add_executable(SegmentHeliumLungs SegmentHeliumLungs.cxx )
+# target_link_libraries(SegmentHeliumLungs ${ITK_LIBRARIES})
 
-add_executable(SeparateLungs SeparateLungs.cxx )
-target_link_libraries(SeparateLungs ${ITK_LIBRARIES})
+# add_executable(SeparateLungs SeparateLungs.cxx )
+# target_link_libraries(SeparateLungs ${ITK_LIBRARIES})
 
-add_executable(ShapeMorphology ShapeMorphology.cxx )
-target_link_libraries(ShapeMorphology ${ITK_LIBRARIES})
+# add_executable(ShapeMorphology ShapeMorphology.cxx )
+# target_link_libraries(ShapeMorphology ${ITK_LIBRARIES})
 
 add_executable(ShapePriorLevelSet ShapePriorLevelSet.cxx )
 target_link_libraries(ShapePriorLevelSet ${ITK_LIBRARIES})
@@ -469,8 +469,8 @@ target_link_libraries(ShapePriorLevelSet ${ITK_LIBRARIES})
 add_executable(SmoothLungs SmoothLungs.cxx )
 target_link_libraries(SmoothLungs ${ITK_LIBRARIES})
 
-add_executable(SplitHeliumLungs SplitHeliumLungs.cxx )
-target_link_libraries(SplitHeliumLungs ${ITK_LIBRARIES})
+# add_executable(SplitHeliumLungs SplitHeliumLungs.cxx )
+# target_link_libraries(SplitHeliumLungs ${ITK_LIBRARIES})
 
 add_executable(SSI SSI.cxx )
 target_link_libraries(SSI ${ITK_LIBRARIES})

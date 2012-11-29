@@ -9,8 +9,8 @@
   Copyright (c) Insight Software Consortium. All rights reserved.
   See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
 
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+     This software is distributed WITHOUT ANY WARRANTY; without even
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
@@ -28,25 +28,23 @@
 
 namespace itk
 {
-  
+
 /** \class MinimalPathImageFunction
  * \brief Implements livewire image segmentation of Barret and Mortensen.
  *
- * MinimalPathImageFunction implements the livewire segmentation 
- * algorithm of Barrett and Mortenson.  This class naturally derives 
+ * MinimalPathImageFunction implements the livewire segmentation
+ * algorithm of Barrett and Mortenson.  This class naturally derives
  * from the ImageFunction class where an N-D dimensional image
  * is taken as input and the output consists of a path in that image.
  *
  * \reference
- * W. A. Barrett and E. N. Mortenson, "Interactive live-wire boundary 
+ * W. A. Barrett and E. N. Mortenson, "Interactive live-wire boundary
  * extraction", Medical Image Analysis, 1(4):331-341, 1996/7.
  * \ingroup ImageFunctions
  */
-template <class TInputImage>
-class ITK_EXPORT MinimalPathImageFunction 
-: public ImageFunction<TInputImage, 
-         typename itk::PolyLineParametricPath<
-           ::itk::GetImageDimension<TInputImage>::ImageDimension >::Pointer >
+template <class TInputImage, class TOutputPath>
+class ITK_EXPORT MinimalPathImageFunction
+: public ImageFunction<TInputImage, TOutputPath>
 {
 
 public:
@@ -59,11 +57,11 @@ public:
 
   typedef PolyLineParametricPath<
     itkGetStaticConstMacro( ImageDimension )>              OutputType;
-  typedef ImageFunction<TInputImage, 
+  typedef ImageFunction<TInputImage,
     typename OutputType::Pointer>                          Superclass;
   typedef SmartPointer<Self>                               Pointer;
   typedef SmartPointer<const Self>                         ConstPointer;
-  
+
   /** Run-time type information (and related methods). */
   itkTypeMacro( MinimalPathImageFunction, ImageFunction );
 
@@ -74,8 +72,8 @@ public:
   typedef TInputImage                                       InputImageType;
   typedef typename InputImageType::Pointer                  InputImagePointer;
   typedef typename InputImageType::ConstPointer             InputImageConstPointer;
-  typedef typename InputImageType::RegionType               InputImageRegionType; 
-  typedef typename InputImageType::PixelType                InputImagePixelType; 
+  typedef typename InputImageType::RegionType               InputImageRegionType;
+  typedef typename InputImageType::PixelType                InputImagePixelType;
 
   typedef typename Superclass::IndexType                    IndexType;
   typedef typename Superclass::PointType                    PointType;
@@ -84,14 +82,14 @@ public:
   typedef typename OutputType::VertexType                   VertexType;
 
   typedef float                                             RealType;
-  typedef Image<RealType, 
+  typedef Image<RealType,
     itkGetStaticConstMacro( ImageDimension )>               RealImageType;
   typedef GradientImageFilter<InputImageType, RealType,
     RealType>                                               GradientFilterType;
   typedef typename GradientFilterType::OutputImageType      GradientImageType;
-  typedef Image<typename InputImageType::OffsetType, 
+  typedef Image<typename InputImageType::OffsetType,
     itkGetStaticConstMacro( ImageDimension )>               OffsetImageType;
-  typedef Image<int, 
+  typedef Image<int,
     itkGetStaticConstMacro( ImageDimension )>               MaskImageType;
   typedef typename MaskImageType::PixelType                 MaskPixelType;
 
@@ -102,10 +100,10 @@ public:
   typedef MinPriorityQueueElementWrapper
     <IndexType, RealType>                            PriorityQueueElementType;
   typedef PriorityQueueContainer<
-    PriorityQueueElementType, 
+    PriorityQueueElementType,
     PriorityQueueElementType,
     RealType, long>                                  PriorityQueueType;
-    
+
   virtual void SetInputImage( const InputImageType *ptr );
 
   /** Evaluate the function at specified Point position. */
@@ -113,22 +111,22 @@ public:
 				{
 						IndexType index;
       this->ConvertPointToNearestIndex( point, index );
-						return this->EvaluateAtIndex( index );   
+						return this->EvaluateAtIndex( index );
 				}
 
   /** Evaluate the function at specified ContinousIndex position.
    * Subclasses must provide this method. */
-  virtual typename OutputType::Pointer 
+  virtual typename OutputType::Pointer
     EvaluateAtContinuousIndex( const ContinuousIndexType &cindex ) const
 				{
 						IndexType index;
       this->ConvertContinuousIndexToNearestIndex( cindex, index );
-						return this->EvaluateAtIndex( index );   
+						return this->EvaluateAtIndex( index );
 				}
 
   /** Evaluate the function at specified Index position.
    * Subclasses must provide this method. */
-  virtual typename OutputType::Pointer 
+  virtual typename OutputType::Pointer
     EvaluateAtIndex( const IndexType &index ) const;
 
   itkSetMacro( MaskImage, typename MaskImageType::Pointer );
@@ -140,16 +138,16 @@ public:
   virtual void SetAnchorSeed( IndexType index )
     {
     itkDebugMacro( "setting AnchorSeed to " << index );
-    if ( this->m_AnchorSeed != index ) 
+    if ( this->m_AnchorSeed != index )
       {
       this->m_AnchorSeed = index;
       if ( this->GetInputImage() != NULL )
         {
         this->GeneratePathDirectionImage();
         }
-      this->Modified(); 
-      } 
-    } 
+      this->Modified();
+      }
+    }
   itkGetConstMacro( AnchorSeed, IndexType );
 
   itkSetMacro( UseFaceConnectedness, bool );
@@ -162,10 +160,10 @@ public:
 
 protected:
 
-  MinimalPathImageFunction(); 
+  MinimalPathImageFunction();
   virtual ~MinimalPathImageFunction();
   void PrintSelf(std::ostream& os, Indent indent) const;
-  
+
 private:
   MinimalPathImageFunction(const Self&); //purposely not implemented
   void operator=(const Self&); //purposely not implemented
@@ -183,7 +181,7 @@ private:
   bool                                       m_UseFaceConnectedness;
   bool                                       m_UseImageSpacing;
 };
-  
+
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
