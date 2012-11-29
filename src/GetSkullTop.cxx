@@ -193,6 +193,7 @@ for( It.GoToBegin(); !It.IsAtEnd(); ++It )
   if( It.Get() == 1 )
     {
     ImageType::IndexType startIndex = It.GetIndex();
+
     LinerType::IndexArray indices = liner.BuildLine( startIndex, topCenterIndex );
     bool overlap = false;
     LinerType::IndexArray::const_iterator it;
@@ -214,7 +215,7 @@ for( It.GoToBegin(); !It.IsAtEnd(); ++It )
 
     if( !overlap )
       {
-      if( output->GetLargestPossibleRegion().IsInside( indices[0] ) )
+      if( output->GetLargestPossibleRegion().IsInside( indices[1] ) )
         {
         output->SetPixel( indices[1], 1 );
         }

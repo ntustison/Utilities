@@ -116,6 +116,7 @@ int CollidingFronts( unsigned int argc, char *argv[] )
   filter->SetInput( reader->GetOutput() );
   filter->SetSeedPoints1( seeds1 );
   filter->SetSeedPoints2( seeds2 );
+//   filter->ApplyConnectivityOn();
   filter->Update();
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
