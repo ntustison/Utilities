@@ -360,9 +360,9 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
     N4_CORRECTED_IMAGE=${OUTPUT_PREFIX}N4Corrected${i}.${OUTPUT_SUFFIX}
 
     TMP_FILES=( ${TMP_FILES[@]} $N4_TRUNCATED_IMAGE )
-    N4_CORRECTED_IMAGES=( ${N4_CORRECTED_IMAGES[@]} $N4_CORRECTED_IMAGE )
+    N4_CORRECTED_IMAGES=( ${N4_CORRECTED_IMAGES[@]} ${N4_CORRECTED_IMAGE} )
 
-    if [[ ! -f $N4_CORRECTED_IMAGE ]];
+    if [[ ! -f ${N4_CORRECTED_IMAGE} ]];
       then
         logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${N4_TRUNCATED_IMAGE} TruncateImageIntensity ${ANATOMICAL_IMAGES[$i]} 0.025 0.975 256
 
@@ -420,19 +420,19 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
   then
 
     # Check inputs
-    if [[ ! -f $EXTRACTION_TEMPLATE ]];
+    if [[ ! -f ${EXTRACTION_TEMPLATE} ]];
       then
         echo "The extraction template doesn't exist:"
         echo "   $EXTRACTION_TEMPLATE"
         exit 1
       fi
-    if [[ ! -f $N4_CORRECTED_IMAGES[0] ]];
+    if [[ ! -f ${N4_CORRECTED_IMAGES[0]} ]];
       then
         echo "The N4 corrected image doesn't exist:"
         echo "   ${N4_CORRECTED_IMAGES[0]}"
         exit 1
       fi
-    if [[ ! -f $EXTRACTION_PRIOR ]];
+    if [[ ! -f ${EXTRACTION_PRIOR} ]];
       then
         echo "The brain mask doesn't exist:"
         echo "   $EXTRACTION_PRIOR"
@@ -680,7 +680,7 @@ NUMBER_OF_PRIOR_IMAGES=${#WARPED_PRIOR_IMAGE_FILENAMES[*]}
 
 BRAIN_SEGMENTATION_POSTERIORS=${BRAIN_SEGMENTATION_OUTPUT}Posteriors%${FORMAT}d.${OUTPUT_SUFFIX}
 
-if [[ ! -f $BRAIN_SEGMENTATION ]];
+if [[ ! -f ${BRAIN_SEGMENTATION} ]];
   then
 
     echo
@@ -693,25 +693,25 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
     echo
 
     # Check inputs
-    if [[ ! -f $SEGMENTATION_TEMPLATE ]];
+    if [[ ! -f ${SEGMENTATION_TEMPLATE} ]];
       then
         echo "The segmentation template doesn't exist:"
         echo "   $SEGMENTATION_TEMPLATE"
         exit 1
       fi
-    if [[ ! -f $N4_CORRECTED_IMAGES[0] ]];
+    if [[ ! -f ${N4_CORRECTED_IMAGES[0]} ]];
       then
         echo "The N4 corrected image doesn't exist:"
         echo "   ${N4_CORRECTED_IMAGES[0]}"
         exit 1
       fi
-    if [[ ! -f $EXTRACTION_MASK ]];
+    if [[ ! -f ${EXTRACTION_MASK} ]];
       then
         echo "The brain mask doesn't exist:"
         echo "   $EXTRACTION_MASK"
         exit 1
       fi
-    if [[ ! -f $SEGMENTATION_BRAIN ]];
+    if [[ ! -f ${SEGMENTATION_BRAIN} ]];
       then
         echo "The extracted brain doesn't exist:"
         echo "   $SEGMENTATION_BRAIN"
@@ -726,7 +726,7 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
     time_start_brain_segmentation=`date +%s`
 
     ## Step 1 ##
-    if [[ ! -f $SEGMENTATION_WARP ]];
+    if [[ ! -f ${SEGMENTATION_WARP} ]];
       then
 
       logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_MASK_DILATED} MD ${EXTRACTION_MASK} 10
@@ -745,7 +745,7 @@ if [[ ! -f $BRAIN_SEGMENTATION ]];
 
     for (( i = 0; i < ${NUMBER_OF_PRIOR_IMAGES}; i++ ))
       do
-        if [[ ! -f $PRIOR_IMAGE_FILENAMES[$i] ]];
+        if [[ ! -f ${PRIOR_IMAGE_FILENAMES[$i]} ]];
           then
             echo "The prior image file name does not exist:"
             echo "   ${PRIOR_IMAGE_FILENAMES[$i]}"
@@ -834,19 +834,19 @@ if [[ ! -f ${CORTICAL_THICKNESS_IMAGE} ]];
     echo
 
     # Check inputs
-    if [[ ! -f $BRAIN_SEGMENTATION ]];
+    if [[ ! -f ${BRAIN_SEGMENTATION} ]];
       then
         echo "The brain segmentation image doesn't exist:"
         echo "   $BRAIN_SEGMENTATION"
         exit 1
       fi
-    if [[ ! -f $CORTICAL_THICKNESS_GM ]];
+    if [[ ! -f ${CORTICAL_THICKNESS_GM} ]];
       then
         echo "The cortical gray matter probability image doesn't exist:"
         echo "   $CORTICAL_THICKNESS_GM"
         exit 1
       fi
-    if [[ ! -f $CORTICAL_THICKNESS_WM ]]
+    if [[ ! -f ${CORTICAL_THICKNESS_WM} ]]
       then
         echo "The cortical white matter probability image doesn't exist:"
         echo "   $CORTICAL_THICKNESS_WM"
