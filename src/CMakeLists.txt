@@ -112,6 +112,9 @@ target_link_libraries(CalculateVolumeFromBinaryImage ${ITK_LIBRARIES})
 add_executable(ChangeImageInformation ChangeImageInformation.cxx )
 target_link_libraries(ChangeImageInformation ${ITK_LIBRARIES})
 
+add_executable(EstimateVesselCurve EstimateVesselCurve.cxx )
+target_link_libraries(EstimateVesselCurve ${ITK_LIBRARIES})
+
 add_executable(CollidingFronts CollidingFronts.cxx )
 target_link_libraries(CollidingFronts ${ITK_LIBRARIES})
 
