@@ -68,7 +68,7 @@ int main( int argc, char *argv[] )
 {
   if ( argc < 4 )
     {
-    std::cout << argv[0] << " inputImage inputSeedImage outputSampledSplineAvantsFile" << std::endl;
+    std::cout << argv[0] << " inputImage inputSeedImage outputSampledSplineAvantsFile [numberOfIterations=3] [gradientStep=2x1x0.5] [numberOfFittingLevels=4x5x7]" << std::endl;
     std::cout << "Note:  The seed image needs to have two labels (1 and 2) designating the two sets of seed points." << std::endl;
     exit( 1 );
     }
@@ -78,8 +78,42 @@ int main( int argc, char *argv[] )
 
   const unsigned int ImageDimension = 3;
   const unsigned int numberOfSamples = 100;
-  const unsigned int numberOfIterations = 2;
-  RealType gradientStep = 0.1;
+  unsigned int numberOfIterations = 3;
+
+  std::vector<RealType> gradientSteps;
+  gradientSteps.resize( numberOfIterations );
+  gradientSteps[0] = 2;
+  gradientSteps[1] = 1;
+  gradientSteps[2] = 0.5;
+
+  std::vector<unsigned int> numberOfLevels;
+  numberOfLevels.resize( numberOfIterations );
+  numberOfLevels[0] = 4;
+  numberOfLevels[1] = 5;
+  numberOfLevels[2] = 7;
+
+  if( argc > 4 )
+    {
+    numberOfIterations = static_cast<unsigned int>( atoi( argv[4] ) );
+    }
+  if( argc > 5 )
+    {
+    gradientSteps = ConvertVector<RealType>( std::string( argv[5] ) );
+    if( gradientSteps.size() != numberOfIterations )
+      {
+      std::cerr << "Error:  The number of elements specified for the gradient steps must be"
+        << " equal to the number of iterations." << std::endl;
+      }
+    }
+  if( argc > 6 )
+    {
+    numberOfLevels = ConvertVector<unsigned int>( std::string( argv[6] ) );
+    if( numberOfLevels.size() != numberOfIterations )
+      {
+      std::cerr << "Error:  The number of elements specified for the number of levels must be"
+        << " equal to the number of iterations." << std::endl;
+      }
+    }
 
   typedef itk::Vector<RealType, ImageDimension> VectorType;
   typedef itk::Image<PixelType, ImageDimension> ImageType;
@@ -246,6 +280,9 @@ int main( int argc, char *argv[] )
   BSplinerType::WeightsContainerType::Pointer weights = BSplinerType::WeightsContainerType::New();
   weights->Initialize();
 
+  std::vector<VectorType> begSplinePoints;
+  std::vector<VectorType> endSplinePoints;
+
   count = 0;
   for( It.GoToBegin(); !It.IsAtEnd(); ++It )
     {
@@ -260,6 +297,8 @@ int main( int argc, char *argv[] )
         {
         bpoint[d] = point[d] - offset[d];
         }
+      begSplinePoints.push_back( bpoint );
+
       PointSetType::PointType param;
       param[0] = 0.0;
       pointSet->SetPoint( count, param );
@@ -278,6 +317,8 @@ int main( int argc, char *argv[] )
         {
         bpoint[d] = point[d] - offset[d];
         }
+      endSplinePoints.push_back( bpoint );
+
       PointSetType::PointType param;
       param[0] = 1.0;
       pointSet->SetPoint( count, param );
@@ -305,12 +346,15 @@ int main( int argc, char *argv[] )
       }
     }
 
-  BSplinerType::Pointer bspliner = BSplinerType::New();
+  std::vector<VectorType> gradients;
+  std::vector<VectorType> normals;
+  std::vector<VectorType> binormals;
+  std::vector<VectorType> points;
 
   unsigned int iteration = 0;
   while( iteration++ < numberOfIterations )
     {
-    bspliner->SetInput( pointSet );
+    BSplinerType::Pointer bspliner = BSplinerType::New();
     bspliner->SetGenerateOutputImage( false );
 
     CurveImageType::PointType origin;
@@ -334,13 +378,14 @@ int main( int argc, char *argv[] )
     bspliner->SetNumberOfControlPoints( ncps );
 
     BSplinerType::ArrayType nlevels;
-    nlevels[0] = 3;
+    nlevels[0] = numberOfLevels[iteration-1];
     bspliner->SetNumberOfLevels( nlevels );
 
     BSplinerType::ArrayType close;
     close[0] = false;
     bspliner->SetCloseDimension( close );
 
+    bspliner->SetInput( pointSet );
     bspliner->SetPointWeights( weights );
     bspliner->Update();
 
@@ -352,12 +397,12 @@ int main( int argc, char *argv[] )
     bsplineFunction->SetOrigin( bspliner->GetOrigin() );
     bsplineFunction->SetInputImage( bspliner->GetPhiLattice() );
 
-    typedef BSplineFunctionType::GradientType GradientType;
+    points.clear();
+    binormals.clear();
+    normals.clear();
+    gradients.clear();
 
-    std::vector<VectorType> gradients;
-    std::vector<VectorType> normals;
-    std::vector<VectorType> binormals;
-    std::vector<VectorType> points;
+    typedef BSplineFunctionType::GradientType GradientType;
 
     for( unsigned int n = 0; n < numberOfSamples+1; n++ )
       {
@@ -367,8 +412,7 @@ int main( int argc, char *argv[] )
       VectorType spatialPoint = bsplineFunction->Evaluate( param );
       GradientType gradientMatrix = bsplineFunction->EvaluateGradient( param );
 
-      points.push_back( spatialPoint );
-      points[n] += offset;
+      points.push_back( spatialPoint + offset );
 
       VectorType grad;
       for( unsigned int d = 0; d < ImageDimension; d++ )
@@ -414,14 +458,16 @@ int main( int argc, char *argv[] )
 
       normals.push_back( normal );
       }
+    if( iteration == numberOfIterations )
+      {
+      break;
+      }
 
     // Now traverse the curve and sample the normal plane
 
     typedef itk::LinearInterpolateImageFunction<ImageType> InterpolatorType;
     InterpolatorType::Pointer interpolator = InterpolatorType::New();
     interpolator->SetInputImage( filter->GetOutput() );
-
-    weights->Initialize();
 
     RealType voxelSpacingFactor = 0.0;
     for( unsigned int d = 0; d < ImageDimension; d++ )
@@ -431,16 +477,18 @@ int main( int argc, char *argv[] )
     voxelSpacingFactor = vcl_sqrt( voxelSpacingFactor );
 
     pointSet->Initialize();
+    weights->Initialize();
 
     count = 0;
+
     for( unsigned int n = 0; n < points.size(); n++ )
       {
       PointSetType::PointType param;
       param[0] = static_cast<float>( n ) / ( points.size() + 0.0001 );
 
-      for( RealType u = -gradientStep; u <= gradientStep; u += ( gradientStep * 0.2 ) )
+      for( RealType u = -gradientSteps[iteration-1]; u <= gradientSteps[iteration-1]; u += ( gradientSteps[iteration-1] * 0.2 ) )
         {
-        for( RealType v = -gradientStep; v <= gradientStep; v += ( gradientStep * 0.2 ) )
+        for( RealType v = -gradientSteps[iteration-1]; v <= gradientSteps[iteration-1]; v += ( gradientSteps[iteration-1] * 0.2 ) )
           {
           if( vcl_sqrt( vnl_math_sqr( u ) + vnl_math_sqr( v ) ) > 3.0 )
             {
@@ -470,21 +518,42 @@ int main( int argc, char *argv[] )
           weights->InsertElement( count, weight );
 
           pointSet->SetPoint( count, param );
-          pointSet->SetPointData( count, tmp );
+          pointSet->SetPointData( count, tmp - offset );
           count++;
           }
         }
       }
+
+    PointSetType::PointType param;
+    param[0] = 0.0;
+    for( unsigned int n = 0; n < begSplinePoints.size(); n++ )
+      {
+      pointSet->SetPoint( count, param );
+      pointSet->SetPointData( count, begSplinePoints[n] );
+      weights->InsertElement( count, 1.0 );
+      count++;
+      }
+
+    param[0] = 1.0;
+    for( unsigned int n = 0; n < endSplinePoints.size(); n++ )
+      {
+      pointSet->SetPoint( count, param );
+      pointSet->SetPointData( count, endSplinePoints[n] );
+      weights->InsertElement( count, 1.0 );
+      count++;
+      }
+
+    bspliner->SetInput( pointSet );
+    bspliner->SetPointWeights( weights );
+    bspliner->Update();
     }
 
   std::ofstream str( argv[3] );
 
   str << "0 0 0 0" << std::endl;
-  itk::ImageRegionIterator<CurveImageType> ItB( bspliner->GetOutput(),
-    bspliner->GetOutput()->GetLargestPossibleRegion() );
-  for( ItB.GoToBegin(); !ItB.IsAtEnd(); ++ItB )
+  for( unsigned int n = 0; n < points.size(); n++ )
     {
-    VectorType curvePoint = ItB.Get();
+    VectorType curvePoint = points[n];
     for( unsigned int d = 0; d < ImageDimension; d++ )
       {
       str << curvePoint[d] << " ";
