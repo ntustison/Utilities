@@ -481,8 +481,11 @@ target_link_libraries(SSI ${ITK_LIBRARIES})
 add_executable( StatsForSkullThickness StatsForSkullThickness.cxx )
 target_link_libraries( StatsForSkullThickness ${ITK_LIBRARIES})
 
-add_executable(BSplineCalc BSplineCalc.cxx )
-target_link_libraries(BSplineCalc ${ITK_LIBRARIES})
+add_executable(DenoiseImage DenoiseImage.cxx )
+target_link_libraries(DenoiseImage ${ITK_LIBRARIES})
+
+add_executable(DenoiseImage DenoiseImage.cxx )
+target_link_libraries(DenoiseImage ${ITK_LIBRARIES})
 
 add_executable(testRegulItkBspline testRegulItkBspline.cxx )
 target_link_libraries(testRegulItkBspline ${ITK_LIBRARIES} ${VTK_LIBRARIES} )

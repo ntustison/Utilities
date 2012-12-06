@@ -7,6 +7,7 @@
 #include "itkImageFileWriter.h"
 #include "itkImageRegionConstIteratorWithIndex.h"
 #include "itkLinearInterpolateImageFunction.h"
+#include "itkNearestNeighborInterpolateImageFunction.h"
 #include "itkOtsuMultipleThresholdsImageFilter.h"
 #include "itkPointSet.h"
 #include "itkVector.h"
@@ -171,6 +172,8 @@ int main( int argc, char *argv[] )
   unsigned long seeds2Counter = 0;
   unsigned long seeds3Counter = 0;
 
+  bool useChrisSamples = false;
+
   unsigned long count = 0;
   VectorType offset;
   offset.Fill( 0.0 );
@@ -238,6 +241,10 @@ int main( int argc, char *argv[] )
       node.SetIndex( position );
 
       seeds3->InsertElement( seeds3Counter++, node );
+      }
+    else if( !useChrisSamples && It.Get() == 4 )
+      {
+      useChrisSamples = true;
       }
     }
 
@@ -469,6 +476,10 @@ int main( int argc, char *argv[] )
     InterpolatorType::Pointer interpolator = InterpolatorType::New();
     interpolator->SetInputImage( filter->GetOutput() );
 
+    typedef itk::NearestNeighborInterpolateImageFunction<LabelImageType> NNInterpolatorType;
+    NNInterpolatorType::Pointer interpolator2 = NNInterpolatorType::New();
+    interpolator2->SetInputImage( seedsReader->GetOutput() );
+
     RealType voxelSpacingFactor = 0.0;
     for( unsigned int d = 0; d < ImageDimension; d++ )
       {
@@ -502,15 +513,25 @@ int main( int argc, char *argv[] )
             {
             samplePoint[d] = tmp[d];
             }
-
           if( ! interpolator->IsInsideBuffer( samplePoint ) )
             {
             continue;
             }
 
-          RealType weight = interpolator->Evaluate( samplePoint );
+          RealType weight = 1.0;
+          if( useChrisSamples )
+            {
+            if( interpolator2->Evaluate( samplePoint ) != 4 )
+              {
+              weight = 0.0;
+              }
+            }
+          else
+            {
+            RealType weight = interpolator->Evaluate( samplePoint );
+            }
 
-          if( weight <= 0 )
+          if( weight <= 0.0 )
             {
             continue;
             }
