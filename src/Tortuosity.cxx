@@ -103,11 +103,11 @@ int main( int argc, char *argv[] )
     VectorType deltaN = Ns[i] - Ns[i-1];
     deltaNMag.push_back( deltaN.GetSquaredNorm() );
     }
-//
+
   unsigned int icmCount = 1;
   for( unsigned int i = 1; i < deltaNMag.size()-1; ++i )
     {
-    if( deltaNMag[i] > 1.0 && deltaNMag[i] > deltaNMag[i-1] && deltaNMag[i] >= deltaNMag[i-1] )
+    if( deltaNMag[i] > 1.0 && deltaNMag[i] > deltaNMag[i-1] && deltaNMag[i] > deltaNMag[i-1] )
       {
       icmCount++;
       }
