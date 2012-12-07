@@ -61,8 +61,8 @@ target_link_libraries( itkTimeAndMemoryProbeTest ${ITK_LIBRARIES})
 #add_executable( BSplineExample BSplineExample.cxx )
 #target_link_libraries( BSplineExample ${ITK_LIBRARIES})
 
-# add_executable( Test Test.cxx )
-# target_link_libraries( Test ${ITK_LIBRARIES})
+add_executable( Test Test.cxx )
+target_link_libraries( Test ${ITK_LIBRARIES})
 
 add_executable( BSplineTest BSplineTest.cxx )
 target_link_libraries( BSplineTest ${ITK_LIBRARIES})

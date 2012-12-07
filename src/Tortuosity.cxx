@@ -95,6 +95,8 @@ int main( int argc, char *argv[] )
     B.SetVnlVector( vnl_cross_3d( T.GetVnlVector(), N.GetVnlVector() ) );
 
     Ns.push_back( N );
+
+    std::cout << N << std::endl;
     }
 
   std::vector<RealType> deltaNMag;

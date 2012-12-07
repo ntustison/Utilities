@@ -1,15 +1,17 @@
-#include "itkConstNeighborhoodIterator.h"
-#include "itkCrossCorrelationRegistrationFunction.h"
-#include "itkDisplacementFieldTransform.h"
-#include "itkFiniteDifferenceFunction.h"
+// #include "itkConstNeighborhoodIterator.h"
+// #include "itkCrossCorrelationRegistrationFunction.h"
+// #include "itkDisplacementFieldTransform.h"
+// #include "itkFiniteDifferenceFunction.h"
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImportImageFilter.h"
 #include "itkVector.h"
+//
+// #include "itkANTSNeighborhoodCorrelationImageToImageMetricv4.h"
 
-#include "itkANTSNeighborhoodCorrelationImageToImageMetricv4.h"
+#include <fstream>
 
 
 template <unsigned int ImageDimension>
@@ -20,6 +22,22 @@ int Test( unsigned int argc, char *argv[] )
   typedef itk::Image<RealType, ImageDimension> ImageType;
   typedef itk::Vector<RealType, ImageDimension> VectorType;
   typedef itk::Image<VectorType, ImageDimension> DisplacementFieldType;
+
+  std::ofstream str( "helix.txt" );
+
+  for( float t = 0.0; t < 5 * 2 * vnl_math::pi; t+=0.1 )
+    {
+//     float x = vcl_cos( t );
+//     float y = vcl_sin( t );
+//     float z = t;
+    float x = 5*t;
+    float y = 3*t;
+    float z = t;
+    str << x << " " << y << " " << z << " 1" << std::endl;
+    }
+  str.close();
+
+
 //
 //   typedef itk::DisplacementFieldTransform<RealType, ImageDimension> DisplacementFieldTransformType;
 //
@@ -187,11 +205,11 @@ int Test( unsigned int argc, char *argv[] )
 
 int main( int argc, char *argv[] )
 {
-  if ( argc < 4 )
-    {
-    std::cout << argv[0] << " imageDimension fixedImage movingImage" << std::endl;
-    exit( 1 );
-    }
+//   if ( argc < 4 )
+//     {
+//     std::cout << argv[0] << " imageDimension fixedImage movingImage" << std::endl;
+//     exit( 1 );
+//     }
 
   switch( atoi( argv[1] ) )
    {
