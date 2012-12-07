@@ -107,7 +107,7 @@ int main( int argc, char *argv[] )
   unsigned int icmCount = 1;
   for( unsigned int i = 1; i < deltaNMag.size()-1; ++i )
     {
-    if( deltaNMag[i] > 1.0 && deltaNMag[i] > deltaNMag[i-1] && deltaNMag[i] > deltaNMag[i-1] )
+    if( deltaNMag[i] > 1.0 && deltaNMag[i] > deltaNMag[i-1] && deltaNMag[i] > deltaNMag[i+1] )
       {
       icmCount++;
       }
