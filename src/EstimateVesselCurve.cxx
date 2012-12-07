@@ -1,15 +1,18 @@
 
-#include "itkBinaryThresholdImageFilter.h"
 #include "itkBSplineControlPointImageFunction.h"
 #include "itkBSplineScatteredDataPointSetToImageFilter.h"
 #include "itkCollidingFrontsImageFilter.h"
+#include "itkHessianToObjectnessMeasureImageFilter.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkImageRegionConstIteratorWithIndex.h"
 #include "itkLinearInterpolateImageFunction.h"
+#include "itkMultiScaleHessianBasedMeasureImageFilter.h"
 #include "itkNearestNeighborInterpolateImageFunction.h"
-#include "itkOtsuMultipleThresholdsImageFilter.h"
+#include "itkConfidenceConnectedImageFilter.h"
 #include "itkPointSet.h"
+#include "itkRescaleIntensityImageFilter.h"
+#include "itkSymmetricSecondRankTensor.h"
 #include "itkVector.h"
 
 #include "vnl/vnl_cross.h"
@@ -130,23 +133,53 @@ int main( int argc, char *argv[] )
   seedsReader->SetFileName( argv[2] );
   seedsReader->Update();
 
-  // Otsu threshold the image and select the regions
+  // Connectivity threshold the image and select the regions
   // corresponding to the MRA regions
 
-  typedef itk::OtsuMultipleThresholdsImageFilter<ImageType, LabelImageType> OtsuType;
-  OtsuType::Pointer otsu = OtsuType::New();
-  otsu->SetInput( reader->GetOutput() );
-  otsu->SetNumberOfHistogramBins( 200 );
-  otsu->SetNumberOfThresholds( 4 );
-
-  typedef itk::BinaryThresholdImageFilter<LabelImageType, ImageType> ThresholderType;
+  typedef itk::ConfidenceConnectedImageFilter<ImageType, ImageType> ThresholderType;
   ThresholderType::Pointer thresholder = ThresholderType::New();
-  thresholder->SetInput( otsu->GetOutput() );
-  thresholder->SetInsideValue( 1 );
-  thresholder->SetOutsideValue( 0 );
-  thresholder->SetLowerThreshold( 3 );
-  thresholder->SetUpperThreshold( 3 );
+  thresholder->SetInput( reader->GetOutput() );
+  thresholder->SetMultiplier( 2 );
+  thresholder->SetNumberOfIterations( 25 );
+  thresholder->SetReplaceValue( 1.0 );
+  thresholder->SetInitialNeighborhoodRadius( 1 );
+
+  itk::ImageRegionConstIteratorWithIndex<LabelImageType> It( seedsReader->GetOutput(),
+    seedsReader->GetOutput()->GetLargestPossibleRegion() );
+
+  ImageType::IndexType meanIndex;
+  meanIndex.Fill( 0 );
+
+  unsigned long N = 0;
+
+  for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+    {
+    if( It.Get() == 1 )
+      {
+      for( unsigned int d = 0; d < ImageDimension; d++ )
+        {
+        meanIndex[d] += It.GetIndex()[d];
+        }
+      N++;
+      }
+    }
+  for( unsigned int d = 0; d < ImageDimension; d++ )
+    {
+    meanIndex[d] = static_cast<int>( meanIndex[d] / N );
+    }
+  thresholder->AddSeed( meanIndex );
+
   thresholder->Update();
+
+  itk::ImageRegionIterator<ImageType> ItT( thresholder->GetOutput(),
+    thresholder->GetOutput()->GetLargestPossibleRegion() );
+  for( ItT.GoToBegin(), It.GoToBegin(); !ItT.IsAtEnd(); ++ItT, ++It )
+    {
+    if( It.Get() == 3 )
+      {
+      ItT.Set( 0 );
+      }
+    }
 
   // Use colliding fronts to connect the seeds.  Also, create an
   // initial curve based on the seed points and the intermediate
@@ -178,8 +211,6 @@ int main( int argc, char *argv[] )
   VectorType offset;
   offset.Fill( 0.0 );
 
-  itk::ImageRegionConstIteratorWithIndex<LabelImageType> It( seedsReader->GetOutput(),
-    seedsReader->GetOutput()->GetLargestPossibleRegion() );
   for( It.GoToBegin(); !It.IsAtEnd(); ++It )
     {
     if( It.Get() == 1 )
@@ -248,8 +279,45 @@ int main( int argc, char *argv[] )
       }
     }
 
+  typedef itk::NumericTraits<PixelType>::RealType RealPixelType;
+
+  typedef itk::SymmetricSecondRankTensor<RealPixelType, ImageDimension> HessianPixelType;
+  typedef itk::Image<HessianPixelType, ImageDimension> HessianImageType;
+  typedef itk::HessianToObjectnessMeasureImageFilter<HessianImageType, ImageType> ObjectnessFilterType;
+  typedef itk::MultiScaleHessianBasedMeasureImageFilter<ImageType, HessianImageType, ImageType> MultiScaleEnhancementFilterType;
+
+  MultiScaleEnhancementFilterType::Pointer multiScaleEnhancementFilter = MultiScaleEnhancementFilterType::New();
+  multiScaleEnhancementFilter->SetInput( thresholder->GetOutput() );
+  multiScaleEnhancementFilter->SetSigmaStepMethodToLogarithmic();
+  multiScaleEnhancementFilter->SetSigmaMinimum( 1.5  );
+  multiScaleEnhancementFilter->SetSigmaMaximum( 3 );
+  multiScaleEnhancementFilter->SetNumberOfSigmaSteps( 10 );
+
+  float alpha = 0.5;
+  float beta = 0.5;
+  float gamma = 5.0;
+  bool brightObject = true;
+
+  ObjectnessFilterType::Pointer objectnessFilter = ObjectnessFilterType::New();
+  objectnessFilter->SetScaleObjectnessMeasure( false );
+  objectnessFilter->SetBrightObject( brightObject );
+  objectnessFilter->SetAlpha( alpha );
+  objectnessFilter->SetBeta( beta );
+  objectnessFilter->SetGamma( gamma );
+  objectnessFilter->SetObjectDimension( 1 );
+
+  multiScaleEnhancementFilter->SetHessianToMeasureFilter( objectnessFilter );
+  multiScaleEnhancementFilter->Update();
+
+  typedef itk::RescaleIntensityImageFilter<ImageType, ImageType> RescalerType;
+  RescalerType::Pointer rescaler = RescalerType::New();
+  rescaler->SetInput( multiScaleEnhancementFilter->GetOutput() );
+  rescaler->SetOutputMinimum( 0.0 );
+  rescaler->SetOutputMaximum( 1.0 );
+  rescaler->Update();
+
   FilterType::Pointer filter = FilterType::New();
-  filter->SetInput( thresholder->GetOutput() );
+  filter->SetInput( rescaler->GetOutput() );
   filter->SetSeedPoints1( seeds1 );
   filter->SetSeedPoints2( seeds2 );
   filter->ApplyConnectivityOn();
@@ -278,6 +346,13 @@ int main( int argc, char *argv[] )
     It2.Set( slope * ( It2.Get() - maximumValue ) );
     }
 
+//   typedef itk::ImageFileWriter<ImageType> WriterType;
+//   WriterType::Pointer writer = WriterType::New();
+//   writer->SetFileName( "filter.nii.gz" );
+//   writer->SetInput( filter->GetOutput() );
+//   writer->Update();
+//
+//   exit( 0 );
 
   for( unsigned int d = 0; d < ImageDimension; d++ )
     {
@@ -513,7 +588,8 @@ int main( int argc, char *argv[] )
             {
             samplePoint[d] = tmp[d];
             }
-          if( ! interpolator->IsInsideBuffer( samplePoint ) )
+          if( ! interpolator->IsInsideBuffer( samplePoint ) ||
+              interpolator2->Evaluate( samplePoint ) == 3 )
             {
             continue;
             }
@@ -528,7 +604,7 @@ int main( int argc, char *argv[] )
             }
           else
             {
-            RealType weight = interpolator->Evaluate( samplePoint );
+            weight = interpolator->Evaluate( samplePoint );
             }
 
           if( weight <= 0.0 )
