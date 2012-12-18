@@ -64,6 +64,9 @@ target_link_libraries( itkTimeAndMemoryProbeTest ${ITK_LIBRARIES})
 add_executable( Test Test.cxx )
 target_link_libraries( Test ${ITK_LIBRARIES})
 
+add_executable( AdaBoostTest AdaBoostTest.cxx )
+target_link_libraries( AdaBoostTest ${ITK_LIBRARIES})
+
 add_executable( BSplineTest BSplineTest.cxx )
 target_link_libraries( BSplineTest ${ITK_LIBRARIES})
 

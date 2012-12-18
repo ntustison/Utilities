@@ -27,12 +27,15 @@ int Test( unsigned int argc, char *argv[] )
 
   for( float t = 0.0; t < 5 * 2 * vnl_math::pi; t+=0.1 )
     {
+    float x = vcl_cos( t );
+    float y = vcl_sin( t );
+    float z = 1;
 //     float x = vcl_cos( t );
 //     float y = vcl_sin( t );
 //     float z = t;
-    float x = 5*t;
-    float y = 3*t;
-    float z = t;
+//     float x = 5*t;
+//     float y = 3*t;
+//     float z = t;
     str << x << " " << y << " " << z << " 1" << std::endl;
     }
   str.close();
