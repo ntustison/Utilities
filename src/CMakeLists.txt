@@ -100,6 +100,9 @@ target_link_libraries( BSplineBasisFunctions ${ITK_LIBRARIES})
 add_executable(CalculateFirstOrderStatisticsFromImage CalculateFirstOrderStatisticsFromImage.cxx )
 target_link_libraries(CalculateFirstOrderStatisticsFromImage ${ITK_LIBRARIES})
 
+add_executable( CalculateStatisticsImage CalculateStatisticsImage.cxx )
+target_link_libraries( CalculateStatisticsImage ${ITK_LIBRARIES} )
+
 add_executable(LabelIntensityStatistics LabelIntensityStatistics.cxx )
 target_link_libraries(LabelIntensityStatistics ${ITK_LIBRARIES})
 
@@ -289,6 +292,9 @@ target_link_libraries(GetPhysicalSpaceToParaviewAffine ${ITK_LIBRARIES})
 add_executable(GetConnectedComponents GetConnectedComponents.cxx )
 target_link_libraries(GetConnectedComponents ${ITK_LIBRARIES})
 
+add_executable( GetConnectedComponentsVolumeRatio GetConnectedComponentsVolumeRatio.cxx )
+target_link_libraries(GetConnectedComponentsVolumeRatio ${ITK_LIBRARIES} )
+
 add_executable(GenerateAttenuationMask GenerateAttenuationMask.cxx )
 target_link_libraries(GenerateAttenuationMask ${ITK_LIBRARIES})
 
@@ -300,6 +306,9 @@ target_link_libraries(SmoothDisplacementField ${ITK_LIBRARIES})
 
 add_executable(GenerateCooccurrenceMeasures GenerateCooccurrenceMeasures.cxx )
 target_link_libraries(GenerateCooccurrenceMeasures ${ITK_LIBRARIES})
+
+add_executable(GenerateCooccurrenceImage GenerateCooccurrenceImage.cxx )
+target_link_libraries(GenerateCooccurrenceImage ${ITK_LIBRARIES})
 
 add_executable(GenerateDeformationFieldMagnitudeImage GenerateDeformationFieldMagnitudeImage.cxx )
 target_link_libraries(GenerateDeformationFieldMagnitudeImage ${ITK_LIBRARIES})

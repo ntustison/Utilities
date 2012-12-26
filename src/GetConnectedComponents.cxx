@@ -22,6 +22,7 @@
 #include "itkImageFileReader.h"
 #include "itkImageRegionIterator.h"
 
+#include "itkBinaryThresholdImageFilter.h"
 #include "itkConnectedComponentImageFilter.h"
 #include "itkRelabelComponentImageFilter.h"
 
@@ -31,7 +32,7 @@
 template <unsigned int ImageDimension>
 int GetConnectedComponents(int argc, char* argv[] )
 {
-  typedef int PixelType;
+  typedef unsigned int PixelType;
   typedef itk::Image<PixelType, ImageDimension> ImageType;
 
   typedef itk::ImageFileReader<ImageType> ReaderType;
@@ -73,88 +74,64 @@ int GetConnectedComponents(int argc, char* argv[] )
     writer->SetFileName( argv[3] );
     writer->SetInput( reader->GetOutput() );
     writer->Update();
-
-    return EXIT_SUCCESS;
     }
   else
     {
-    typedef itk::ConnectedComponentImageFilter<ImageType, ImageType> ConnectedComponentType;
-    typename ConnectedComponentType::Pointer filter = ConnectedComponentType::New();
-    filter->SetInput( reader->GetOutput() );
-    filter->Update();
+    typename ImageType::Pointer output = ImageType::New();
+    output->CopyInformation( reader->GetOutput() );
+    output->SetRegions( reader->GetOutput()->GetRequestedRegion() );
+    output->Allocate();
+    output->FillBuffer( 0 );
 
-    relabeler->SetInput( filter->GetOutput() );
+    typedef itk::RelabelComponentImageFilter<ImageType, ImageType> RelabelerType;
+    typename RelabelerType::Pointer relabeler = RelabelerType::New();
+    relabeler->SetInput( reader->GetOutput() );
     relabeler->Update();
-    }
 
+    unsigned int count = 0;
 
-  unsigned int numberOfObjects = relabeler->GetNumberOfObjects();
-  std::cout << "NumberOfObjects: " << numberOfObjects << std::endl;
-  for ( unsigned int i = 1; i <= numberOfObjects; i++ )
-    {
-    std::cout << "  Object[" << i << "] consists of "
-              << relabeler->GetSizeOfObjectsInPixels()[i-1]
-              << std::endl;
-    }
-
-  if( argc > 5 && atoi( argv[5] ) > 1 )
-    {
-    relabeler->Update();
-    itk::ImageRegionIterator<ImageType> It( relabeler->GetOutput(),
-      relabeler->GetOutput()->GetLargestPossibleRegion() );
-    for ( It.GoToBegin(); !It.IsAtEnd(); ++It )
+    for ( unsigned int i = 1; i <= relabeler->GetNumberOfObjects(); i++ )
       {
-      typename ImageType::PixelType label = It.Get();
-      if ( label != 0 && relabeler->GetSizeOfObjectsInPixels()[label-1] < static_cast<unsigned int>( atoi( argv[5] ) ) )
+      typedef itk::BinaryThresholdImageFilter<ImageType, ImageType> ThresholderType;
+      typename ThresholderType::Pointer thresholder = ThresholderType::New();
+      thresholder->SetInput( relabeler->GetOutput() );
+      thresholder->SetLowerThreshold( i );
+      thresholder->SetUpperThreshold( i );
+      thresholder->SetOutsideValue( 0 );
+      thresholder->SetInsideValue( 1 );
+      thresholder->Update();
+
+      typedef itk::ConnectedComponentImageFilter<ImageType, ImageType> ConnectedComponentType;
+      typename ConnectedComponentType::Pointer filter = ConnectedComponentType::New();
+      filter->SetInput( thresholder->GetOutput() );
+      filter->Update();
+
+      typename RelabelerType::Pointer relabeler2 = RelabelerType::New();
+      relabeler2->SetInput( filter->GetOutput() );
+      relabeler2->Update();
+
+      itk::ImageRegionIterator<ImageType> It2( relabeler2->GetOutput(),
+        relabeler2->GetOutput()->GetRequestedRegion() );
+
+      itk::ImageRegionIterator<ImageType> ItO( output, output->GetRequestedRegion() );
+
+      for( It2.GoToBegin(), ItO.GoToBegin(); !It2.IsAtEnd(); ++It2, ++ItO )
         {
-        It.Set( 0 );
-        }
-      }
-    }
-
-  if( argc > 6 )
-    {
-    typename ReaderType::Pointer maskReader = ReaderType::New();
-    maskReader->SetFileName( argv[6] );
-    maskReader->Update();
-
-    std::vector<typename ImageType::PixelType> maskedLabels;
-
-    itk::ImageRegionIterator<ImageType> ItM( maskReader->GetOutput(),
-      maskReader->GetOutput()->GetLargestPossibleRegion() );
-    itk::ImageRegionIterator<ImageType> It( relabeler->GetOutput(),
-      relabeler->GetOutput()->GetLargestPossibleRegion() );
-    for( ItM.GoToBegin(), It.GoToBegin(); !ItM.IsAtEnd(); ++ItM, ++It )
-      {
-      typename ImageType::PixelType label = It.Get();
-      if( ItM.Get() > 0 && label > 0 )
-        {
-        if( std::find( maskedLabels.begin(), maskedLabels.end(), label )
-          == maskedLabels.end() )
+        unsigned int label = It2.Get();
+        if( label != 0 )
           {
-          maskedLabels.push_back( label );
+          ItO.Set( label + count );
           }
         }
+      count += relabeler2->GetNumberOfObjects();
       }
-    for( ItM.GoToBegin(), It.GoToBegin(); !ItM.IsAtEnd(); ++ItM, ++It )
-      {
-      typename ImageType::PixelType label = It.Get();
-      if( label > 0 )
-        {
-        if( std::find( maskedLabels.begin(), maskedLabels.end(), label )
-          != maskedLabels.end() )
-          {
-          It.Set( 0 );
-          }
-        }
-      }
-    }
 
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-  typename WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( argv[3] );
-  writer->SetInput( relabeler->GetOutput() );
-  writer->Update();
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetFileName( argv[3] );
+    writer->SetInput( output );
+    writer->Update();
+    }
 
   return 0;
 }
@@ -165,10 +142,7 @@ int main( int argc, char *argv[] )
     {
     std::cerr << "Usage: " << argv[0] << " imageDimension "
               << "inputImage outputImage [relabelOnly] "
-              << "[smallestAllowableSize] [maskImage]" << std::endl;
-    std::cerr << "The [maskImage] option functions as follows.  After calculating "
-              << "the connected component image, any label in the masked region is "
-              << "removed." << std::endl;
+              << std::endl;
     exit( 1 );
     }
 
