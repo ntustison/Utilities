@@ -219,6 +219,9 @@ target_link_libraries(CreateRidgeMap ${ITK_LIBRARIES})
 add_executable(CreateImage CreateImage.cxx )
 target_link_libraries(CreateImage ${ITK_LIBRARIES})
 
+add_executable(CreateVirtualCT CreateVirtualCT.cxx )
+target_link_libraries(CreateVirtualCT ${ITK_LIBRARIES})
+
 add_executable(CreatePCAImageDecomposition CreatePCAImageDecomposition.cxx )
 target_link_libraries(CreatePCAImageDecomposition ${ITK_LIBRARIES})
 

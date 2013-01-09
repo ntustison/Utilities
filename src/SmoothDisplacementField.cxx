@@ -164,12 +164,6 @@ int SmoothDisplacementField( int argc, char *argv[] )
     {
     typedef itk::DisplacementFieldToBSplineImageFilter<DisplacementFieldType, DisplacementFieldType> BSplineFilterType;
 
-    typename BSplineFilterType::ArrayType ncps;
-    for( unsigned int d = 0; d < ImageDimension; d++ )
-      {
-      ncps[d] = var[d];
-      }
-
     unsigned int numberOfLevels = 1;
     if( argc > 5 )
       {
@@ -182,12 +176,27 @@ int SmoothDisplacementField( int argc, char *argv[] )
       splineOrder = atoi( argv[6] );
       }
 
+    typename BSplineFilterType::ArrayType ncps;
+    for( unsigned int d = 0; d < ImageDimension; d++ )
+      {
+      ncps[d] = var[d] + splineOrder;
+      }
+
     typename BSplineFilterType::Pointer bspliner = BSplineFilterType::New();
     bspliner->SetDisplacementField( field );
     bspliner->SetNumberOfControlPoints( ncps );
     bspliner->SetSplineOrder( splineOrder );
     bspliner->SetNumberOfFittingLevels( numberOfLevels );
     bspliner->SetEnforceStationaryBoundary( true );
+    if( argc > 7 )
+      {
+      typedef itk::ImageFileReader<typename BSplineFilterType::RealImageType> ConfidenceImageReaderType;
+      typename ConfidenceImageReaderType::Pointer cReader = ConfidenceImageReaderType::New();
+      cReader->SetFileName( argv[7] );
+      cReader->Update();
+
+      bspliner->SetConfidenceImage( cReader->GetOutput() );
+      }
     bspliner->SetEstimateInverse( false );
 
     itk::TimeProbe timer;
@@ -256,7 +265,7 @@ int main( int argc, char *argv[] )
   if ( argc < 5 )
     {
     std::cout << argv[0] << " imageDimension inputField outputField variance_or_mesh_size_base_level "
-              << "[numberOfevels=1] [splineOrder=3]" << std::endl;
+              << "[numberOfevels=1] [splineOrder=3] [confidenceImage]" << std::endl;
     exit( 0 );
     }
 
