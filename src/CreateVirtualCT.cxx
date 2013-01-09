@@ -68,12 +68,18 @@ int DrawLines( int argc, char *argv[] )
   typedef itk::ImageFileReader<ImageType> ReaderType;
   typename ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName( argv[2] );
-  reader->Update();
+
+  typename ImageType::Pointer mri = reader->GetOutput();
+  mri->Update();
+  mri->DisconnectPipeline();
 
   typedef itk::ImageFileReader<LabelImageType> LabelReaderType;
   typename LabelReaderType::Pointer labelReader = LabelReaderType::New();
   labelReader->SetFileName( argv[3] );
-  labelReader->Update();
+
+  typename LabelImageType::Pointer seg = labelReader->GetOutput();
+  seg->Update();
+  seg->DisconnectPipeline();
 
   typename ImageType::IndexType targetIndex;
 
@@ -82,7 +88,7 @@ int DrawLines( int argc, char *argv[] )
   float N = 0.0;
 
   itk::ImageRegionIteratorWithIndex<ImageType> It(
-    reader->GetOutput(), reader->GetOutput()->GetLargestPossibleRegion() );
+    mri, mri->GetLargestPossibleRegion() );
   for( It.GoToBegin(); !It.IsAtEnd(); ++It )
     {
     typename ImageType::IndexType index = It.GetIndex();
@@ -104,12 +110,17 @@ int DrawLines( int argc, char *argv[] )
     }
   std::cout << "Target index = " << targetIndex << std::endl;
 
-
   typename ImageType::Pointer output = ImageType::New();
-  output->CopyInformation( reader->GetOutput() );
-  output->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
+  output->CopyInformation( mri );
+  output->SetRegions( mri->GetLargestPossibleRegion() );
   output->Allocate();
   output->FillBuffer( 0 );
+
+  typename ImageType::Pointer outputCount = ImageType::New();
+  outputCount->CopyInformation( mri );
+  outputCount->SetRegions( mri->GetLargestPossibleRegion() );
+  outputCount->Allocate();
+  outputCount->FillBuffer( 0 );
 
   typedef itk::BresenhamLine<ImageDimension> LinerType;
   LinerType liner;
@@ -117,7 +128,7 @@ int DrawLines( int argc, char *argv[] )
   typedef typename LinerType::OffsetType OffsetType;
   typedef typename LinerType::IndexType IndexType;
 
-  typename ImageType::SizeType size = reader->GetOutput()->GetLargestPossibleRegion().GetSize();
+  typename ImageType::SizeType size = mri->GetLargestPossibleRegion().GetSize();
 
   unsigned long maxLength = 0;
   for( unsigned int d = 0; d < ImageDimension; d++ )
@@ -127,7 +138,7 @@ int DrawLines( int argc, char *argv[] )
   maxLength = static_cast<unsigned long>( vcl_sqrt( maxLength ) );
 
   itk::ImageRegionIteratorWithIndex<LabelImageType> ItL(
-    labelReader->GetOutput(), labelReader->GetOutput()->GetLargestPossibleRegion() );
+    seg, seg->GetLargestPossibleRegion() );
   for( ItL.GoToBegin(); !ItL.IsAtEnd(); ++ItL )
     {
     if( ItL.Get() == 1 )
@@ -155,18 +166,18 @@ int DrawLines( int argc, char *argv[] )
 
       for( it = offsets.begin(); it != offsets.end(); ++it )
         {
-        if( begOffsetIndex == 0 && labelReader->GetOutput()->GetLargestPossibleRegion().IsInside( currentIndex ) == 3 )
+        if( begOffsetIndex == 0 && seg->GetPixel( currentIndex ) == 3 )
           {
           begOffsetIndex = it - offsets.begin();
           begIndex = currentIndex;
           }
-        if( !labelReader->GetOutput()->GetLargestPossibleRegion().IsInside( currentIndex ) )
+        if( !seg->GetLargestPossibleRegion().IsInside( currentIndex ) )
           {
           break;
           }
         if( startIndex == currentIndex && begOffsetIndex != 0 )
           {
-          if( labelReader->GetOutput()->GetPixel( currentIndex + offsets[it - offsets.begin() + 1] ) == 0 )
+          if( seg->GetPixel( targetIndex + offsets[it - offsets.begin() + 1] ) == 0 )
             {
             isFound = true;
             endOffsetIndex = it - offsets.begin();
@@ -177,28 +188,124 @@ int DrawLines( int argc, char *argv[] )
         currentIndex = targetIndex + *it;
         }
 
-      // Debug
-      if( isFound )
+      if( !isFound )
         {
-        output->SetPixel( begIndex, 1 );
-        output->SetPixel( endIndex, 2 );
+        continue;
         }
 
-      // check to see if we're on the outer boundary
+      // Calculate virtual total thickness, Y
+      // Y_CT = 1.62396 + 0.55682 * X_T1
 
-//         if( offsetIndex > offsets.size()
+      typename ImageType::PointType begPoint;
+      typename ImageType::PointType endPoint;
 
+      output->TransformIndexToPhysicalPoint( begIndex, begPoint );
+      output->TransformIndexToPhysicalPoint( endIndex, endPoint );
 
+      float X_T1 = begPoint.EuclideanDistanceTo( endPoint );
+      float Y_CT = 1.62396 + 0.55682 * X_T1;
 
+      unsigned int minBegOffsetIndex = begOffsetIndex;
+      unsigned int minEndOffsetIndex = endOffsetIndex;
+      float minDistanceDifference = vnl_math_abs( X_T1 - Y_CT );
+      for( unsigned int t = 1; t <= 10; t++ )
+        {
+        typename ImageType::PointType begPointPre;
+        output->TransformIndexToPhysicalPoint( targetIndex + offsets[begOffsetIndex-t], begPointPre );
+        typename ImageType::PointType endPointPost;
+        output->TransformIndexToPhysicalPoint( targetIndex + offsets[endOffsetIndex+t-1], endPointPost );
+
+        float distanceDifference = vnl_math_abs( Y_CT - begPointPre.EuclideanDistanceTo( endPointPost ) );
+        if( distanceDifference < minDistanceDifference )
+          {
+          minDistanceDifference = distanceDifference;
+          minBegOffsetIndex = begOffsetIndex - t;
+          minEndOffsetIndex = endOffsetIndex + t - 1;
+          }
+
+        output->TransformIndexToPhysicalPoint( targetIndex + offsets[endOffsetIndex+t], endPointPost );
+        distanceDifference = vnl_math_abs( Y_CT - begPointPre.EuclideanDistanceTo( endPointPost ) );
+        if( distanceDifference < minDistanceDifference )
+          {
+          minDistanceDifference = distanceDifference;
+          minBegOffsetIndex = begOffsetIndex - t;
+          minEndOffsetIndex = endOffsetIndex + t;
+          }
+        }
+
+      float Y_CT_INNER = 0.00010 + 0.30800 * X_T1;
+      float Y_CT_MIDDLE = 0.73595 + 0.18319 * X_T1;
+      float Y_CT_OUTER = 0.87618 + 0.06697 * X_T1;
+
+      float Y_totalDistance = Y_CT_INNER + Y_CT_MIDDLE + Y_CT_OUTER;
+
+      float Y_PORTION_INNER = Y_CT_INNER / Y_totalDistance;
+      float Y_PORTION_MIDDLE = Y_CT_MIDDLE / Y_totalDistance;
+      float Y_PORTION_OUTER = Y_CT_OUTER / Y_totalDistance;
+
+      unsigned int numberOfOffsets = minEndOffsetIndex - minBegOffsetIndex + 1;
+
+      unsigned int numberOfInnerOffsets = static_cast<unsigned int>( Y_PORTION_INNER * ( numberOfOffsets ) + 0.5 );
+      unsigned int numberOfOuterOffsets = static_cast<unsigned int>( Y_PORTION_OUTER * ( numberOfOffsets ) + 0.5 );
+
+      unsigned int numberOfMiddleOffsets = 0;
+      if( numberOfOffsets > ( numberOfInnerOffsets + numberOfOuterOffsets ) )
+        {
+        numberOfMiddleOffsets = numberOfOffsets - ( numberOfInnerOffsets + numberOfOuterOffsets );
+        }
+
+      float averageMR = 0.0;
+      for( unsigned int n = 0; n < numberOfOffsets; n++ )
+        {
+        averageMR += mri->GetPixel( targetIndex + offsets[minBegOffsetIndex + n] );
+        }
+      averageMR /= static_cast<float>( numberOfOffsets );
+
+      float densityCT = 1528.719 - 29.072 * vcl_sqrt( averageMR );
+
+      float densityCT_INNER = ( 1.0 - Y_PORTION_INNER ) * densityCT;
+      float densityCT_MIDDLE = ( 1.0 - Y_PORTION_MIDDLE ) * densityCT;
+      float densityCT_OUTER = ( 1.0 - Y_PORTION_OUTER ) * densityCT;
+
+      for( unsigned int n = 0; n < numberOfOffsets; n++ )
+        {
+        typename ImageType::IndexType index1 = targetIndex + offsets[minBegOffsetIndex + n];
+
+        float outputValue = output->GetPixel( index1 );
+        float outputCountValue = outputCount->GetPixel( index1 );
+        outputCount->SetPixel( index1, outputCountValue + 1.0 );
+        if( n < numberOfInnerOffsets )
+          {
+          output->SetPixel( index1, outputValue + densityCT_INNER / static_cast<float>( numberOfInnerOffsets ) );
+          }
+        else if( n >= numberOfInnerOffsets && n < numberOfInnerOffsets + numberOfMiddleOffsets )
+          {
+          output->SetPixel( index1, outputValue + densityCT_MIDDLE / static_cast<float>( numberOfMiddleOffsets ) );
+          }
+        else // if( n >= numberOfInnerOffsets + numberOfMiddleOffsets && n < numberOfOuterOffsets )
+          {
+          output->SetPixel( index1, outputValue + densityCT_OUTER / static_cast<float>( numberOfOuterOffsets ) );
+          }
+        }
+
+      // Debug
+//       if( isFound )
+//         {
+//         output->SetPixel( targetIndex + offsets[minBegOffsetIndex], 1 );
+//         output->SetPixel( targetIndex + offsets[minEndOffsetIndex], 2 );
+//         }
       }
     }
 
-
-
-
-
-
-
+  itk::ImageRegionIterator<ImageType> ItO( output, output->GetLargestPossibleRegion() );
+  itk::ImageRegionIterator<ImageType> ItC( outputCount, outputCount->GetLargestPossibleRegion() );
+  for( ItO.GoToBegin(), ItC.GoToBegin(); !ItO.IsAtEnd(); ++ItO, ++ItC )
+    {
+    if( ItC.Get() > 0 )
+      {
+      ItO.Set( ItO.Get() / ItC.Get() );
+      }
+    }
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
