@@ -119,16 +119,16 @@ int CreateSampledBSplineSurface( int argc, char *argv[] )
   for( ItB.GoToBegin(); !ItB.IsAtEnd(); ++ItB )
     {
     typename ImageType::IndexType index;
-    int count = 0;
+    unsigned int count = 0;
     for( unsigned int d = 0; d < ImageDimension; d++ )
       {
       if( d != whichAxis )
         {
-        index[count++] = ItB.GetIndex()[d];
+        index[d] = ItB.GetIndex()[count++];
         }
       else
         {
-        index[count++] = static_cast<long>( vcl_floor( ItB.Get()[0] + averageHeight + 0.5 ) );
+        index[d] = static_cast<long>( vcl_floor( ItB.Get()[0] + averageHeight + 0.5 ) );
         }
       }
     labelImage->SetPixel( index, 1 );
@@ -159,7 +159,6 @@ int CreateSampledBSplineSurface( int argc, char *argv[] )
       }
     ItR.NextLine();
     }
-
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
