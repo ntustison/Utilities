@@ -276,15 +276,15 @@ int DrawLines( int argc, char *argv[] )
         outputCount->SetPixel( index1, outputCountValue + 1.0 );
         if( n < numberOfInnerOffsets )
           {
-          output->SetPixel( index1, outputValue + densityCT_INNER / static_cast<float>( numberOfInnerOffsets ) );
+          output->SetPixel( index1, outputValue + densityCT_INNER );
           }
         else if( n >= numberOfInnerOffsets && n < numberOfInnerOffsets + numberOfMiddleOffsets )
           {
-          output->SetPixel( index1, outputValue + densityCT_MIDDLE / static_cast<float>( numberOfMiddleOffsets ) );
+          output->SetPixel( index1, outputValue + densityCT_MIDDLE );
           }
         else // if( n >= numberOfInnerOffsets + numberOfMiddleOffsets && n < numberOfOuterOffsets )
           {
-          output->SetPixel( index1, outputValue + densityCT_OUTER / static_cast<float>( numberOfOuterOffsets ) );
+          output->SetPixel( index1, outputValue + densityCT_OUTER );
           }
         }
 

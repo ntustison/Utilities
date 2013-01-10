@@ -219,6 +219,9 @@ target_link_libraries(CreateRidgeMap ${ITK_LIBRARIES})
 add_executable(CreateImage CreateImage.cxx )
 target_link_libraries(CreateImage ${ITK_LIBRARIES})
 
+add_executable(CreateSampledBSplineSurface CreateSampledBSplineSurface.cxx )
+target_link_libraries(CreateSampledBSplineSurface ${ITK_LIBRARIES})
+
 add_executable(CreateVirtualCT CreateVirtualCT.cxx )
 target_link_libraries(CreateVirtualCT ${ITK_LIBRARIES})
 
