@@ -1,5 +1,7 @@
 #include "itkBresenhamLine.h"
+#include "itkDiscreteGaussianImageFilter.h"
 #include "itkImage.h"
+#include "itkImageDuplicator.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
@@ -306,6 +308,60 @@ int DrawLines( int argc, char *argv[] )
       ItO.Set( ItO.Get() / ItC.Get() );
       }
     }
+
+  // Use Poisson diffusion to fill in holes
+
+  typename ImageType::Pointer outputFilled;
+
+  typedef itk::ImageDuplicator<ImageType> DuplicatorType;
+  typename DuplicatorType::Pointer duplicator = DuplicatorType::New();
+  duplicator->SetInputImage( output );
+
+  outputFilled = duplicator->GetOutput();
+  outputFilled->Update();
+  outputFilled->DisconnectPipeline();
+
+  itk::ImageRegionIterator<ImageType> ItF( outputFilled, outputFilled->GetLargestPossibleRegion() );
+
+  float delta = itk::NumericTraits<float>::max();
+
+  unsigned int maxIterations = 20;
+  unsigned int iteration = 0;
+
+  while( iteration++ < maxIterations && delta >= 1e-4 )
+    {
+    std::cout << "iteration " << iteration << ": delta = " << delta << std::endl;
+    typedef itk::DiscreteGaussianImageFilter<ImageType, ImageType> SmoothingFilterType;
+    typename SmoothingFilterType::Pointer smoothingFilter = SmoothingFilterType::New();
+
+    smoothingFilter->SetUseImageSpacing( false );
+    smoothingFilter->SetVariance( 1.0 );
+    smoothingFilter->SetMaximumError( 0.01f );
+    smoothingFilter->SetInput( outputFilled );
+    smoothingFilter->Update();
+
+    typename ImageType::Pointer smoothImage = smoothingFilter->GetOutput();
+
+    itk::ImageRegionIterator<ImageType> ItS( smoothImage, smoothImage->GetLargestPossibleRegion() );
+
+    delta = 0;
+    N = 0.0;
+    for( ItO.GoToBegin(), ItS.GoToBegin(), ItL.GoToBegin(), ItF.GoToBegin(); !ItO.IsAtEnd(); ++ItO, ++ItS, ++ItL, ++ItF )
+      {
+      if( ItL.Get() != 0 && ItO.Get() == 0.0 )
+        {
+        delta += vnl_math_abs( ItS.Get() - ItF.Get() );
+        ItF.Set( ItS.Get() );
+        N++;
+        }
+      else
+        {
+        ItF.Set( ItO.Get() );
+        }
+      }
+    delta /= N;
+    }
+
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
