@@ -325,7 +325,7 @@ int DrawLines( int argc, char *argv[] )
 
   float delta = itk::NumericTraits<float>::max();
 
-  unsigned int maxIterations = 20;
+  unsigned int maxIterations = 100;
   unsigned int iteration = 0;
 
   while( iteration++ < maxIterations && delta >= 1e-4 )
@@ -334,7 +334,7 @@ int DrawLines( int argc, char *argv[] )
     typedef itk::DiscreteGaussianImageFilter<ImageType, ImageType> SmoothingFilterType;
     typename SmoothingFilterType::Pointer smoothingFilter = SmoothingFilterType::New();
 
-    smoothingFilter->SetUseImageSpacing( false );
+    smoothingFilter->SetUseImageSpacing( true );
     smoothingFilter->SetVariance( 1.0 );
     smoothingFilter->SetMaximumError( 0.01f );
     smoothingFilter->SetInput( outputFilled );
