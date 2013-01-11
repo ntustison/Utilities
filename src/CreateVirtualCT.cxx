@@ -328,7 +328,7 @@ int DrawLines( int argc, char *argv[] )
   unsigned int maxIterations = 100;
   unsigned int iteration = 0;
 
-  while( iteration++ < maxIterations && delta >= 1e-4 )
+  while( iteration++ < maxIterations && delta >= 1.0e-4 )
     {
     std::cout << "iteration " << iteration << ": delta = " << delta << std::endl;
     typedef itk::DiscreteGaussianImageFilter<ImageType, ImageType> SmoothingFilterType;
@@ -366,7 +366,7 @@ int DrawLines( int argc, char *argv[] )
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( argv[4] );
-  writer->SetInput( output );
+  writer->SetInput( outputFilled );
   writer->Update();
 
   return EXIT_SUCCESS;
