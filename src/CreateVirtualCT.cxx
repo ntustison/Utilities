@@ -316,21 +316,20 @@ int DrawLines( int argc, char *argv[] )
   typedef itk::ImageDuplicator<ImageType> DuplicatorType;
   typename DuplicatorType::Pointer duplicator = DuplicatorType::New();
   duplicator->SetInputImage( output );
+  duplicator->Update();
 
   outputFilled = duplicator->GetOutput();
-  outputFilled->Update();
-  outputFilled->DisconnectPipeline();
 
   itk::ImageRegionIterator<ImageType> ItF( outputFilled, outputFilled->GetLargestPossibleRegion() );
 
   float delta = itk::NumericTraits<float>::max();
 
-  unsigned int maxIterations = 100;
+  unsigned int maxIterations = 20;
   unsigned int iteration = 0;
 
-  while( iteration++ < maxIterations && delta >= 1.0e-4 )
+  while( iteration++ < maxIterations && delta >= 1.0 )
     {
-    std::cout << "iteration " << iteration << ": delta = " << delta << std::endl;
+    std::cout << "    iteration " << iteration << ": delta = " << delta << std::endl;
     typedef itk::DiscreteGaussianImageFilter<ImageType, ImageType> SmoothingFilterType;
     typename SmoothingFilterType::Pointer smoothingFilter = SmoothingFilterType::New();
 
