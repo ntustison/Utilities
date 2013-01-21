@@ -222,6 +222,9 @@ target_link_libraries(CreateImage ${ITK_LIBRARIES})
 add_executable(CreateSampledBSplineSurface CreateSampledBSplineSurface.cxx )
 target_link_libraries(CreateSampledBSplineSurface ${ITK_LIBRARIES})
 
+add_executable(Check3TissueLabeling Check3TissueLabeling.cxx )
+target_link_libraries(Check3TissueLabeling ${ITK_LIBRARIES})
+
 add_executable(CreateVirtualCT CreateVirtualCT.cxx )
 target_link_libraries(CreateVirtualCT ${ITK_LIBRARIES})
 
