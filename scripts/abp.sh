@@ -70,7 +70,10 @@ Required arguments:
      -o:  OutputPrefix                          The following images are created using the specified prefix:
                                                   * ${OUTPUT_PREFIX}N4Corrected.${OUTPUT_SUFFIX}
                                                   * ${OUTPUT_PREFIX}ExtractedBrain.${OUTPUT_SUFFIX}
-                                                  * ${OUTPUT_PREFIX}3TissueBrainSegmentation.${OUTPUT_SUFFIX}
+                                                  * ${OUTPUT_PREFIX}BrainSegmentation.${OUTPUT_SUFFIX}
+                                                  * ${OUTPUT_PREFIX}BrainSegmentationPosteriors1.${OUTPUT_SUFFIX}  CSF
+                                                  * ${OUTPUT_PREFIX}BrainSegmentationPosteriors2.${OUTPUT_SUFFIX}  GM
+                                                  * ${OUTPUT_PREFIX}BrainSegmentationPosteriors3.${OUTPUT_SUFFIX}  WM
                                                   * ${OUTPUT_PREFIX}CorticalThickness.${OUTPUT_SUFFIX}
 
 Optional arguments:
@@ -80,10 +83,7 @@ Optional arguments:
      -s:  image file suffix                     Any of the standard ITK IO formats e.g. nrrd, nii.gz (default), mhd
      -t:  template for t1 registration
      -k:  keep temporary files                  Keep brain extraction/segmentation warps, etc (default = false).
-     -w:  white matter label                    white matter label for segmentation (default = 3).
-     -g:  gray matter label                     cortical gray matter label for segmentation (default = 2)
-     -i:  max iterations for registration       ANTS registration max iterations (default = 50x100x20)
-
+     -i:  max iterations for registration       ANTS registration max iterations (default = 100x100x70x20)
 
 USAGE
     exit 1
@@ -100,8 +100,6 @@ echoParameters() {
       extraction prior        = ${EXTRACTION_PRIOR}
       segmentation template   = ${SEGMENTATION_TEMPLATE}
       segmentation prior      = ${SEGMENTATION_PRIOR}
-      gray matter label       = ${GRAY_MATTER_LABEL}
-      white matter label      = ${WHITE_MATTER_LABEL}
       output prefix           = ${OUTPUT_PREFIX}
       output image suffix     = ${OUTPUT_SUFFIX}
       registration template   = ${REGISTRATION_TEMPLATE}
@@ -182,6 +180,7 @@ SEGMENTATION_TEMPLATE=""
 SEGMENTATION_PRIOR=""
 WHITE_MATTER_LABEL=3
 GRAY_MATTER_LABEL=2
+CSF_MATTER_LABEL=1
 
 ################################################################################
 #
@@ -229,7 +228,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:d:e:f:g:h:i:k:l:m:p:o:s:t:v:w:" OPT
+  while getopts "a:d:e:f:h:i:k:l:m:p:o:s:t:v:" OPT
     do
       case $OPT in
           a) #anatomical t1 image
@@ -248,9 +247,6 @@ else
        ;;
           f) #brain extraction registration mask
        EXTRACTION_REGISTRATION_MASK=$OPTARG
-       ;;
-          g) #white matter label
-       GRAY_MATTER_LABEL=$OPTARG
        ;;
           h) #help
        Usage >&2
@@ -279,9 +275,6 @@ else
        ;;
           t) #template registration image
        REGISTRATION_TEMPLATE=$OPTARG
-       ;;
-          w) #white matter label
-       WHITE_MATTER_LABEL=$OPTARG
        ;;
           *) # getopts issues an error message
        echo "ERROR:  unrecognized option -$OPT $OPTARG"
@@ -399,7 +392,7 @@ BRAIN_EXTRACTION_OUTPUT=${OUTPUT_PREFIX}BrainExtraction
 EXTRACTION_WARP_OUTPUT_PREFIX=${BRAIN_EXTRACTION_OUTPUT}Prior
 EXTRACTION_WARP=${EXTRACTION_WARP_OUTPUT_PREFIX}1Warp.nii.gz
 EXTRACTION_INVERSE_WARP=${EXTRACTION_WARP_OUTPUT_PREFIX}1InverseWarp.nii.gz
-EXTRACTION_MATRIX_OFFSET=${EXTRACTION_WARP_OUTPUT_PREFIX}0GenericAffine.mat
+EXTRACTION_GENERIC_AFFINE=${EXTRACTION_WARP_OUTPUT_PREFIX}0GenericAffine.mat
 EXTRACTION_MASK_PRIOR_WARPED=${EXTRACTION_WARP_OUTPUT_PREFIX}Warped.${OUTPUT_SUFFIX}
 EXTRACTION_MASK=$BRAIN_EXTRACTION_MASK
 EXTRACTION_SEGMENTATION=${BRAIN_EXTRACTION_OUTPUT}Segmentation.${OUTPUT_SUFFIX}
@@ -451,7 +444,7 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
 
     time_start_brain_extraction=`date +%s`
 
-    TMP_FILES=( $EXTRACTION_MASK_PRIOR_WARPED $EXTRACTION_WARP $EXTRACTION_INVERSE_WARP $EXTRACTION_MATRIX_OFFSET $EXTRACTION_TMP $EXTRACTION_MASK_TMP $EXTRACTION_GM $EXTRACTION_CSF $EXTRACTION_SEGMENTATION $EXTRACTION_INITIAL_AFFINE $EXTRACTION_INITIAL_AFFINE_MOVING $EXTRACTION_INITIAL_AFFINE_FIXED $EXTRACTION_LAPLACIAN $EXTRACTION_TEMPLATE_LAPLACIAN )
+    TMP_FILES=( $EXTRACTION_MASK_PRIOR_WARPED $EXTRACTION_WARP $EXTRACTION_INVERSE_WARP $EXTRACTION_GENERIC_AFFINE $EXTRACTION_TMP $EXTRACTION_MASK_TMP $EXTRACTION_GM $EXTRACTION_CSF $EXTRACTION_SEGMENTATION $EXTRACTION_INITIAL_AFFINE $EXTRACTION_INITIAL_AFFINE_MOVING $EXTRACTION_INITIAL_AFFINE_FIXED $EXTRACTION_LAPLACIAN $EXTRACTION_TEMPLATE_LAPLACIAN )
 
     ## Step 1 ##
     if [[ ! -f ${EXTRACTION_WARP} ]];
@@ -483,8 +476,23 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
       logCmd $exe_brain_extraction_1
       fi
 
+    ## check to see if the output registration transforms exist
+    if [[ ! -f ${EXTRACTION_GENERIC_AFFINE} ]];
+      then
+        echo "The registration component of the extraction step didn't complete properly."
+        echo "The transform file ${EXTRACTION_GENERIC_AFFINE} does not exist."
+        exit 1
+      fi
+
+    if [[ ! -f ${EXTRACTION_INVERSE_WARP} ]];
+      then
+        echo "The registration component of the extraction step didn't complete properly."
+        echo "The transform file ${EXTRACTION_INVERSE_WARP} does not exist."
+        exit 1
+      fi
+
     ## Step 2 ##
-    exe_brain_extraction_2="${WARP} -d ${DIMENSION} -i ${EXTRACTION_PRIOR} -o ${EXTRACTION_MASK_PRIOR_WARPED} -r ${ANATOMICAL_IMAGES[0]} -n Gaussian -t [${EXTRACTION_MATRIX_OFFSET},1] -t ${EXTRACTION_INVERSE_WARP}"
+    exe_brain_extraction_2="${WARP} -d ${DIMENSION} -i ${EXTRACTION_PRIOR} -o ${EXTRACTION_MASK_PRIOR_WARPED} -r ${ANATOMICAL_IMAGES[0]} -n Gaussian -t [${EXTRACTION_GENERIC_AFFINE},1] -t ${EXTRACTION_INVERSE_WARP}"
     logCmd $exe_brain_extraction_2
 
     ## superstep 1b ##
@@ -567,7 +575,7 @@ SEGMENTATION_WARP_OUTPUT_PREFIX=${BRAIN_SEGMENTATION_OUTPUT}Prior
 SEGMENTATION_PRIOR_WARPED=${SEGMENTATION_WARP_OUTPUT_PREFIX}Warped
 SEGMENTATION_WARP=${SEGMENTATION_WARP_OUTPUT_PREFIX}1Warp.nii.gz
 SEGMENTATION_INVERSE_WARP=${SEGMENTATION_WARP_OUTPUT_PREFIX}1InverseWarp.nii.gz
-SEGMENTATION_MATRIX_OFFSET=${SEGMENTATION_WARP_OUTPUT_PREFIX}0GenericAffine.mat
+SEGMENTATION_GENERIC_AFFINE=${SEGMENTATION_WARP_OUTPUT_PREFIX}0GenericAffine.mat
 SEGMENTATION_WHITE_MATTER_MASK=${EXTRACTION_WM}
 SEGMENTATION_BRAIN=${EXTRACTION_BRAIN}
 SEGMENTATION_MASK_DILATED=${BRAIN_SEGMENTATION_OUTPUT}MaskDilated.nii.gz
@@ -631,11 +639,15 @@ for(( j=0; j < $NUMBER_OF_REPS; j++ ))
   done
 GRAY_MATTER_LABEL_FORMAT=${ROOT}${GRAY_MATTER_LABEL}
 
+CSF_LABEL_FORMAT=${ROOT}${CSF_MATTER_LABEL}
+
 SEGMENTATION_PRIOR_WARPED=${SEGMENTATION_PRIOR_WARPED}\%${ROOT}d.${OUTPUT_SUFFIX}
 
 NUMBER_OF_PRIOR_IMAGES=${#WARPED_PRIOR_IMAGE_FILENAMES[*]}
 
 BRAIN_SEGMENTATION_POSTERIORS=${BRAIN_SEGMENTATION_OUTPUT}Posteriors%${FORMAT}d.${OUTPUT_SUFFIX}
+
+POSTERIOR_IMAGE_FILENAMES=( ${BRAIN_SEGMENTATION_OUTPUT}Posteriors${CSF_MATTER_LABEL_FORMAT}.${OUTPUT_SUFFIX} ${BRAIN_SEGMENTATION_OUTPUT}Posteriors${GRAY_MATTER_LABEL_FORMAT}.${OUTPUT_SUFFIX} ${BRAIN_SEGMENTATION_OUTPUT}Posteriors${WHITE_MATTER_LABEL_FORMAT}.${OUTPUT_SUFFIX} )
 
 if [[ ! -f ${BRAIN_SEGMENTATION} ]];
   then
@@ -698,6 +710,21 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
       logCmd $exe_brain_segmentation_1
       fi
 
+    ## check to see if the output registration transforms exist
+    if [[ ! -f ${SEGMENTATION_GENERIC_AFFINE} ]];
+      then
+        echo "The registration component of the segmentation step didn't complete properly."
+        echo "The transform file ${SEGMENTATION_GENERIC_AFFINE} does not exist."
+        exit 1
+      fi
+
+    if [[ ! -f ${SEGMENTATION_WARP} ]];
+      then
+        echo "The registration component of the segmentation step didn't complete properly."
+        echo "The transform file ${SEGMENTATION_WARP} does not exist."
+        exit 1
+      fi
+
     ## Step 2 ##
 
     for (( i = 0; i < ${NUMBER_OF_PRIOR_IMAGES}; i++ ))
@@ -709,7 +736,7 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
             exit 1
           fi
 
-        exe_brain_segmentation_2="${WARP} -d ${DIMENSION} -i ${PRIOR_IMAGE_FILENAMES[$i]} -o ${WARPED_PRIOR_IMAGE_FILENAMES[$i]} -r ${N4_CORRECTED_IMAGES[0]} -n Gaussian  -t ${SEGMENTATION_WARP} -t ${SEGMENTATION_MATRIX_OFFSET}"
+        exe_brain_segmentation_2="${WARP} -d ${DIMENSION} -i ${PRIOR_IMAGE_FILENAMES[$i]} -o ${WARPED_PRIOR_IMAGE_FILENAMES[$i]} -r ${N4_CORRECTED_IMAGES[0]} -n Gaussian  -t ${SEGMENTATION_WARP} -t ${SEGMENTATION_GENERIC_AFFINE}"
         logCmd $exe_brain_segmentation_2
       done
 
@@ -749,7 +776,10 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
         logCmd $exe_brain_segmentation_3
       done
 
-    TMP_FILES=( $SEGMENTATION_WARP $SEGMENTATION_INVERSE_WARP $SEGMENTATION_MATRIX_OFFSET $SEGMENTATION_WHITE_MATTER_MASK $SEGMENTATION_BRAIN ${SEGMENTATION_BRAIN_N4_IMAGES[@]} $SEGMENTATION_MASK_DILATED )
+    ## check for unexpected permutation of segmentation labels
+    logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${BRAIN_SEGMENTATION} Check3TissueLabeling ${WARPED_PRIOR_IMAGE_FILENAMES[@]} ${POSTERIOR_IMAGE_FILENAMES[@]}
+
+    TMP_FILES=( $SEGMENTATION_WARP $SEGMENTATION_INVERSE_WARP $SEGMENTATION_GENERIC_AFFINE $SEGMENTATION_WHITE_MATTER_MASK $SEGMENTATION_BRAIN ${SEGMENTATION_BRAIN_N4_IMAGES[@]} $SEGMENTATION_MASK_DILATED )
     TMP_FILES=( ${TMP_FILES[@]} ${WARPED_PRIOR_IMAGE_FILENAMES[@]} )
 
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
