@@ -40,14 +40,14 @@ Usage:
               -a anatomicalImage.nii.gz
               -e brainExtractionTemplate
               -m brainExtractionProbabilityMask
-              -l brainParcellationTemplate
-              -p brainParcellationProbabilityMask
+              -l brainSegmentationTemplate
+              -p brainSegmentationPriors
               <OPTARGS>
               -o outputPrefix
 
 Example:
 
-  bash $0 -d 3 -i t1.nii.gz -e brainWithSkullTemplate.nii.gz -m brainPrior.nii.gz -l corticalLabels.nii.gz -p corticalLabelPriors.nii.gz -o output
+  bash $0 -d 3 -i t1.nii.gz -e brainWithSkullTemplate.nii.gz -m brainPrior.nii.gz -l segmentationTemplate.nii.gz -p segmentationPriors%d.nii.gz -o output
 
 Required arguments:
 
@@ -63,7 +63,7 @@ Required arguments:
                                                 have brain masks defined, and warped to anatomical template and
                                                 averaged resulting in a probability image.
      -l   Brain segmentation template           Anatomical template for brain segmentation.  E.g. NIREP template
-                                                with labels.
+                                                with labels.  The template must be skull stripped.
      -p   Brain segmentationpriors              Label probability priors corresponding to the image specified
                                                 with the -l option.  Specified using c-style formatting, e.g.
                                                 -p labelsPriors%02d.nii.gz.
