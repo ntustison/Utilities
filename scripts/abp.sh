@@ -84,6 +84,7 @@ Optional arguments:
      -t:  template for t1 registration
      -k:  keep temporary files                  Keep brain extraction/segmentation warps, etc (default = false).
      -i:  max iterations for registration       ANTS registration max iterations (default = 100x100x70x20)
+     -w:  Atropos prior segmentation weight     Atropos spatial prior probabiltiy weight for the segmentation (default = 0)
 
 USAGE
     exit 1
@@ -228,7 +229,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:d:e:f:h:i:k:l:m:p:o:s:t:v:" OPT
+  while getopts "a:d:e:f:h:i:k:l:m:p:o:s:t:v:w:" OPT
     do
       case $OPT in
           a) #anatomical t1 image
@@ -254,6 +255,9 @@ else
        ;;
           i) #max_iterations
        ANTS_MAX_ITERATIONS=$OPTARG
+       ;;
+          i) #atropos prior weight
+       ATROPOS_SEGMENTATION_PRIOR_WEIGHT=$OPTARG
        ;;
           k) #brain segmentation label anatomical image
        KEEP_TMP_IMAGES=$OPTARG
