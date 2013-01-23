@@ -256,7 +256,7 @@ else
           i) #max_iterations
        ANTS_MAX_ITERATIONS=$OPTARG
        ;;
-          i) #atropos prior weight
+          w) #atropos prior weight
        ATROPOS_SEGMENTATION_PRIOR_WEIGHT=$OPTARG
        ;;
           k) #brain segmentation label anatomical image
