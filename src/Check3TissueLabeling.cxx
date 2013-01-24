@@ -52,6 +52,8 @@ int main( int argc, char* argv[] )
     posteriors[d]->DisconnectPipeline();
     }
 
+  double means[3] = { 0.0 };
+
   LabelType movingLabels[3];
   LabelType fixedLabels[3];
   for( unsigned int d = 0; d < 3; d++ )
@@ -65,6 +67,7 @@ int main( int argc, char* argv[] )
     LabelType maxLabel = 1;
     for( LabelType l = 2; l <= 3; l++ )
       {
+
       if( stats->GetMean( l ) > stats->GetMean( maxLabel ) )
         {
         maxLabel = l;
@@ -77,9 +80,12 @@ int main( int argc, char* argv[] )
   for( unsigned int d = 0; d < 3; d++ )
     {
     std::cout << fixedLabels[d] << " -> " << movingLabels[d] << std::endl;
+    }
 
+  for( LabelType l = 1; l <= 3; l++ )
+    {
     bool foundLabel = false;
-    for( LabelType l = 1; l <= 3; l++ )
+    for( unsigned int d = 0; d < 3; d++ )
       {
       if( movingLabels[d] == l )
         {
@@ -92,7 +98,6 @@ int main( int argc, char* argv[] )
       return EXIT_FAILURE;
       }
     }
-
 
   bool writeSegmentationImage = false;
   for( unsigned int d = 0; d < 3; d++ )
