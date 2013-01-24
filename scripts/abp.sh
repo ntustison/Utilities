@@ -659,7 +659,6 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
         logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${EXTRACTION_MASK} MD ${EXTRACTION_MASK} 5
         logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${EXTRACTION_MASK} ME ${EXTRACTION_MASK} 5
 
-        logCmd ${ANTSPATH}/MultiplyImages ${DIMENSION} ${EXTRACTION_MASK} ${N4_CORRECTED_IMAGES[0]} ${EXTRACTION_BRAIN}
       fi
 
     if [[ ! -f ${EXTRACTION_WM} ]];
@@ -675,6 +674,8 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
 
         logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${EXTRACTION_SEGMENTATION} ${EXTRACTION_WM} 3 3 1 0
       fi
+
+    logCmd ${ANTSPATH}/MultiplyImages ${DIMENSION} ${EXTRACTION_MASK} ${N4_CORRECTED_IMAGES[0]} ${EXTRACTION_BRAIN}
 
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
       then
