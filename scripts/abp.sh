@@ -622,10 +622,6 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
         logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${EXTRACTION_MASK} GetLargestComponent ${EXTRACTION_MASK}
 
         ## superstep 6 ##
-      fi
-
-    if [[ ! -f ${EXTRACTION_WM} ]];
-      then
         ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE='';
         for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
           do
@@ -664,6 +660,20 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
         logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${EXTRACTION_MASK} ME ${EXTRACTION_MASK} 5
 
         logCmd ${ANTSPATH}/MultiplyImages ${DIMENSION} ${EXTRACTION_MASK} ${N4_CORRECTED_IMAGES[0]} ${EXTRACTION_BRAIN}
+      fi
+
+    if [[ ! -f ${EXTRACTION_WM} ]];
+      then
+        ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE='';
+        for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
+          do
+            ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE="${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -a ${N4_CORRECTED_IMAGES[$i]}";
+          done
+
+        exe_brain_extraction_3="${ATROPOS} -d ${DIMENSION} -o ${EXTRACTION_SEGMENTATION} ${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -x ${EXTRACTION_MASK} -i ${ATROPOS_BRAIN_EXTRACTION_INITIALIZATION} -c ${ATROPOS_BRAIN_EXTRACTION_CONVERGENCE} -m ${ATROPOS_BRAIN_EXTRACTION_MRF} -k ${ATROPOS_BRAIN_EXTRACTION_LIKELIHOOD}"
+        logCmd $exe_brain_extraction_3
+
+        logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${EXTRACTION_SEGMENTATION} ${EXTRACTION_WM} 3 3 1 0
       fi
 
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
