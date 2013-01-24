@@ -751,7 +751,7 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
         logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_MASK_DILATED} MD ${EXTRACTION_MASK} 20
 
         basecall = ''
-        if [[ $INPUT_TEMPLATES_ARE_THE_SAME -eq 1 ]];
+        if [[ $INPUT_TEMPLATES_ARE_THE_SAME -eq 1 && -f ${EXTRACTION_AFFINE} ]];
           then
             basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${SEGMENTATION_WARP_OUTPUT_PREFIX} -r [${EXTRACTION_AFFINE},1] -z 1"
           else
@@ -841,11 +841,10 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
 
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
       then
-
-      for f in ${TMP_FILES[@]}
-        do
-          logCmd rm $f
-        done
+        for f in ${TMP_FILES[@]}
+          do
+            logCmd rm $f
+          done
       fi
 
      time_end_brain_segmentation=`date +%s`
@@ -906,12 +905,10 @@ if [[ ! -f ${CORTICAL_THICKNESS_IMAGE} ]];
 
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
       then
-
-      for f in ${TMP_FILES[@]}
-        do
-          logCmd rm $f
-        done
-
+        for f in ${TMP_FILES[@]}
+          do
+            logCmd rm $f
+          done
       fi
 
     if [[ ! -f ${CORTICAL_THICKNESS_IMAGE} ]];
