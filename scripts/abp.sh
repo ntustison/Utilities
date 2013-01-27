@@ -764,7 +764,7 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
       then
         logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_MASK_DILATED} MD ${EXTRACTION_MASK} 20
 
-        basecall = ''
+        basecall=''
         if [[ $INPUT_TEMPLATES_ARE_THE_SAME -eq 1 && -f ${EXTRACTION_AFFINE} ]];
           then
             basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${SEGMENTATION_WARP_OUTPUT_PREFIX} -r [${EXTRACTION_AFFINE},1] -z 1"
