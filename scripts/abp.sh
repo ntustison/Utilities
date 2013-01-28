@@ -1077,7 +1077,7 @@ SEGMENTATION_CONVERGENCE_PLOT=${BRAIN_SEGMENTATION_OUTPUT}Convergence.pdf
 if [[ `type -p RScript` > /dev/null ]];
   then
     echo "library( ggplot2 )" > $SEGMENTATION_CONVERGENCE_SCRIPT
-    echo "conv <- read.csv( \"output2/test0.5BrainSegmentationConvergence.txt\" )" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
+    echo "conv <- read.csv( \"${SEGMENTATION_CONVERGENCE_FILE}\" )" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
     echo "myPlot <- ggplot( conv, aes( x = Iteration, y = Dice ) ) +" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
     echo "  geom_point( data = conv, aes( colour = Iteration ), size = 4 ) +" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
     echo "  scale_y_continuous( breaks = seq( 0.8  , 1, by = 0.025 ), labels = seq( 0.8, 1, by = 0.025 ), limits = c( 0.8, 1 ) ) +" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
