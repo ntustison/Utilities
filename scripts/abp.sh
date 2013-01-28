@@ -85,6 +85,7 @@ Optional arguments:
      -k:  keep temporary files                  Keep brain extraction/segmentation warps, etc (default = false).
      -i:  max iterations for registration       ANTS registration max iterations (default = 100x100x70x20)
      -w:  Atropos prior segmentation weight     Atropos spatial prior probabiltiy weight for the segmentation (default = 0)
+     -n:  number of segmentation iterations     N4 -> Atropos -> N4 iterations during segmentation (default = 3)
 
 USAGE
     exit 1
@@ -209,13 +210,14 @@ N4_BSPLINE_PARAMS="[200]"
 ATROPOS=${ANTSPATH}Atropos
 ATROPOS_BRAIN_EXTRACTION_INITIALIZATION="kmeans[3]"
 ATROPOS_BRAIN_EXTRACTION_LIKELIHOOD="Gaussian"
-ATROPOS_BRAIN_EXTRACTION_CONVERGENCE="[3,0.0001]"
+ATROPOS_BRAIN_EXTRACTION_CONVERGENCE="[3,0.0]"
 
 ATROPOS_SEGMENTATION_INITIALIZATION="PriorProbabilityImages"
 ATROPOS_SEGMENTATION_PRIOR_WEIGHT=0.0
 ATROPOS_SEGMENTATION_LIKELIHOOD="Gaussian"
 ATROPOS_SEGMENTATION_CONVERGENCE="[12,0.0001]"
 ATROPOS_SEGMENTATION_POSTERIOR_FORMULATION="Wittgenstein"
+ATROPOS_SEGMENTATION_NUMBER_OF_ITERATIONS
 
 DIRECT=${ANTSPATH}KellyKapowski
 DIRECT_CONVERGENCE="[45,0.0,10]";
@@ -227,7 +229,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:d:e:f:h:i:k:l:m:p:o:s:t:v:w:" OPT
+  while getopts "a:d:e:f:h:i:k:l:m:n:p:o:s:t:v:w:" OPT
     do
       case $OPT in
           a) #anatomical t1 image
@@ -263,6 +265,9 @@ else
           m) #brain extraction prior probability mask
        EXTRACTION_PRIOR=$OPTARG
        ;;
+          n) #atropos segmentation iterations
+       ATROPOS_SEGMENTATION_NUMBER_OF_ITERATIONS=$OPTARG
+       ;;
           p) #brain segmentation label prior image
        SEGMENTATION_PRIOR=$OPTARG
        ;;
@@ -291,10 +296,10 @@ if [[ DIMENSION -eq 2 ]];
   then
     ATROPOS_BRAIN_EXTRACTION_MRF="[0.2,1x1]"
   fi
-ATROPOS_SEGMENTATION_MRF="[0.11,1x1x1]";
+ATROPOS_SEGMENTATION_MRF="[0.1,1x1x1]";
 if [[ DIMENSION -eq 2 ]];
   then
-    ATROPOS_SEGMENTATION_MRF="[0.11,1x1]"
+    ATROPOS_SEGMENTATION_MRF="[0.1,1x1]"
   fi
 
 
@@ -809,7 +814,7 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
 
     logCmd cp ${SEGMENTATION_WHITE_MATTER_MASK} ${SEGMENTATION_BRAIN_WEIGHT_MASK}
 
-    for(( i = 0; i < 3; i++ ))
+    for(( i = 0; i < ${ATROPOS_SEGMENTATION_NUMBER_OF_ITERATIONS}; i++ ))
       do
         SEGMENTATION_BRAIN_N4_IMAGES=()
         for(( j = 0; j < ${#ANATOMICAL_IMAGES[@]}; j++ ))
