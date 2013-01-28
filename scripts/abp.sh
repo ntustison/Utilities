@@ -459,66 +459,6 @@ CORTICAL_THICKNESS_IMAGE=${OUTPUT_PREFIX}CorticalThickness.${OUTPUT_SUFFIX}
 
 ################################################################################
 #
-# N4 Correction (pre brain extraction)
-#
-################################################################################
-
-echo
-echo "--------------------------------------------------------------------------------------"
-echo " Bias correction of anatomical images (pre brain extraction)"
-echo "   1) pre-process by truncating the image intensities"
-echo "   2) run N4"
-echo "--------------------------------------------------------------------------------------"
-echo
-
-time_start_n4_correction=`date +%s`
-
-TMP_FILES=()
-
-for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
-  do
-    N4_TRUNCATED_IMAGE=${OUTPUT_PREFIX}N4Truncated${i}.${OUTPUT_SUFFIX}
-    N4_CORRECTED_IMAGE=${OUTPUT_PREFIX}N4Corrected${i}.${OUTPUT_SUFFIX}
-
-    TMP_FILES=( ${TMP_FILES[@]} $N4_TRUNCATED_IMAGE )
-    N4_CORRECTED_IMAGES=( ${N4_CORRECTED_IMAGES[@]} ${N4_CORRECTED_IMAGE} )
-
-    if [[ ! -f ${N4_CORRECTED_IMAGE} ]];
-      then
-        logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${N4_TRUNCATED_IMAGE} TruncateImageIntensity ${ANATOMICAL_IMAGES[$i]} 0.025 0.975 256
-
-        exe_n4_correction="${N4} -d ${DIMENSION} -i ${N4_TRUNCATED_IMAGE} -s ${N4_SHRINK_FACTOR_1} -c ${N4_CONVERGENCE_1} -b ${N4_BSPLINE_PARAMS} -o ${N4_CORRECTED_IMAGE}"
-        logCmd $exe_n4_correction
-      fi
-  done
-
-time_end_n4_correction=`date +%s`
-time_elapsed_n4_correction=$((time_end_n4_correction - time_start_n4_correction))
-
-if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
-  then
-    for f in ${TMP_FILES[@]}
-      do
-        logCmd rm $f
-      done
-  fi
-
-  ## check if output was produced
-  if [[ ! -f ${N4_CORRECTED_IMAGES[0]} ]];
-    then
-      echo "Expected output was not produce.  The N4 corrected image doesn't exist:"
-      echo "   ${N4_CORRECTED_IMAGES[0]}"
-      exit 1
-    fi
-
-echo
-echo "--------------------------------------------------------------------------------------"
-echo " Done with N4 correction (pre brain extraction):  $(( time_elapsed_n4_correction / 3600 ))h $(( time_elapsed_n4_correction %3600 / 60 ))m $(( time_elapsed_n4_correction % 60 ))s"
-echo "--------------------------------------------------------------------------------------"
-echo
-
-################################################################################
-#
 # Brain extraction
 #
 ################################################################################
@@ -542,12 +482,72 @@ EXTRACTION_INITIAL_AFFINE_MOVING=${BRAIN_EXTRACTION_OUTPUT}InitialAffineMoving.$
 EXTRACTION_LAPLACIAN=${BRAIN_EXTRACTION_OUTPUT}Laplacian.${OUTPUT_SUFFIX}
 EXTRACTION_TEMPLATE_LAPLACIAN=${BRAIN_EXTRACTION_OUTPUT}TemplateLaplacian.${OUTPUT_SUFFIX}
 
-TMP_FILES=( $EXTRACTION_MASK_PRIOR_WARPED $EXTRACTION_WARP $EXTRACTION_INVERSE_WARP $EXTRACTION_TMP $EXTRACTION_GM $EXTRACTION_CSF $EXTRACTION_SEGMENTATION $EXTRACTION_INITIAL_AFFINE $EXTRACTION_INITIAL_AFFINE_MOVING $EXTRACTION_INITIAL_AFFINE_FIXED $EXTRACTION_LAPLACIAN $EXTRACTION_TEMPLATE_LAPLACIAN )
+TMP_FILES=( $EXTRACTION_MASK_PRIOR_WARPED $EXTRACTION_WARP $EXTRACTION_INVERSE_WARP $EXTRACTION_TMP $EXTRACTION_GM $EXTRACTION_CSF $EXTRACTION_SEGMENTATION $EXTRACTION_INITIAL_AFFINE $EXTRACTION_INITIAL_AFFINE_MOVING $EXTRACTION_INITIAL_AFFINE_FIXED $EXTRACTION_LAPLACIAN $EXTRACTION_TEMPLATE_LAPLACIAN ${N4_CORRECTED_IMAGES[@]} )
 
 if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
   then
 
     time_start_brain_extraction=`date +%s`
+
+    ################################################################################
+    #
+    # N4 Correction (pre brain extraction)
+    #
+    ################################################################################
+
+    echo
+    echo "--------------------------------------------------------------------------------------"
+    echo " Bias correction of anatomical images (pre brain extraction)"
+    echo "   1) pre-process by truncating the image intensities"
+    echo "   2) run N4"
+    echo "--------------------------------------------------------------------------------------"
+    echo
+
+    time_start_n4_correction=`date +%s`
+
+    TMP_FILES=()
+
+    for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
+      do
+        N4_TRUNCATED_IMAGE=${OUTPUT_PREFIX}N4Truncated${i}.${OUTPUT_SUFFIX}
+        N4_CORRECTED_IMAGE=${OUTPUT_PREFIX}N4Corrected${i}.${OUTPUT_SUFFIX}
+
+        TMP_FILES=( ${TMP_FILES[@]} $N4_TRUNCATED_IMAGE )
+        N4_CORRECTED_IMAGES=( ${N4_CORRECTED_IMAGES[@]} ${N4_CORRECTED_IMAGE} )
+
+        if [[ ! -f ${N4_CORRECTED_IMAGE} ]];
+          then
+            logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${N4_TRUNCATED_IMAGE} TruncateImageIntensity ${ANATOMICAL_IMAGES[$i]} 0.025 0.975 256
+
+            exe_n4_correction="${N4} -d ${DIMENSION} -i ${N4_TRUNCATED_IMAGE} -s ${N4_SHRINK_FACTOR_1} -c ${N4_CONVERGENCE_1} -b ${N4_BSPLINE_PARAMS} -o ${N4_CORRECTED_IMAGE}"
+            logCmd $exe_n4_correction
+          fi
+      done
+
+    time_end_n4_correction=`date +%s`
+    time_elapsed_n4_correction=$((time_end_n4_correction - time_start_n4_correction))
+
+    if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
+      then
+        for f in ${TMP_FILES[@]}
+          do
+            logCmd rm $f
+          done
+      fi
+
+      ## check if output was produced
+      if [[ ! -f ${N4_CORRECTED_IMAGES[0]} ]];
+        then
+          echo "Expected output was not produce.  The N4 corrected image doesn't exist:"
+          echo "   ${N4_CORRECTED_IMAGES[0]}"
+          exit 1
+        fi
+
+    echo
+    echo "--------------------------------------------------------------------------------------"
+    echo " Done with N4 correction (pre brain extraction):  $(( time_elapsed_n4_correction / 3600 ))h $(( time_elapsed_n4_correction %3600 / 60 ))m $(( time_elapsed_n4_correction % 60 ))s"
+    echo "--------------------------------------------------------------------------------------"
+    echo
 
     if [[ ! -f ${EXTRACTION_MASK} ]];
       then
@@ -739,12 +739,6 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
         echo "   $SEGMENTATION_TEMPLATE"
         exit 1
       fi
-    if [[ ! -f ${N4_CORRECTED_IMAGES[0]} ]];
-      then
-        echo "The N4 corrected image doesn't exist:"
-        echo "   ${N4_CORRECTED_IMAGES[0]}"
-        exit 1
-      fi
     if [[ ! -f ${SEGMENTATION_BRAIN} ]];
       then
         echo "The extracted brain doesn't exist:"
@@ -807,7 +801,7 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
             exit 1
           fi
 
-        exe_brain_segmentation_2="${WARP} -d ${DIMENSION} -i ${PRIOR_IMAGE_FILENAMES[$i]} -o ${WARPED_PRIOR_IMAGE_FILENAMES[$i]} -r ${N4_CORRECTED_IMAGES[0]} -n Gaussian  -t ${SEGMENTATION_WARP} -t ${SEGMENTATION_GENERIC_AFFINE}"
+        exe_brain_segmentation_2="${WARP} -d ${DIMENSION} -i ${PRIOR_IMAGE_FILENAMES[$i]} -o ${WARPED_PRIOR_IMAGE_FILENAMES[$i]} -r ${ANATOMICAL_IMAGES[0]} -n Gaussian  -t ${SEGMENTATION_WARP} -t ${SEGMENTATION_GENERIC_AFFINE}"
         logCmd $exe_brain_segmentation_2
       done
 
@@ -818,16 +812,16 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
     for(( i = 0; i < 3; i++ ))
       do
         SEGMENTATION_BRAIN_N4_IMAGES=()
-        for(( j = 0; j < ${#N4_CORRECTED_IMAGES[@]}; j++ ))
+        for(( j = 0; j < ${#ANATOMICAL_IMAGES[@]}; j++ ))
           do
             SEGMENTATION_BRAIN_N4_IMAGES=( ${SEGMENTATION_BRAIN_N4_IMAGES[@]} ${BRAIN_SEGMENTATION_OUTPUT}${j}N4.${OUTPUT_SUFFIX} )
 
-            exe_n4_correction="${N4} -d ${DIMENSION} -i ${N4_CORRECTED_IMAGES[$j]} -x ${EXTRACTION_MASK} -w ${SEGMENTATION_BRAIN_WEIGHT_MASK} -s ${N4_SHRINK_FACTOR_2} -c ${N4_CONVERGENCE_2} -b ${N4_BSPLINE_PARAMS} -o ${SEGMENTATION_BRAIN_N4_IMAGES[$j]}"
+            exe_n4_correction="${N4} -d ${DIMENSION} -i ${ANATOMICAL_IMAGES[$j]} -x ${EXTRACTION_MASK} -w ${SEGMENTATION_BRAIN_WEIGHT_MASK} -s ${N4_SHRINK_FACTOR_2} -c ${N4_CONVERGENCE_2} -b ${N4_BSPLINE_PARAMS} -o ${SEGMENTATION_BRAIN_N4_IMAGES[$j]}"
             logCmd $exe_n4_correction
 
-            logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_BRAIN_N4_IMAGES[$j]} m ${SEGMENTATION_BRAIN_N4_IMAGES[$j]} ${EXTRACTION_MASK}
+#             logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_BRAIN_N4_IMAGES[$j]} m ${SEGMENTATION_BRAIN_N4_IMAGES[$j]} ${EXTRACTION_MASK}
             logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_BRAIN_N4_IMAGES[$j]} TruncateImageIntensity ${SEGMENTATION_BRAIN_N4_IMAGES[$j]} 0.025 0.975 256 ${EXTRACTION_MASK}
-            logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_BRAIN_N4_IMAGES[$j]} Normalize ${SEGMENTATION_BRAIN_N4_IMAGES[$j]}
+#             logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_BRAIN_N4_IMAGES[$j]} Normalize ${SEGMENTATION_BRAIN_N4_IMAGES[$j]}
           done
 
         ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE='';
@@ -850,7 +844,7 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
     ## check for unexpected permutation of segmentation labels
     logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${BRAIN_SEGMENTATION} Check3TissueLabeling ${WARPED_PRIOR_IMAGE_FILENAMES[@]} ${POSTERIOR_IMAGE_FILENAMES[@]}
 
-    TMP_FILES=( $EXTRACTION_AFFINE $SEGMENTATION_WARP $SEGMENTATION_INVERSE_WARP $SEGMENTATION_GENERIC_AFFINE $SEGMENTATION_WHITE_MATTER_MASK $SEGMENTATION_BRAIN ${SEGMENTATION_BRAIN_N4_IMAGES[@]} $SEGMENTATION_MASK_DILATED )
+    TMP_FILES=( $EXTRACTION_AFFINE $SEGMENTATION_WARP $SEGMENTATION_INVERSE_WARP $SEGMENTATION_GENERIC_AFFINE $SEGMENTATION_WHITE_MATTER_MASK $SEGMENTATION_BRAIN $SEGMENTATION_MASK_DILATED )
     TMP_FILES=( ${TMP_FILES[@]} ${WARPED_PRIOR_IMAGE_FILENAMES[@]} )
 
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
@@ -969,10 +963,10 @@ if [[ -f ${REGISTRATION_TEMPLATE} ]];
 
         time_start_template_registration=`date +%s`
 
-        basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${REGISTRATION_TEMPLATE_OUTPUT_PREFIX} -r [${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},1] -z 1"
-        stage1="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Rigid[0.1] -f 4x2x1 -s 2x1x0"
-        stage2="-m MI[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Affine[0.1] -f 4x2x1 -s 2x1x0"
-        stage3="-m CC[${REGISTRATION_TEMPLATE},${N4_CORRECTED_IMAGES[0]},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 4x2x1 -s 2x1x0"
+        basecall="${ANTS} -d ${DIMENSION} -u 1 -w [0.025,0.975] -o ${REGISTRATION_TEMPLATE_OUTPUT_PREFIX} -r [${REGISTRATION_TEMPLATE},${SEGMENTATION_BRAIN_N4_IMAGES[0]},1] -z 1"
+        stage1="-m MI[${REGISTRATION_TEMPLATE},${SEGMENTATION_BRAIN_N4_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Rigid[0.1] -f 4x2x1 -s 2x1x0"
+        stage2="-m MI[${REGISTRATION_TEMPLATE},${SEGMENTATION_BRAIN_N4_IMAGES[0]},${ANTS_LINEAR_METRIC_PARAMS}] -c ${ANTS_LINEAR_CONVERGENCE} -t Affine[0.1] -f 4x2x1 -s 2x1x0"
+        stage3="-m CC[${REGISTRATION_TEMPLATE},${SEGMENTATION_BRAIN_N4_IMAGES[0]},1,4] -c [${ANTS_MAX_ITERATIONS},1e-9,15] -t ${ANTS_TRANSFORMATION} -f 4x2x1 -s 2x1x0"
 
         exe_template_registration_1="${basecall} ${stage1} ${stage2} ${stage3}"
 
@@ -981,7 +975,7 @@ if [[ -f ${REGISTRATION_TEMPLATE} ]];
             logCmd $exe_template_registration_1
           fi
 
-        exe_template_registration_2="${WARP} -d ${DIMENSION} -i ${N4_CORRECTED_IMAGES[0]} -o ${REGISTRATION_TEMPLATE_OUTPUT_PREFIX}Warped.${OUTPUT_SUFFIX} -r ${REGISTRATION_TEMPLATE} -n Gaussian -t ${REGISTRATION_TEMPLATE_WARP} -t ${REGISTRATION_TEMPLATE_GENERIC_AFFINE}"
+        exe_template_registration_2="${WARP} -d ${DIMENSION} -i ${SEGMENTATION_BRAIN_N4_IMAGES[0]} -o ${REGISTRATION_TEMPLATE_OUTPUT_PREFIX}Warped.${OUTPUT_SUFFIX} -r ${REGISTRATION_TEMPLATE} -n Gaussian -t ${REGISTRATION_TEMPLATE_WARP} -t ${REGISTRATION_TEMPLATE_GENERIC_AFFINE}"
         logCmd $exe_template_registration_2
 
         if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
