@@ -85,7 +85,7 @@ Optional arguments:
      -k:  keep temporary files                  Keep brain extraction/segmentation warps, etc (default = false).
      -i:  max iterations for registration       ANTS registration max iterations (default = 100x100x70x20)
      -w:  Atropos prior segmentation weight     Atropos spatial prior probabiltiy weight for the segmentation (default = 0)
-     -n:  number of segmentation iterations     N4 -> Atropos -> N4 iterations during segmentation (default = 3)
+     -n:  number of segmentation iterations     N4 -> Atropos -> N4 iterations during segmentation (default = 15)
 
 USAGE
     exit 1
@@ -133,6 +133,9 @@ echoParameters() {
        initialization         = ${ATROPOS_SEGMENTATION_INITIALIZATION}
        posterior formulation  = ${ATROPOS_SEGMENTATION_POSTERIOR_FORMULATION}
        mrf                    = ${ATROPOS_SEGMENTATION_MRF}
+       Max N4->Atropos iters. = ${ATROPOS_SEGMENTATION_NUMBER_OF_ITERATIONS}
+       N4->Atropos threshold  = ${ATROPOS_SEGMENTATION_DICE_THRESHOLD}
+
 
     DiReCT parameters:
       convergence             = ${DIRECT_CONVERGENCE}
@@ -194,7 +197,7 @@ ANTS=${ANTSPATH}antsRegistration
 ANTS_MAX_ITERATIONS="100x100x70x20"
 ANTS_TRANSFORMATION="SyN[0.1,3,0]"
 ANTS_LINEAR_METRIC_PARAMS="1,32,Regular,0.25"
-ANTS_LINEAR_CONVERGENCE="[1000x1000x1000x1000,1e-8,15]"
+ANTS_LINEAR_CONVERGENCE="[1000x500x250x100,1e-8,10]"
 ANTS_METRIC="CC"
 ANTS_METRIC_PARAMS="1,4"
 
@@ -215,9 +218,10 @@ ATROPOS_BRAIN_EXTRACTION_CONVERGENCE="[3,0.0]"
 ATROPOS_SEGMENTATION_INITIALIZATION="PriorProbabilityImages"
 ATROPOS_SEGMENTATION_PRIOR_WEIGHT=0.0
 ATROPOS_SEGMENTATION_LIKELIHOOD="Gaussian"
-ATROPOS_SEGMENTATION_CONVERGENCE="[12,0.0001]"
+ATROPOS_SEGMENTATION_CONVERGENCE="[5,0.0]"
 ATROPOS_SEGMENTATION_POSTERIOR_FORMULATION="Wittgenstein"
-ATROPOS_SEGMENTATION_NUMBER_OF_ITERATIONS
+ATROPOS_SEGMENTATION_NUMBER_OF_ITERATIONS=15
+ATROPOS_SEGMENTATION_DICE_THRESHOLD=0.99
 
 DIRECT=${ANTSPATH}KellyKapowski
 DIRECT_CONVERGENCE="[45,0.0,10]";
@@ -487,7 +491,7 @@ EXTRACTION_INITIAL_AFFINE_MOVING=${BRAIN_EXTRACTION_OUTPUT}InitialAffineMoving.$
 EXTRACTION_LAPLACIAN=${BRAIN_EXTRACTION_OUTPUT}Laplacian.${OUTPUT_SUFFIX}
 EXTRACTION_TEMPLATE_LAPLACIAN=${BRAIN_EXTRACTION_OUTPUT}TemplateLaplacian.${OUTPUT_SUFFIX}
 
-TMP_FILES=( $EXTRACTION_MASK_PRIOR_WARPED $EXTRACTION_WARP $EXTRACTION_INVERSE_WARP $EXTRACTION_TMP $EXTRACTION_GM $EXTRACTION_CSF $EXTRACTION_SEGMENTATION $EXTRACTION_INITIAL_AFFINE $EXTRACTION_INITIAL_AFFINE_MOVING $EXTRACTION_INITIAL_AFFINE_FIXED $EXTRACTION_LAPLACIAN $EXTRACTION_TEMPLATE_LAPLACIAN ${N4_CORRECTED_IMAGES[@]} )
+TMP_FILES=( $EXTRACTION_MASK_PRIOR_WARPED $EXTRACTION_WARP $EXTRACTION_INVERSE_WARP $EXTRACTION_TMP $EXTRACTION_GM $EXTRACTION_CSF $EXTRACTION_SEGMENTATION $EXTRACTION_INITIAL_AFFINE $EXTRACTION_INITIAL_AFFINE_MOVING $EXTRACTION_INITIAL_AFFINE_FIXED $EXTRACTION_LAPLACIAN $EXTRACTION_TEMPLATE_LAPLACIAN )
 
 if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
   then
@@ -510,14 +514,12 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
 
     time_start_n4_correction=`date +%s`
 
-    TMP_FILES=()
-
     for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
       do
         N4_TRUNCATED_IMAGE=${OUTPUT_PREFIX}N4Truncated${i}.${OUTPUT_SUFFIX}
         N4_CORRECTED_IMAGE=${OUTPUT_PREFIX}N4Corrected${i}.${OUTPUT_SUFFIX}
 
-        TMP_FILES=( ${TMP_FILES[@]} $N4_TRUNCATED_IMAGE )
+        TMP_FILES=( ${TMP_FILES[@]} $N4_TRUNCATED_IMAGE $N4_CORRECTED_IMAGE )
         N4_CORRECTED_IMAGES=( ${N4_CORRECTED_IMAGES[@]} ${N4_CORRECTED_IMAGE} )
 
         if [[ ! -f ${N4_CORRECTED_IMAGE} ]];
@@ -532,21 +534,13 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
     time_end_n4_correction=`date +%s`
     time_elapsed_n4_correction=$((time_end_n4_correction - time_start_n4_correction))
 
-    if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
+    ## check if output was produced
+    if [[ ! -f ${N4_CORRECTED_IMAGES[0]} ]];
       then
-        for f in ${TMP_FILES[@]}
-          do
-            logCmd rm $f
-          done
+        echo "Expected output was not produce.  The N4 corrected image doesn't exist:"
+        echo "   ${N4_CORRECTED_IMAGES[0]}"
+        exit 1
       fi
-
-      ## check if output was produced
-      if [[ ! -f ${N4_CORRECTED_IMAGES[0]} ]];
-        then
-          echo "Expected output was not produce.  The N4 corrected image doesn't exist:"
-          echo "   ${N4_CORRECTED_IMAGES[0]}"
-          exit 1
-        fi
 
     echo
     echo "--------------------------------------------------------------------------------------"
@@ -682,14 +676,6 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
 
     logCmd ${ANTSPATH}/MultiplyImages ${DIMENSION} ${EXTRACTION_MASK} ${N4_CORRECTED_IMAGES[0]} ${EXTRACTION_BRAIN}
 
-    if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
-      then
-        for f in ${TMP_FILES[@]}
-          do
-            logCmd rm $f
-          done
-      fi
-
     if [[ ! -f ${EXTRACTION_MASK} ]];
       then
         echo "Expected output was not produced.  The brain mask doesn't exist:"
@@ -707,6 +693,14 @@ if [[ ! -f ${EXTRACTION_MASK} || ! -f ${EXTRACTION_WM} ]];
     echo
   fi
 
+if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
+  then
+    for f in ${TMP_FILES[@]}
+      do
+        logCmd rm $f
+      done
+  fi
+
 ################################################################################
 #
 # Brain segmentation
@@ -721,6 +715,8 @@ SEGMENTATION_BRAIN=${EXTRACTION_BRAIN}
 SEGMENTATION_MASK_DILATED=${BRAIN_SEGMENTATION_OUTPUT}MaskDilated.nii.gz
 SEGMENTATION_BRAIN_N4_IMAGES=()
 SEGMENTATION_BRAIN_WEIGHT_MASK=${BRAIN_SEGMENTATION_OUTPUT}WeightMask.nii.gz
+SEGMENTATION_CONVERGENCE_FILE=${BRAIN_SEGMENTATION_OUTPUT}Convergence.txt
+SEGMENTATION_PREVIOUS_ITERATION_LABELING=${BRAIN_SEGMENTATION_OUTPUT}PreviousIterationSegmentation.${OUTPUT_SUFFIX}
 
 BRAIN_SEGMENTATION_POSTERIORS=${BRAIN_SEGMENTATION_OUTPUT}Posteriors%${FORMAT}d.${OUTPUT_SUFFIX}
 POSTERIOR_IMAGE_FILENAMES=( ${BRAIN_SEGMENTATION_OUTPUT}Posteriors${CSF_MATTER_LABEL_FORMAT}.${OUTPUT_SUFFIX} ${BRAIN_SEGMENTATION_OUTPUT}Posteriors${GRAY_MATTER_LABEL_FORMAT}.${OUTPUT_SUFFIX} ${BRAIN_SEGMENTATION_OUTPUT}Posteriors${WHITE_MATTER_LABEL_FORMAT}.${OUTPUT_SUFFIX} )
@@ -814,6 +810,13 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
 
     logCmd cp ${SEGMENTATION_WHITE_MATTER_MASK} ${SEGMENTATION_BRAIN_WEIGHT_MASK}
 
+    if [[ -f ${SEGMENTATION_CONVERGENCE_FILE} ]];
+      then
+        logCmd rm -f ${SEGMENTATION_CONVERGENCE_FILE}
+      fi
+
+
+    DICE_EXCEEDED_THRESHOLD=0
     for(( i = 0; i < ${ATROPOS_SEGMENTATION_NUMBER_OF_ITERATIONS}; i++ ))
       do
         SEGMENTATION_BRAIN_N4_IMAGES=()
@@ -837,18 +840,48 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
         if [[ $i -eq 0 ]];
           then
             exe_brain_segmentation_3="${ATROPOS} -d ${DIMENSION} -x ${EXTRACTION_MASK}  -c ${ATROPOS_SEGMENTATION_CONVERGENCE} -p ${ATROPOS_SEGMENTATION_POSTERIOR_FORMULATION}[0] ${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -i ${ATROPOS_SEGMENTATION_INITIALIZATION}[${NUMBER_OF_PRIOR_IMAGES},${SEGMENTATION_PRIOR_WARPED},${ATROPOS_SEGMENTATION_PRIOR_WEIGHT}] -k ${ATROPOS_SEGMENTATION_LIKELIHOOD} -m ${ATROPOS_SEGMENTATION_MRF} -o [${BRAIN_SEGMENTATION_OUTPUT}.${OUTPUT_SUFFIX},${BRAIN_SEGMENTATION_POSTERIORS}]"
-          fi
+          else
+            `cp -f ${BRAIN_SEGMENTATION_OUTPUT}.${OUTPUT_SUFFIX} ${SEGMENTATION_PREVIOUS_ITERATION_LABELING}`
+        fi
 
-        SEGMENTATION_BRAIN_WEIGHT_MASK=${BRAIN_SEGMENTATION_OUTPUT}Posteriors${WHITE_MATTER_LABEL_FORMAT}.${OUTPUT_SUFFIX}
+        logCmd cp -f ${BRAIN_SEGMENTATION_OUTPUT}Posteriors${WHITE_MATTER_LABEL_FORMAT}.${OUTPUT_SUFFIX} ${SEGMENTATION_BRAIN_WEIGHT_MASK}
 
         logCmd $exe_brain_segmentation_3
+
+        if [[ $i -gt 0 && -f ${SEGMENTATION_PREVIOUS_ITERATION_LABELING} ]];
+          then
+            output=`${ANTSPATH}LabelOverlapMeasures ${DIMENSION} ${BRAIN_SEGMENTATION_OUTPUT}.${OUTPUT_SUFFIX} ${SEGMENTATION_PREVIOUS_ITERATION_LABELING}`
+
+            overlapMeasures=''
+            count=0
+            while read line;
+              do
+                (( count++ ))
+                if [[ $count == 3 ]];
+                  then
+                    overlapMeasures=( $line )
+                  fi
+              done <<< "$output"
+
+            if [[ ! -f ${SEGMENTATION_CONVERGENCE_FILE} ]];
+              then
+                echo "Iteration,Dice" > ${SEGMENTATION_CONVERGENCE_FILE}
+              fi
+            echo "${i},${overlapMeasures[2]}" >> ${SEGMENTATION_CONVERGENCE_FILE}
+
+          if [[ $( echo "${ATROPOS_SEGMENTATION_DICE_THRESHOLD} < ${overlapMeasures[2]}"|bc ) -eq 1 ]];
+            then
+              DICE_EXCEEDED_THRESHOLD=1
+              break
+            fi
+          fi
       done
 
     ## check for unexpected permutation of segmentation labels
     logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${BRAIN_SEGMENTATION} Check3TissueLabeling ${WARPED_PRIOR_IMAGE_FILENAMES[@]} ${POSTERIOR_IMAGE_FILENAMES[@]}
 
     TMP_FILES=( $EXTRACTION_AFFINE $SEGMENTATION_WARP $SEGMENTATION_INVERSE_WARP $SEGMENTATION_GENERIC_AFFINE $SEGMENTATION_WHITE_MATTER_MASK $SEGMENTATION_BRAIN $SEGMENTATION_MASK_DILATED )
-    TMP_FILES=( ${TMP_FILES[@]} ${WARPED_PRIOR_IMAGE_FILENAMES[@]} )
+    TMP_FILES=( ${TMP_FILES[@]} ${WARPED_PRIOR_IMAGE_FILENAMES[@]} $SEGMENTATION_PREVIOUS_ITERATION_LABELING $EXTRACTION_GENERIC_AFFINE $SEGMENTATION_BRAIN_WEIGHT_MASK)
 
     if [[ $KEEP_TMP_IMAGES = "false" || $KEEP_TMP_IMAGES = "0" ]];
       then
@@ -863,7 +896,12 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
 
      echo
      echo "--------------------------------------------------------------------------------------"
-     echo " Done with brain segmentation:  $(( time_elapsed_brain_segmentation / 3600 ))h $(( time_elapsed_brain_segmentation %3600 / 60 ))m $(( time_elapsed_brain_segmentation % 60 ))s"
+     if [[ DICE_EXCEEDED_THRESHOLD -eq 1 ]];
+       then
+         echo " Done with brain segmentation (Dice exceeded threshold):  $(( time_elapsed_brain_segmentation / 3600 ))h $(( time_elapsed_brain_segmentation %3600 / 60 ))m $(( time_elapsed_brain_segmentation % 60 ))s"
+       else
+         echo " Done with brain segmentation (max. iterations):  $(( time_elapsed_brain_segmentation / 3600 ))h $(( time_elapsed_brain_segmentation %3600 / 60 ))m $(( time_elapsed_brain_segmentation % 60 ))s"
+       fi
      echo "--------------------------------------------------------------------------------------"
      echo
 
@@ -1032,6 +1070,26 @@ echo " Done with ANTs processing pipeline"
 echo " Script executed in $time_elapsed seconds"
 echo " $(( time_elapsed / 3600 ))h $(( time_elapsed %3600 / 60 ))m $(( time_elapsed % 60 ))s"
 echo "--------------------------------------------------------------------------------------"
+
+SEGMENTATION_CONVERGENCE_SCRIPT=${BRAIN_SEGMENTATION_OUTPUT}Convergence.R
+SEGMENTATION_CONVERGENCE_PLOT=${BRAIN_SEGMENTATION_OUTPUT}Convergence.pdf
+
+if [[ `type -p RScript` > /dev/null ]];
+  then
+    echo "library( ggplot2 )" > $SEGMENTATION_CONVERGENCE_SCRIPT
+    echo "conv <- read.csv( \"output2/test0.5BrainSegmentationConvergence.txt\" )" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
+    echo "myPlot <- ggplot( conv, aes( x = Iteration, y = Dice ) ) +" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
+    echo "  geom_point( data = conv, aes( colour = Iteration ), size = 4 ) +" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
+    echo "  scale_y_continuous( breaks = seq( 0.8  , 1, by = 0.025 ), labels = seq( 0.8, 1, by = 0.025 ), limits = c( 0.8, 1 ) ) +" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
+    echo "  theme( legend.position = \"none\" )" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
+    echo "ggsave( filename = \"$SEGMENTATION_CONVERGENCE_PLOT\", plot = myPlot, width = 4, height = 3, units = 'in' )" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
+
+    `RScript $SEGMENTATION_CONVERGENCE_SCRIPT`
+    rm -f $SEGMENTATION_CONVERGENCE_SCRIPT
+  fi
+
+
+
 
 exit 0
 
