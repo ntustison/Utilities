@@ -1088,8 +1088,5 @@ if [[ `type -p RScript` > /dev/null ]];
     rm -f $SEGMENTATION_CONVERGENCE_SCRIPT
   fi
 
-
-
-
 exit 0
 
