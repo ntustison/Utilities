@@ -845,9 +845,9 @@ if [[ ! -f ${BRAIN_SEGMENTATION} ]];
             `cp -f ${BRAIN_SEGMENTATION_OUTPUT}.${OUTPUT_SUFFIX} ${SEGMENTATION_PREVIOUS_ITERATION_LABELING}`
         fi
 
-        logCmd cp -f ${BRAIN_SEGMENTATION_OUTPUT}Posteriors${WHITE_MATTER_LABEL_FORMAT}.${OUTPUT_SUFFIX} ${SEGMENTATION_BRAIN_WEIGHT_MASK}
-
         logCmd $exe_brain_segmentation_3
+
+        logCmd cp -f ${BRAIN_SEGMENTATION_OUTPUT}Posteriors${WHITE_MATTER_LABEL_FORMAT}.${OUTPUT_SUFFIX} ${SEGMENTATION_BRAIN_WEIGHT_MASK}
 
         ## check for unexpected permutation of segmentation labels
         logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${BRAIN_SEGMENTATION} Check3TissueLabeling ${WARPED_PRIOR_IMAGE_FILENAMES[@]} ${POSTERIOR_IMAGE_FILENAMES[@]}
