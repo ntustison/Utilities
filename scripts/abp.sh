@@ -26,8 +26,7 @@ fi
 function Usage {
     cat <<USAGE
 
-This script, apb.sh, performs T1 anatomical brain processing where the following
-steps are currently applied:
+`basename $0` performs T1 anatomical brain processing where the following steps are currently applied:
 
   1. Brain extraction
   2. Brain 3-tissue segmentation
@@ -37,7 +36,7 @@ steps are currently applied:
 Usage:
 
 `basename $0` -d imageDimension
-              -a anatomicalImage.nii.gz
+              -a anatomicalImage
               -e brainExtractionTemplate
               -m brainExtractionProbabilityMask
               -l brainSegmentationTemplate
@@ -51,10 +50,10 @@ Example:
 
 Required arguments:
 
-     -d:  ImageDimension                        2 or 3 (for 2 or 3 dimensional single image)
+     -d:  Image dimension                       2 or 3 (for 2- or 3-dimensional image)
      -a:  Anatomical image                      Structural image, typically T1.  If more than one
                                                 anatomical image is specified, subsequently specified
-                                                images are used during the segmetnation process.  However,
+                                                images are used during the segmentation process.  However,
                                                 only the first image is used in the registration of priors.
                                                 Our suggestion would be to specify the T1 as the first image.
      -e:  Brain extraction template             Anatomical template created using e.g. LPBA40 data set with
@@ -62,12 +61,12 @@ Required arguments:
      -m:  Brain extraction probability mask     Brain probability mask created using e.g. LPBA40 data set which
                                                 have brain masks defined, and warped to anatomical template and
                                                 averaged resulting in a probability image.
-     -l   Brain segmentation template           Anatomical template for brain segmentation.  E.g. NIREP template
+     -l:  Brain segmentation template           Anatomical template for brain segmentation.  E.g. NIREP template
                                                 with labels.  The template must be skull stripped.
-     -p   Brain segmentationpriors              Label probability priors corresponding to the image specified
+     -p:  Brain segmentation priors             Label probability priors corresponding to the image specified
                                                 with the -l option.  Specified using c-style formatting, e.g.
                                                 -p labelsPriors%02d.nii.gz.
-     -o:  OutputPrefix                          The following images are created using the specified prefix:
+     -o:  Output prefix                         The following images are created:
                                                   * ${OUTPUT_PREFIX}N4Corrected.${OUTPUT_SUFFIX}
                                                   * ${OUTPUT_PREFIX}ExtractedBrain.${OUTPUT_SUFFIX}
                                                   * ${OUTPUT_PREFIX}BrainSegmentation.${OUTPUT_SUFFIX}
@@ -84,7 +83,7 @@ Optional arguments:
      -t:  template for t1 registration
      -k:  keep temporary files                  Keep brain extraction/segmentation warps, etc (default = false).
      -i:  max iterations for registration       ANTS registration max iterations (default = 100x100x70x20)
-     -w:  Atropos prior segmentation weight     Atropos spatial prior probabiltiy weight for the segmentation (default = 0)
+     -w:  Atropos prior segmentation weight     Atropos spatial prior probability weight for the segmentation (default = 0)
      -n:  number of segmentation iterations     N4 -> Atropos -> N4 iterations during segmentation (default = 15)
 
 USAGE
@@ -135,7 +134,6 @@ echoParameters() {
        mrf                    = ${ATROPOS_SEGMENTATION_MRF}
        Max N4->Atropos iters. = ${ATROPOS_SEGMENTATION_NUMBER_OF_ITERATIONS}
        N4->Atropos threshold  = ${ATROPOS_SEGMENTATION_DICE_THRESHOLD}
-
 
     DiReCT parameters:
       convergence             = ${DIRECT_CONVERGENCE}
@@ -261,7 +259,7 @@ else
           i) #max_iterations
        ANTS_MAX_ITERATIONS=$OPTARG
        ;;
-          k) #brain segmentation label anatomical image
+          k) #keep tmp images
        KEEP_TMP_IMAGES=$OPTARG
        ;;
           l) #brain segmentation label anatomical image
