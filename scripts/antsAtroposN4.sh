@@ -19,7 +19,7 @@ function Usage {
 Usage:
 
 `basename $0` -d imageDimension
-              -i inputImage
+              -a inputImage
               -x maskImage
               -m n4AtroposIterations
               -n atroposIterations
@@ -35,7 +35,7 @@ Example:
 Required arguments:
 
      -d:  image dimension                       2 or 3 (for 2- or 3-dimensional image)
-     -i:  input image                           Anatomical image, typically T1.  If more than one
+     -a:  input image                           Anatomical image, typically T1.  If more than one
                                                 anatomical image is specified, subsequently specified
                                                 images are used during the segmentation process.
      -x:  mask image                            Mask defining the region of interest.
@@ -43,11 +43,12 @@ Required arguments:
      -n:  max. Atropos iterations               Maximum number of (inner loop) iterations in Atropos.
      -c:  number of segmentation classes        Number of classes defining the segmentation
      -l:  posterior label for N4 weight mask    Which posterior probability image should be used to define the
-                                                N4 weight mask
+                                                N4 weight mask.  Can also specify multiple posteriors in which
+                                                case the chosen posteriors are added.
      -o:  Output prefix                          The following images are created:
                                                   * ${OUTPUT_PREFIX}N4Corrected.${OUTPUT_SUFFIX}
                                                   * ${OUTPUT_PREFIX}Segmentation.${OUTPUT_SUFFIX}
-                                                  * ${OUTPUT_PREFIX}SegmentationPosteriors.${OUTPUT_SUFFIX}  CSF
+                                                  * ${OUTPUT_PREFIX}SegmentationPosteriors.${OUTPUT_SUFFIX}
 
 Optional arguments:
 
@@ -67,7 +68,7 @@ echoParameters() {
     Using apb with the following arguments:
       image dimension         = ${DIMENSION}
       anatomical image        = ${ANATOMICAL_IMAGES[@]}
-      segmentation prior      = ${SEGMENTATION_PRIOR}
+      segmentation priors     = ${ATROPOS_SEGMENTATION_PRIORS}
       output prefix           = ${OUTPUT_PREFIX}
       output image suffix     = ${OUTPUT_SUFFIX}
 
@@ -75,13 +76,12 @@ echoParameters() {
       convergence             = ${N4_CONVERGENCE}
       shrink factor           = ${N4_SHRINK_FACTOR}
       B-spline parameters     = ${N4_BSPLINE_PARAMS}
-      weight mask post. label = ${N4_WEIGHT_MASK_POSTERIOR_LABEL}
+      weight mask post. label = ${N4_WEIGHT_MASK_POSTERIOR_LABELS[@]}
 
     Atropos parameters (segmentation):
        convergence            = ${ATROPOS_SEGMENTATION_CONVERGENCE}
        likelihood             = ${ATROPOS_SEGMENTATION_LIKELIHOOD}
        prior weight           = ${ATROPOS_SEGMENTATION_PRIOR_WEIGHT}
-       initialization         = ${ATROPOS_SEGMENTATION_INITIALIZATION}
        posterior formulation  = ${ATROPOS_SEGMENTATION_POSTERIOR_FORMULATION}
        mrf                    = ${ATROPOS_SEGMENTATION_MRF}
        Max N4->Atropos iters. = ${ATROPOS_SEGMENTATION_NUMBER_OF_ITERATIONS}
@@ -89,12 +89,16 @@ echoParameters() {
 PARAMETERS
 }
 
+
+#    local  myresult='some value'
+#    echo "$myresult"
+
 # Echos a command to both stdout and stderr, then runs it
 function logCmd() {
   cmd="$*"
   echo "BEGIN >>>>>>>>>>>>>>>>>>>>"
   echo $cmd
-  $cmd
+  logCmdOutput=$( $cmd | tee /dev/tty )
   echo "END   <<<<<<<<<<<<<<<<<<<<"
   echo
   echo
@@ -120,7 +124,7 @@ DIMENSION=3
 
 ANATOMICAL_IMAGES=()
 
-SEGMENTATION_PRIOR=""
+ATROPOS_SEGMENTATION_PRIORS=""
 
 ################################################################################
 #
@@ -134,10 +138,9 @@ N4=${ANTSPATH}N4BiasFieldCorrection
 N4_CONVERGENCE="[50x50x50x50,0.0000000001]"
 N4_SHRINK_FACTOR=2
 N4_BSPLINE_PARAMS="[200]"
-N4_WEIGHT_MASK_POSTERIOR_LABEL=1
+N4_WEIGHT_MASK_POSTERIOR_LABELS=()
 
 ATROPOS=${ANTSPATH}Atropos
-ATROPOS_SEGMENTATION_INITIALIZATION="PriorProbabilityImages"
 ATROPOS_SEGMENTATION_PRIOR_WEIGHT=0.0
 ATROPOS_SEGMENTATION_LIKELIHOOD="Gaussian"
 ATROPOS_SEGMENTATION_POSTERIOR_FORMULATION="Socrates"
@@ -145,13 +148,12 @@ ATROPOS_SEGMENTATION_MASK=''
 ATROPOS_SEGMENTATION_NUMBER_OF_ITERATIONS=5
 ATROPOS_SEGMENTATION_NUMBER_OF_ITERATIONS=5
 ATROPOS_SEGMENTATION_NUMBER_OF_CLASSES=3
-ATROPOS_SEGMENTATION_DICE_THRESHOLD=0.99
 
 if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "c:d:h:i:k:l:m:n:o:p:s:w:x:" OPT
+  while getopts "a:c:d:h:k:l:m:n:o:p:s:w:x:" OPT
     do
       case $OPT in
           c) #number of segmentation classes
@@ -169,14 +171,14 @@ else
        Usage >&2
        exit 0
        ;;
-          i) #anatomical t1 image
+          a) #anatomical t1 image
        ANATOMICAL_IMAGES[${#ANATOMICAL_IMAGES[@]}]=$OPTARG
        ;;
           k) #keep tmp images
        KEEP_TMP_IMAGES=$OPTARG
        ;;
           l) #
-       N4_WEIGHT_MASK_POSTERIOR_LABEL=$OPTARG
+       N4_WEIGHT_MASK_POSTERIOR_LABELS[${#N4_WEIGHT_MASK_POSTERIOR_LABELS[@]}]=$OPTARG
        ;;
           m) #atropos segmentation iterations
        N4_ATROPOS_NUMBER_OF_ITERATIONS=$OPTARG
@@ -188,7 +190,7 @@ else
        OUTPUT_PREFIX=$OPTARG
        ;;
           p) #brain segmentation label prior image
-       SEGMENTATION_PRIOR=$OPTARG
+       ATROPOS_SEGMENTATION_PRIORS=$OPTARG
        ;;
           s) #output suffix
        OUTPUT_SUFFIX=$OPTARG
@@ -232,7 +234,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
     fi
   done
 
-FORMAT=${SEGMENTATION_PRIOR}
+FORMAT=${ATROPOS_SEGMENTATION_PRIORS}
 PREFORMAT=${FORMAT%%\%*}
 POSTFORMAT=${FORMAT##*d}
 FORMAT=${FORMAT#*\%}
@@ -251,8 +253,9 @@ MAXNUMBER=1000
 
 PRIOR_IMAGE_FILENAMES=()
 POSTERIOR_IMAGE_FILENAMES=()
+POSTERIOR_IMAGE_FILENAMES_PREVIOUS_ITERATION=()
 ATROPOS_SEGMENTATION_OUTPUT=${OUTPUT_PREFIX}Segmentation
-for (( i = 1; i < $MAXNUMBER; i++ ))
+for (( i = 1; i <= $ATROPOS_SEGMENTATION_NUMBER_OF_CLASSES; i++ ))
   do
     NUMBER_OF_REPS=$(( $TOTAL_LENGTH - ${#i} ))
     ROOT='';
@@ -262,18 +265,23 @@ for (( i = 1; i < $MAXNUMBER; i++ ))
       done
     PRIOR_FILENAME=${PREFORMAT}${ROOT}${i}${POSTFORMAT}
     POSTERIOR_FILENAME=${OUTPUT_PREFIX}${ROOT}SegmentationPosteriors${i}.${OUTPUT_SUFFIX}
+    POSTERIOR_FILENAME_PREVIOUS_ITERATION=${OUTPUT_PREFIX}${ROOT}SegmentationPosteriorsPreviousIteration${i}.${OUTPUT_SUFFIX}
+    POSTERIOR_IMAGE_FILENAMES=( ${POSTERIOR_IMAGE_FILENAMES[@]} $POSTERIOR_FILENAME )
+    POSTERIOR_IMAGE_FILENAMES_PREVIOUS_ITERATION=( ${POSTERIOR_IMAGE_FILENAMES_PREVIOUS_ITERATION[@]} $POSTERIOR_FILENAME_PREVIOUS_ITERATION )
     if [[ -f $PRIOR_FILENAME ]];
       then
         PRIOR_IMAGE_FILENAMES=( ${PRIOR_IMAGE_FILENAMES[@]} $PRIOR_FILENAME )
-        POSTERIOR_IMAGE_FILENAMES=( ${POSTERIOR_IMAGE_FILENAMES[@]} $POSTERIOR_FILENAME )
-      else
-        break 1
       fi
   done
 
 NUMBER_OF_PRIOR_IMAGES=${#PRIOR_IMAGE_FILENAMES[*]}
 
-if [[ ${NUMBER_OF_PRIOR_IMAGES} -ne ${ATROPOS_SEGMENTATION_NUMBER_OF_CLASSES} ]];
+INITIALIZE_WITH_KMEANS=0
+if [[ ${NUMBER_OF_PRIOR_IMAGES} -eq 0 ]];
+  then
+    echo "Initializing with kmeans segmentation."
+    INITIALIZE_WITH_KMEANS=1
+elif [[ ${ATROPOS_SEGMENTATION_NUMBER_OF_CLASSES} -ne ${NUMBER_OF_PRIOR_IMAGES} ]];
   then
     echo "Expected ${ATROPOS_SEGMENTATION_NUMBER_OF_CLASSES} prior images (${NUMBER_OF_PRIOR_IMAGES} are specified).  Check the command line specification."
     exit 1
@@ -323,19 +331,31 @@ SEGMENTATION_PREVIOUS_ITERATION_LABELING=${OUTPUT_PREFIX}SegmentationPreviousIte
 
 ATROPOS_SEGMENTATION_POSTERIORS=${ATROPOS_SEGMENTATION_OUTPUT}Posteriors%${FORMAT}d.${OUTPUT_SUFFIX}
 
-N4_WEIGHT_MASK_POSTERIOR_IDX=$((N4_WEIGHT_MASK_POSTERIOR_LABEL-1))
+N4_WEIGHT_MASK_POSTERIOR_IDXS=()
+for (( i = 0; i < ${#N4_WEIGHT_MASK_POSTERIOR_LABELS[@]}; i++ ))
+  do
+    N4_WEIGHT_MASK_POSTERIOR_IDXS[$i]=$((N4_WEIGHT_MASK_POSTERIOR_LABELS[$i]-1))
+  done
 
 time_start_brain_segmentation=`date +%s`
 
-logCmd cp ${PRIOR_IMAGE_FILENAMES[$N4_WEIGHT_MASK_POSTERIOR_IDX]} ${SEGMENTATION_WEIGHT_MASK}
+if [[ $INITIALIZE_WITH_KMEANS -eq 0 ]]
+  then
+    logCmd cp ${PRIOR_IMAGE_FILENAMES[${N4_WEIGHT_MASK_POSTERIOR_IDXS[0]}]} ${SEGMENTATION_WEIGHT_MASK}
+
+    for (( i = 1; i < ${#N4_WEIGHT_MASK_POSTERIOR_LABELS[@]}; i++ ))
+      do
+        logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_WEIGHT_MASK} + ${SEGMENTATION_WEIGHT_MASK} ${PRIOR_IMAGE_FILENAMES[${N4_WEIGHT_MASK_POSTERIOR_IDXS[$i]}]}
+      done
+  fi
 
 if [[ -f ${SEGMENTATION_CONVERGENCE_FILE} ]];
   then
     logCmd rm -f ${SEGMENTATION_CONVERGENCE_FILE}
   fi
 
-DICE_EXCEEDED_THRESHOLD=0
-for(( i = 0; i < ${N4_ATROPOS_NUMBER_OF_ITERATIONS}; i++ ))
+POSTERIOR_PROBABILITY_CONVERGED=0
+for (( i = 0; i < ${N4_ATROPOS_NUMBER_OF_ITERATIONS}; i++ ))
   do
     SEGMENTATION_N4_IMAGES=()
     for(( j = 0; j < ${#ANATOMICAL_IMAGES[@]}; j++ ))
@@ -344,55 +364,112 @@ for(( i = 0; i < ${N4_ATROPOS_NUMBER_OF_ITERATIONS}; i++ ))
 
         logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_N4_IMAGES[$j]} TruncateImageIntensity ${ANATOMICAL_IMAGES[$j]} 0.025 0.975 256 ${ATROPOS_SEGMENTATION_MASK}
 
-        exe_n4_correction="${N4} -d ${DIMENSION} -i ${SEGMENTATION_N4_IMAGES[$j]} -x ${ATROPOS_SEGMENTATION_MASK} -w ${SEGMENTATION_WEIGHT_MASK} -s ${N4_SHRINK_FACTOR} -c ${N4_CONVERGENCE} -b ${N4_BSPLINE_PARAMS} -o ${SEGMENTATION_N4_IMAGES[$j]}"
+        exe_n4_correction="${N4} -d ${DIMENSION} -i ${SEGMENTATION_N4_IMAGES[$j]} -x ${ATROPOS_SEGMENTATION_MASK} -s ${N4_SHRINK_FACTOR} -c ${N4_CONVERGENCE} -b ${N4_BSPLINE_PARAMS} -o ${SEGMENTATION_N4_IMAGES[$j]}"
+        if [[ -f ${SEGMENTATION_WEIGHT_MASK} ]];
+          then
+            exe_n4_correction="${exe_n4_correction} -w ${SEGMENTATION_WEIGHT_MASK}"
+          fi
         logCmd $exe_n4_correction
       done
 
     ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE='';
     for (( j = 0; j < ${#ANATOMICAL_IMAGES[@]}; j++ ))
       do
-      ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE="${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -a ${SEGMENTATION_N4_IMAGES[$j]}";
+        ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE="${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -a ${SEGMENTATION_N4_IMAGES[$j]}";
       done
 
-    exe_brain_segmentation_3="${ATROPOS} -d ${DIMENSION} -x ${ATROPOS_SEGMENTATION_MASK} -c ${ATROPOS_SEGMENTATION_CONVERGENCE} -p ${ATROPOS_SEGMENTATION_POSTERIOR_FORMULATION}[1] ${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -i ${ATROPOS_SEGMENTATION_INITIALIZATION}[${NUMBER_OF_PRIOR_IMAGES},${ATROPOS_SEGMENTATION_POSTERIORS},${ATROPOS_SEGMENTATION_PRIOR_WEIGHT}] -k ${ATROPOS_SEGMENTATION_LIKELIHOOD} -m ${ATROPOS_SEGMENTATION_MRF} -o [${ATROPOS_SEGMENTATION_OUTPUT}.${OUTPUT_SUFFIX},${ATROPOS_SEGMENTATION_POSTERIORS}]"
+    INITIALIZATION="PriorProbabilityImages[${ATROPOS_SEGMENTATION_NUMBER_OF_CLASSES},${ATROPOS_SEGMENTATION_POSTERIORS},${ATROPOS_SEGMENTATION_PRIOR_WEIGHT}]"
     if [[ $i -eq 0 ]];
       then
-        exe_brain_segmentation_3="${ATROPOS} -d ${DIMENSION} -x ${ATROPOS_SEGMENTATION_MASK}  -c ${ATROPOS_SEGMENTATION_CONVERGENCE} -p ${ATROPOS_SEGMENTATION_POSTERIOR_FORMULATION}[0] ${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -i ${ATROPOS_SEGMENTATION_INITIALIZATION}[${NUMBER_OF_PRIOR_IMAGES},${SEGMENTATION_PRIOR},${ATROPOS_SEGMENTATION_PRIOR_WEIGHT}] -k ${ATROPOS_SEGMENTATION_LIKELIHOOD} -m ${ATROPOS_SEGMENTATION_MRF} -o [${ATROPOS_SEGMENTATION_OUTPUT}.${OUTPUT_SUFFIX},${ATROPOS_SEGMENTATION_POSTERIORS}]"
+        if [[ INITIALIZE_WITH_KMEANS -eq 1 ]];
+          then
+            INITIALIZATION="kmeans[${ATROPOS_SEGMENTATION_NUMBER_OF_CLASSES}]"
+            INITIALIZE_WITH_KMEANS=0
+          else
+            INITIALIZATION="PriorProbabilityImages[${ATROPOS_SEGMENTATION_NUMBER_OF_CLASSES},${ATROPOS_SEGMENTATION_PRIORS},${ATROPOS_SEGMENTATION_PRIOR_WEIGHT}]"
+          fi
+      fi
+
+    exe_brain_segmentation="${ATROPOS} -d ${DIMENSION} -x ${ATROPOS_SEGMENTATION_MASK} -c ${ATROPOS_SEGMENTATION_CONVERGENCE} -p ${ATROPOS_SEGMENTATION_POSTERIOR_FORMULATION}[1] ${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -i ${INITIALIZATION} -k ${ATROPOS_SEGMENTATION_LIKELIHOOD} -m ${ATROPOS_SEGMENTATION_MRF} -o [${ATROPOS_SEGMENTATION_OUTPUT}.${OUTPUT_SUFFIX},${ATROPOS_SEGMENTATION_POSTERIORS}]"
+    if [[ $i -eq 0 ]];
+      then
+        exe_brain_segmentation="${ATROPOS} -d ${DIMENSION} -x ${ATROPOS_SEGMENTATION_MASK}  -c ${ATROPOS_SEGMENTATION_CONVERGENCE} -p ${ATROPOS_SEGMENTATION_POSTERIOR_FORMULATION}[0] ${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -i ${INITIALIZATION} -k ${ATROPOS_SEGMENTATION_LIKELIHOOD} -m ${ATROPOS_SEGMENTATION_MRF} -o [${ATROPOS_SEGMENTATION_OUTPUT}.${OUTPUT_SUFFIX},${ATROPOS_SEGMENTATION_POSTERIORS}]"
       else
         logCmd cp -f ${ATROPOS_SEGMENTATION_OUTPUT}.${OUTPUT_SUFFIX} ${SEGMENTATION_PREVIOUS_ITERATION_LABELING}
-    fi
 
-    logCmd $exe_brain_segmentation_3
+        for (( j = 0; j < ${#POSTERIOR_IMAGE_FILENAMES[@]}; j++ ))
+          do
+            logCmd cp -f ${POSTERIOR_IMAGE_FILENAMES[$j]} ${POSTERIOR_IMAGE_FILENAMES_PREVIOUS_ITERATION[$j]}
+          done
 
-    logCmd cp ${POSTERIOR_IMAGE_FILENAMES[$N4_WEIGHT_MASK_POSTERIOR_IDX]} ${SEGMENTATION_WEIGHT_MASK}
+        for (( j = 0; j < ${#ANATOMICAL_IMAGES[@]}; j++ ))
+          do
+            ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE="${ATROPOS_ANATOMICAL_IMAGES_COMMAND_LINE} -a ${SEGMENTATION_N4_IMAGES[$j]}";
+          done
+      fi
+
+    logCmd $exe_brain_segmentation
+
+    if [[ $i -eq 0 ]];
+      then
+        if [[ ! -f ${SEGMENTATION_CONVERGENCE_FILE} ]];
+          then
+            echo "Iteration,Posterior" > ${SEGMENTATION_CONVERGENCE_FILE}
+          fi
+
+        POSTERIOR_PROBABILITY=0
+        while read line;
+          do
+            tokens=( $line )
+            if [[ ${tokens[0]} == "Iteration" ]];
+              then
+                POSTERIOR_PROBABILITY=${tokens[7]}
+              fi
+          done <<< "$logCmdOutput"
+
+        echo "${i},${POSTERIOR_PROBABILITY}" >> ${SEGMENTATION_CONVERGENCE_FILE}
+      fi
 
     if [[ $i -gt 0 && -f ${SEGMENTATION_PREVIOUS_ITERATION_LABELING} ]];
       then
-        output=$(${ANTSPATH}LabelOverlapMeasures ${DIMENSION} ${ATROPOS_SEGMENTATION_OUTPUT}.${OUTPUT_SUFFIX} ${SEGMENTATION_PREVIOUS_ITERATION_LABELING})
 
-        overlapMeasures=''
-        count=0
+        POSTERIOR_PROBABILITY_PREVIOUS_ITERATION=$POSTERIOR_PROBABILITY
+
+        POSTERIOR_PROBABILITY=0
         while read line;
           do
-            (( count++ ))
-            if [[ $count == 3 ]];
+            tokens=( $line )
+            if [[ ${tokens[0]} == "Iteration" ]];
               then
-                overlapMeasures=( $line )
+                POSTERIOR_PROBABILITY=${tokens[7]}
               fi
-          done <<< "$output"
+          done <<< "$logCmdOutput"
 
-        if [[ ! -f ${SEGMENTATION_CONVERGENCE_FILE} ]];
+        if [[ $( echo "${POSTERIOR_PROBABILITY} < ${POSTERIOR_PROBABILITY_PREVIOUS_ITERATION}"|bc ) -eq 1 ]];
           then
-            echo "Iteration,Dice" > ${SEGMENTATION_CONVERGENCE_FILE}
-          fi
-        echo "${i},${overlapMeasures[2]}" >> ${SEGMENTATION_CONVERGENCE_FILE}
+            POSTERIOR_PROBABILITY_CONVERGED=1
 
-      if [[ $( echo "${ATROPOS_SEGMENTATION_DICE_THRESHOLD} < ${overlapMeasures[2]}"|bc ) -eq 1 ]];
-        then
-          DICE_EXCEEDED_THRESHOLD=1
-          break
-        fi
+            POSTERIOR_PROBABILITY=${POSTERIOR_PROBABILITY_PREVIOUS_ITERATION}
+            logCmd cp -f ${SEGMENTATION_PREVIOUS_ITERATION_LABELING} ${ATROPOS_SEGMENTATION_OUTPUT}.${OUTPUT_SUFFIX}
+
+            for (( j = 0; j < ${#POSTERIOR_IMAGE_FILENAMES[@]}; j++ ))
+              do
+                logCmd cp -f ${POSTERIOR_IMAGE_FILENAMES_PREVIOUS_ITERATION[$j]} ${POSTERIOR_IMAGE_FILENAMES[$j]}
+              done
+
+            break
+          else
+            echo "${i},${POSTERIOR_PROBABILITY}" >> ${SEGMENTATION_CONVERGENCE_FILE}
+          fi
       fi
+
+    logCmd cp ${POSTERIOR_IMAGE_FILENAMES[${N4_WEIGHT_MASK_POSTERIOR_IDXS[0]}]} ${SEGMENTATION_WEIGHT_MASK}
+
+    for (( j = 1; j < ${#N4_WEIGHT_MASK_POSTERIOR_LABELS[@]}; j++ ))
+      do
+        logCmd ${ANTSPATH}ImageMath ${DIMENSION} ${SEGMENTATION_WEIGHT_MASK} + ${SEGMENTATION_WEIGHT_MASK} ${POSTERIOR_IMAGE_FILENAMES[${N4_WEIGHT_MASK_POSTERIOR_IDXS[$j]}]}
+      done
+
   done
 
 TMP_FILES=( $SEGMENTATION_WEIGHT_MASK )
@@ -410,11 +487,11 @@ time_elapsed_brain_segmentation=$((time_end_brain_segmentation - time_start_brai
 
 echo
 echo "--------------------------------------------------------------------------------------"
-if [[ DICE_EXCEEDED_THRESHOLD -eq 1 ]];
+if [[ POSTERIOR_PROBABILITY_CONVERGED -eq 1 ]];
   then
-    echo " Done with brain segmentation (Dice exceeded threshold):  $(( time_elapsed_brain_segmentation / 3600 ))h $(( time_elapsed_brain_segmentation %3600 / 60 ))m $(( time_elapsed_brain_segmentation % 60 ))s"
+    echo " Done with brain segmentation (posterior prob. converged):  $(( time_elapsed_brain_segmentation / 3600 ))h $(( time_elapsed_brain_segmentation %3600 / 60 ))m $(( time_elapsed_brain_segmentation % 60 ))s"
   else
-    echo " Done with brain segmentation (max. iterations):  $(( time_elapsed_brain_segmentation / 3600 ))h $(( time_elapsed_brain_segmentation %3600 / 60 ))m $(( time_elapsed_brain_segmentation % 60 ))s"
+    echo " Done with brain segmentation (exceeded max. iterations):  $(( time_elapsed_brain_segmentation / 3600 ))h $(( time_elapsed_brain_segmentation %3600 / 60 ))m $(( time_elapsed_brain_segmentation % 60 ))s"
   fi
 echo "--------------------------------------------------------------------------------------"
 echo
@@ -443,7 +520,7 @@ if [[ `type -p RScript` > /dev/null ]];
   then
     echo "library( ggplot2 )" > $SEGMENTATION_CONVERGENCE_SCRIPT
     echo "conv <- read.csv( \"${SEGMENTATION_CONVERGENCE_FILE}\" )" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
-    echo "myPlot <- ggplot( conv, aes( x = Iteration, y = Dice ) ) +" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
+    echo "myPlot <- ggplot( conv, aes( x = Iteration, y = Posterior ) ) +" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
     echo "  geom_point( data = conv, aes( colour = Iteration ), size = 4 ) +" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
     echo "  scale_y_continuous( breaks = seq( 0.8  , 1, by = 0.025 ), labels = seq( 0.8, 1, by = 0.025 ), limits = c( 0.8, 1 ) ) +" >>  $SEGMENTATION_CONVERGENCE_SCRIPT
     echo "  theme( legend.position = \"none\" )" >>  $SEGMENTATION_CONVERGENCE_SCRIPT

@@ -61,8 +61,7 @@ Required arguments:
      -m:  Brain extraction probability mask     Brain probability mask created using e.g. LPBA40 data set which
                                                 have brain masks defined, and warped to anatomical template and
                                                 averaged resulting in a probability image.
-     -l:  Brain segmentation template           Anatomical template for brain segmentation.  E.g. NIREP template
-                                                with labels.  The template must be skull stripped.
+     -l:  Brain segmentation template           Anatomical template for brain segmentation.
      -p:  Brain segmentation priors             Label probability priors corresponding to the image specified
                                                 with the -l option.  Specified using c-style formatting, e.g.
                                                 -p labelsPriors%02d.nii.gz.
