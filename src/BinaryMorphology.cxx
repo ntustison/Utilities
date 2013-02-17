@@ -7,9 +7,9 @@
 #include "itkBinaryErodeImageFilter.h"
 #include "itkBinaryMorphologicalClosingImageFilter.h"
 #include "itkBinaryMorphologicalOpeningImageFilter.h"
-#include "itkBinaryBallStructuringElement.h" 
-#include "itkBinaryBoxStructuringElement.h" 
-#include "itkBinaryDiamondStructuringElement.h" 
+#include "itkBinaryBallStructuringElement.h"
+#include "itkBinaryBoxStructuringElement.h"
+#include "itkBinaryDiamondStructuringElement.h"
 #include "itkBinaryThinning3DImageFilter.h"
 #include "itkBinaryThinningImageFilter.h"
 
@@ -30,32 +30,32 @@ int BinaryMorphology( int argc, char * argv[] )
   unsigned int radius = 1;
   if ( argc > 5 )
     {
-    radius = atoi( argv[5] ); 
-    }  
+    radius = atoi( argv[5] );
+    }
 
   PixelType foreground = itk::NumericTraits<PixelType>::One;
   PixelType background = itk::NumericTraits<PixelType>::Zero;
   if ( argc > 7 )
     {
-    foreground = static_cast<PixelType>( atof( argv[7] ) ); 
+    foreground = static_cast<PixelType>( atof( argv[7] ) );
     }
   if ( argc > 8 )
     {
-    background = static_cast<PixelType>( atof( argv[8] ) ); 
+    background = static_cast<PixelType>( atof( argv[8] ) );
     }
 
-  
+
   unsigned int operation = static_cast<unsigned int>( atoi( argv[4] ) );
 
   if ( argc < 6 || atoi( argv[6] ) == 1 )
     {
-    typedef itk::BinaryBallStructuringElement< 
+    typedef itk::BinaryBallStructuringElement<
                         PixelType,
                         ImageDimension> StructuringElementType;
     StructuringElementType  element;
-    element.SetRadius( radius ); 
+    element.SetRadius( radius );
     element.CreateStructuringElement();
-    
+
     switch ( operation )
       {
       case 0:
@@ -74,7 +74,7 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       case 1:
         {
         typedef itk::BinaryErodeImageFilter<ImageType, ImageType,
@@ -91,7 +91,7 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       case 2:
         {
         typedef itk::BinaryMorphologicalClosingImageFilter<ImageType, ImageType,
@@ -107,7 +107,7 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       case 3:
         {
         typedef itk::BinaryMorphologicalOpeningImageFilter<ImageType, ImageType,
@@ -124,23 +124,23 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       default:
         {
-        std::cerr << "Invalid operation choice." << std::endl; 
+        std::cerr << "Invalid operation choice." << std::endl;
         return EXIT_FAILURE;
         }
       }
     }
   else if ( atoi( argv[6] ) == 0 )
     {
-    typedef itk::BinaryBoxStructuringElement< 
+    typedef itk::BinaryBoxStructuringElement<
                         PixelType,
                         ImageDimension>  StructuringElementType;
     StructuringElementType element;
-    element.SetRadius( radius ); 
+    element.SetRadius( radius );
     element.CreateStructuringElement();
-    
+
     switch ( operation )
       {
       case 0:
@@ -159,7 +159,7 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       case 1:
         {
         typedef itk::BinaryErodeImageFilter<ImageType, ImageType,
@@ -176,7 +176,7 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       case 2:
         {
         typedef itk::BinaryMorphologicalClosingImageFilter<ImageType, ImageType,
@@ -192,7 +192,7 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       case 3:
         {
         typedef itk::BinaryMorphologicalOpeningImageFilter<ImageType, ImageType,
@@ -209,23 +209,23 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       default:
         {
-        std::cerr << "Invalid operation choice." << std::endl; 
+        std::cerr << "Invalid operation choice." << std::endl;
         return EXIT_FAILURE;
         }
       }
-    }  
+    }
   else
     {
-    typedef itk::BinaryDiamondStructuringElement< 
+    typedef itk::BinaryDiamondStructuringElement<
                         PixelType,
                         ImageDimension> StructuringElementType;
     StructuringElementType  element;
-    element.SetRadius( radius ); 
+    element.SetRadius( radius );
     element.CreateStructuringElement();
-    
+
     switch ( operation )
       {
       case 0:
@@ -244,7 +244,7 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       case 1:
         {
         typedef itk::BinaryErodeImageFilter<ImageType, ImageType,
@@ -261,7 +261,7 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       case 2:
         {
         typedef itk::BinaryMorphologicalClosingImageFilter<ImageType, ImageType,
@@ -277,7 +277,7 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       case 3:
         {
         typedef itk::BinaryMorphologicalOpeningImageFilter<ImageType, ImageType,
@@ -294,15 +294,15 @@ int BinaryMorphology( int argc, char * argv[] )
         writer->SetFileName( argv[3] );
         writer->Update();
         break;
-        } 
+        }
       default:
         {
-        std::cerr << "Invalid operation choice." << std::endl; 
+        std::cerr << "Invalid operation choice." << std::endl;
         return EXIT_FAILURE;
         }
       }
-    }  
-   
+    }
+
 
   return EXIT_SUCCESS;
 }
@@ -316,12 +316,12 @@ int BinaryThin2D( int argc, char * argv[] )
   ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName( argv[2] );
   reader->Update();
- 
+
   typedef itk::BinaryThinningImageFilter<ImageType, ImageType> FilterType;
   FilterType::Pointer  filter = FilterType::New();
   filter->SetInput( reader->GetOutput() );
   filter->Update();
-  
+
   typedef itk::ImageFileWriter<ImageType>  WriterType;
   WriterType::Pointer writer = WriterType::New();
   writer->SetInput( filter->GetOutput() );
@@ -340,12 +340,12 @@ int BinaryThin3D( int argc, char * argv[] )
   ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName( argv[2] );
   reader->Update();
- 
+
   typedef itk::BinaryThinning3DImageFilter<ImageType, ImageType> FilterType;
   FilterType::Pointer  filter = FilterType::New();
   filter->SetInput( reader->GetOutput() );
   filter->Update();
-  
+
   typedef itk::ImageFileWriter<ImageType>  WriterType;
   WriterType::Pointer writer = WriterType::New();
   writer->SetInput( filter->GetOutput() );
@@ -373,7 +373,7 @@ int main( int argc, char *argv[] )
 
   if( atoi( argv[4] ) == 4 )
     {
-    switch( atoi( argv[1] ) ) 
+    switch( atoi( argv[1] ) )
      {
      case 2:
        BinaryThin2D( argc, argv );
@@ -388,7 +388,7 @@ int main( int argc, char *argv[] )
     }
   else
     {
-    switch( atoi( argv[1] ) ) 
+    switch( atoi( argv[1] ) )
      {
      case 2:
        BinaryMorphology<2>( argc, argv );
@@ -400,6 +400,6 @@ int main( int argc, char *argv[] )
         std::cerr << "Unsupported dimension" << std::endl;
         exit( EXIT_FAILURE );
      }
-   }  
+   }
 }
 
