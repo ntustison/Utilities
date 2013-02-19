@@ -80,15 +80,6 @@ int convert( int argc, char* argv[] )
 
   typename NamesGeneratorType::Pointer namesGenerator = NamesGeneratorType::New();
 
-//  tagkey = "0008|0060"; // Modality
-//  value = "MR";
-//  itk::EncapsulateMetaData<std::string>(dict, tagkey, value );
-//  tagkey = "0008|0008"; // Image Type
-//  value = "DERIVED\\SECONDARY";
-//  itk::EncapsulateMetaData<std::string>(dict, tagkey, value);
-//  tagkey = "0008|0064"; // Conversion Type
-//  value = "DV";
-//  itk::EncapsulateMetaData<std::string>(dict, tagkey, value);
 
   gdcm::UIDGenerator suid;
   if( argc > 5 && atoi( argv[5] ) != 0 )
@@ -181,10 +172,14 @@ int convert( int argc, char* argv[] )
 
   for( unsigned int t = 0; t < numberOfTimePoints; t++ )
     {
-    for( unsigned int s = 0; s < numberOfSlices; s++ )
+    for( int s = numberOfSlices-1; s >= 0; s-- )
       {
       typename SeriesWriterType::DictionaryRawPointer dict =
         new typename SeriesWriterType::DictionaryType;
+
+      itk::EncapsulateMetaData<std::string>( *dict, "0008|0060", "MR" );
+      itk::EncapsulateMetaData<std::string>( *dict, "0008|0008", "DERIVED\\SECONDARY" );
+      itk::EncapsulateMetaData<std::string>( *dict, "0008|0064", "DV" );
 
       std::string tagkey, value;
 
@@ -197,12 +192,12 @@ int convert( int argc, char* argv[] )
           values[n][t*numberOfSlices + s] );
         }
 
-      itk::EncapsulateMetaData<std::string>( *dict,"0020|000e", seriesUID );
-      itk::EncapsulateMetaData<std::string>( *dict,"0020|0052", frameOfReferenceUID );
+//       itk::EncapsulateMetaData<std::string>( *dict,"0020|000e", seriesUID );
+//       itk::EncapsulateMetaData<std::string>( *dict,"0020|0052", frameOfReferenceUID );
 
       gdcm::UIDGenerator sopuid;
       std::string sopInstanceUID = sopuid.Generate();
-      itk::EncapsulateMetaData<std::string>( *dict, "0008|0018", sopInstanceUID );
+//       itk::EncapsulateMetaData<std::string>( *dict, "0008|0018", sopInstanceUID );
       itk::EncapsulateMetaData<std::string>( *dict, "0002|0003", sopInstanceUID );
 
       // instance number
@@ -238,6 +233,7 @@ int convert( int argc, char* argv[] )
         }
 
       itk::EncapsulateMetaData<std::string>( *dict,"0020|0032", value2.str() );
+
       // Slice Location: For now, we store the z component of the Image
       // Position Patient.
       value2.str( "" );
@@ -255,6 +251,9 @@ int convert( int argc, char* argv[] )
       dictionaryArray.push_back( dict );
       }
     }
+
+
+
 
 ////////////////////////////////////////////////
 // 4) Shift data to undo the effect of a rescale intercept by the
