@@ -9,9 +9,6 @@
 template <unsigned int ImageDimension>
 int LabelIntensityStatistics( int argc, char *argv[] )
 {
-
-//   itk::MultiThreader::SetGlobalDefaultNumberOfThreads( 1 );
-//
   typedef int LabelType;
   typedef float RealType;
 

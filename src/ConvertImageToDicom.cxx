@@ -28,6 +28,7 @@
 #include "itkImageSeriesWriter.h"
 #include "itkMetaDataObject.h"
 #include "itkShiftScaleImageFilter.h"
+#include "itkVector.h"
 
 #include "gdcmUIDGenerator.h"
 
@@ -95,6 +96,39 @@ int convert( int argc, char* argv[] )
      reader->GetOutput()->GetLargestPossibleRegion();
 
   typename ImageType::IndexType start = region.GetIndex();
+  typename ImageType::IndexType row = start;
+  row[0] += 1;
+  typename ImageType::IndexType col = start;
+  col[1] += 1;
+
+  typename ImageType::PointType origin = reader->GetOutput()->GetOrigin();
+
+  typename ImageType::PointType rowPosition;
+  reader->GetOutput()->TransformIndexToPhysicalPoint( row, rowPosition );
+
+  typename ImageType::PointType colPosition;
+  reader->GetOutput()->TransformIndexToPhysicalPoint( col, colPosition );
+
+  typedef itk::Vector<float, 3> VectorType;
+  VectorType colVector( 0.0 );
+  VectorType rowVector( 0.0 );
+
+  rowVector[0] = rowPosition[0] - origin[0];
+  rowVector[1] = rowPosition[1] - origin[1];
+  if( Dimension >= 3 )
+    {
+    rowVector[2] = rowPosition[2] - origin[2];
+    }
+  rowVector.Normalize();
+
+  colVector[0] = colPosition[0] - origin[0];
+  colVector[1] = colPosition[1] - origin[1];
+  if( Dimension >= 3 )
+    {
+    colVector[2] = colPosition[2] - origin[2];
+    }
+  colVector.Normalize();
+
   typename ImageType::SizeType  size  = region.GetSize();
 
   unsigned int numberOfTimePoints = 1;
@@ -172,7 +206,7 @@ int convert( int argc, char* argv[] )
 
   for( unsigned int t = 0; t < numberOfTimePoints; t++ )
     {
-    for( int s = numberOfSlices-1; s >= 0; s-- )
+    for( unsigned int s = 0; s < numberOfSlices; s++ )
       {
       typename SeriesWriterType::DictionaryRawPointer dict =
         new typename SeriesWriterType::DictionaryType;
@@ -231,22 +265,29 @@ int convert( int argc, char* argv[] )
         {
         value2 << position[0] << "\\" << position[1] << "\\" << 0.0;
         }
-
       itk::EncapsulateMetaData<std::string>( *dict,"0020|0032", value2.str() );
+
+      value2.str( "" );
+      value2 << colVector[0] << "\\" << colVector[1] << "\\" << colVector[2] << "\\"
+             << rowVector[0] << "\\" << rowVector[1] << "\\" << rowVector[2];
+
+      std::cout << ( value2.str() ).c_str() << std::endl;
+      itk::EncapsulateMetaData<std::string>( *dict,"0020|0037", value2.str() );
+
+
 
       // Slice Location: For now, we store the z component of the Image
       // Position Patient.
-      value2.str( "" );
-      if( Dimension >= 3 )
-        {
-        value2 << position[2];
-        }
-      else
-        {
-        value2 << 0.0;
-        }
-
-      itk::EncapsulateMetaData<std::string>( *dict,"0020|1041", value2.str() );
+//       value2.str( "" );
+//       if( Dimension >= 3 )
+//         {
+//         value2 << position[2];
+//         }
+//       else
+//         {
+//         value2 << 0.0;
+//         }
+//       itk::EncapsulateMetaData<std::string>( *dict,"0020|1041", value2.str() );
 
       dictionaryArray.push_back( dict );
       }
