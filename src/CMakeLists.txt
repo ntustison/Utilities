@@ -210,9 +210,6 @@ target_link_libraries(CreateDirectionalStrainImages ${ITK_LIBRARIES})
 add_executable(CreateColoredLabeledImage CreateColoredLabeledImage.cxx )
 target_link_libraries(CreateColoredLabeledImage ${ITK_LIBRARIES})
 
-add_executable(CreateGMMProbabilityImages CreateGMMProbabilityImages.cxx )
-target_link_libraries(CreateGMMProbabilityImages ${ITK_LIBRARIES})
-
 add_executable(CreateImageSource CreateImageSource.cxx )
 target_link_libraries(CreateImageSource ${ITK_LIBRARIES} )
 
