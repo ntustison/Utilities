@@ -1261,8 +1261,9 @@ int MultipleOperateImages( int argc, char * argv[] )
 
       std::string path = itksys::SystemTools::GetFilenamePath( argv[3] );
       std::string filenameRoot = itksys::SystemTools::GetFilenameName( filenames[n] );
+      std::string filenamePrefix = itksys::SystemTools::GetFilenameName( argv[3] );
 
-      std::string outputName = path + std::string( "/" ) + std::string( argv[3] ) + filenameRoot;
+      std::string outputName = path + std::string( "/" ) + filenamePrefix + filenameRoot;
 
       typedef itk::ImageFileWriter<ImageType> WriterType;
       typename WriterType::Pointer writer = WriterType::New();

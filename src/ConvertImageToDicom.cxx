@@ -215,17 +215,6 @@ int convert( int argc, char* argv[] )
       itk::EncapsulateMetaData<std::string>( *dict, "0008|0008", "DERIVED\\SECONDARY" );
       itk::EncapsulateMetaData<std::string>( *dict, "0008|0064", "DV" );
 
-      std::string tagkey, value;
-
-      std::cout << "t = " << t << ", s = " << s << std::endl;
-      for( unsigned int n = 0; n < tagkeys.size(); n++ )
-        {
-        std::cout << "  " << tagkeys[n] << " -> " << values[n][t*numberOfSlices + s]
-          << std::endl;
-        itk::EncapsulateMetaData<std::string>( *dict, tagkeys[n],
-          values[n][t*numberOfSlices + s] );
-        }
-
 //       itk::EncapsulateMetaData<std::string>( *dict,"0020|000e", seriesUID );
 //       itk::EncapsulateMetaData<std::string>( *dict,"0020|0052", frameOfReferenceUID );
 
@@ -274,8 +263,6 @@ int convert( int argc, char* argv[] )
       std::cout << ( value2.str() ).c_str() << std::endl;
       itk::EncapsulateMetaData<std::string>( *dict,"0020|0037", value2.str() );
 
-
-
       // Slice Location: For now, we store the z component of the Image
       // Position Patient.
 //       value2.str( "" );
@@ -288,6 +275,17 @@ int convert( int argc, char* argv[] )
 //         value2 << 0.0;
 //         }
 //       itk::EncapsulateMetaData<std::string>( *dict,"0020|1041", value2.str() );
+
+
+      std::string tagkey, value;
+
+      std::cout << "t = " << t << ", s = " << s << std::endl;
+      for( unsigned int n = 0; n < tagkeys.size(); n++ )
+        {
+        std::cout << "  " << tagkeys[n] << " -> " << values[n][t*numberOfSlices + s]
+          << std::endl;
+        itk::EncapsulateMetaData<std::string>( *dict, tagkeys[n], values[n][t*numberOfSlices + s] );
+        }
 
       dictionaryArray.push_back( dict );
       }
