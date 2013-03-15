@@ -306,9 +306,6 @@ int convert( int argc, char* argv[] )
 //         }
 //       itk::EncapsulateMetaData<std::string>( *dict,"0020|1041", value2.str() );
 
-
-      std::string tagkey, value;
-
       std::cout << "t = " << t << ", s = " << s << std::endl;
       for( unsigned int n = 0; n < tagkeys.size(); n++ )
         {

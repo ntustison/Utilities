@@ -27,10 +27,11 @@ Usage:
 
 `basename $0` -d imageDimension
               -a inputImage(s)
+              -t symmetricTemplate(s)
               -c clusterCenters
+              -n imageNames
               -r neighgorhoodRadius
               -s smoothSigma
-              -t symmetricTemplate(s)
               -x maskImage
               -o outputPrefix
 
@@ -65,6 +66,7 @@ Optional arguments:
                                                 the following images:
                                                   * symmetric template difference
                                                   * contralateral difference
+     -n   imageNames                            used in the naming of the images (otherwise, labeled IMAGE0, IMAGE1, etc)
 
 USAGE
     exit 1
@@ -78,6 +80,7 @@ echoParameters() {
       anatomical image        = ${ANATOMICAL_IMAGES[@]}
       symmetric templates     = ${SYMMETRIC_TEMPLATES[@]}
       cluster centers         = ${CLUSTER_CENTERS[@]}
+      image names             = ${IMAGE_NAMES[@]}
       radius                  = ${RADIUS}
       smoothing sigma         = ${SMOOTHING_SIGMA}
       output prefix           = ${OUTPUT_PREFIX}
@@ -119,6 +122,7 @@ DIMENSION=3
 ANATOMICAL_IMAGES=()
 SYMMETRIC_TEMPLATE=()
 CLUSTER_CENTERS=()
+IMAGE_NAMES=()
 
 MASK_IMAGE=""
 
@@ -135,7 +139,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:c:d:h:o:r:s:t:x:" OPT
+  while getopts "a:c:d:h:n:o:r:s:t:x:" OPT
     do
       case $OPT in
           a) #anatomical image
@@ -155,6 +159,9 @@ else
           h) #help
        Usage >&2
        exit 0
+       ;;
+          n)
+       IMAGE_NAMES[${#IMAGE_NAMES[@]}]=$OPTARG
        ;;
           o) #output prefix
        OUTPUT_PREFIX=$OPTARG
@@ -193,6 +200,10 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
       then
         echo "The specified image \"${ANATOMICAL_IMAGES[$i]}\" does not exist."
         exit 1
+      fi
+    if [[ -z ${IMAGE_NAMES[$i]} ]];
+      then
+        IMAGE_NAMES[$i]=IMAGE${i}
       fi
   done
 
@@ -260,21 +271,21 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
 
     # mean image
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}IMAGE${i}_MEAN_RADIUS_${RADIUS}.${OUTPUT_SUFFIX}
+    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_MEAN_RADIUS_${RADIUS}.${OUTPUT_SUFFIX}
     if [[ ! -f ${OUTPUT_IMAGE} ]];
       then
         logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 0 ${RADIUS}
       fi
 
     # standard deviation image
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}IMAGE${i}_SIGMA_RADIUS_${RADIUS}.${OUTPUT_SUFFIX}
+    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_SIGMA_RADIUS_${RADIUS}.${OUTPUT_SUFFIX}
     if [[ ! -f ${OUTPUT_IMAGE} ]];
       then
         logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 4 ${RADIUS}
       fi
 
     # skewness image
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}IMAGE${i}_SKEWNESS_RADIUS_${RADIUS}.${OUTPUT_SUFFIX}
+    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_SKEWNESS_RADIUS_${RADIUS}.${OUTPUT_SUFFIX}
     if [[ ! -f ${OUTPUT_IMAGE} ]];
       then
         logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 5 ${RADIUS}
@@ -325,7 +336,7 @@ if [[ ! -f $WARP ]];
 OUTPUT_IMAGE=${OUTPUT_PREFIX}LOG_JACOBIAN.${OUTPUT_SUFFIX}
 if [[ ! -f ${OUTPUT_IMAGE} ]];
   then
-    logCmd ${ANTSPATH}/ANTSJacobian ${DIMENSION} $WARP $OUTPUT_REGISTRATION_PREFIX
+    logCmd ${ANTSPATH}/ANTSJacobian ${DIMENSION} $WARP $OUTPUT_REGISTRATION_PREFIX 1
     logCmd mv ${OUTPUT_REGISTRATION_PREFIX}logjacobian.nii.gz $OUTPUT_IMAGE
   fi
 
@@ -334,7 +345,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
 
     # symmetric template difference images
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}IMAGE${i}_SYMMETRIC_TEMPLATE_DIFFERENCE.${OUTPUT_SUFFIX}
+    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_SYMMETRIC_TEMPLATE_DIFFERENCE.${OUTPUT_SUFFIX}
     if [[ ! -f ${OUTPUT_IMAGE} ]];
       then
         logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n BSpline -r ${ANATOMICAL_IMAGES[$i]} -i ${SYMMETRIC_TEMPLATES[$i]} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
@@ -343,11 +354,11 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
       fi
 
     # contralateral difference images
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}CONTRALATERAL_DIFFERENCE.${OUTPUT_SUFFIX}
+    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_CONTRALATERAL_DIFFERENCE.${OUTPUT_SUFFIX}
     if [[ ! -f ${OUTPUT_IMAGE} ]];
       then
         logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n BSpline -i ${ANATOMICAL_IMAGES[$i]} -r ${SYMMETRIC_TEMPLATES[$i]} -o ${OUTPUT_IMAGE} -t [$AFFINE,1] -t $INVERSE_WARP
-        logCmd ${ANTSPATH}/PermuteFlipImageOrientationAxes -d ${DIMENSION} $OUTPUT_IMAGE 0 1 2 1 0 0
+        logCmd ${UTILPATH}/FlipImage ${DIMENSION} $OUTPUT_IMAGE $OUTPUT_IMAGE 1x0x0
         logCmd ${UTILPATH}/ChangeImageInformation ${DIMENSION} $OUTPUT_IMAGE $OUTPUT_IMAGE 4 ${SYMMETRIC_TEMPLATES[$i]}
         logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n BSpline -i $OUTPUT_IMAGE -r ${ANATOMICAL_IMAGES[$i]} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
         logCmd ${ANTSPATH}/ImageMath ${DIMENSION} $OUTPUT_IMAGE - ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE
@@ -359,37 +370,29 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 ################################################################################
 #
 # Construct GMM probability images for each anatomical image
+# Also create geometric feature images for each atropos labeled output
 #
 ################################################################################
 
 for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
-    OUTPUT_ATROPOS_IMAGE=${OUTPUT_PREFIX}IMAGE${i}_ATROPOS.${OUTPUT_SUFFIX}
-    OUTPUT_ATROPOS_IMAGE_POSTERIORS=${OUTPUT_PREFIX}IMAGE${i}_ATROPOS_POSTERIORS%d.${OUTPUT_SUFFIX}
+    OUTPUT_ATROPOS_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM.${OUTPUT_SUFFIX}
+    OUTPUT_ATROPOS_IMAGE_POSTERIORS=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM_POSTERIORS%d.${OUTPUT_SUFFIX}
 
-    logCmd ${ANTSPATH}/Atropos \
-                          -d ${DIMENSION} \
-                          -a ${ANATOMICAL_IMAGES[$i]} \
-                          -i KMeans[${NUMBER_OF_LABELS},${CLUSTER_CENTERS[i]}] \
-                          -p Socrates[1] \
-                          -x $MASK_IMAGE \
-                          -c [0,0] \
-                          -k Gaussian \
-                          -m [0.1,1x1x1] \
-                          -o [${ OUTPUT_ATROPOS_IMAGE},${OUTPUT_ATROPOS_IMAGE_POSTERIORS}]
+    SEG_BASE="${ANTSPATH}/Atropos -d ${DIMENSION} -a ${ANATOMICAL_IMAGES[$i]}"
+    SEG_0="-i KMeans[${NUMBER_OF_LABELS},${CLUSTER_CENTERS[i]}] -p Socrates[1] -x $MASK_IMAGE"
+    SEG_1="-c [0,0] -k Gaussian -m [0.1,1x1x1]"
+    SEG_2="-o [${OUTPUT_ATROPOS_IMAGE},${OUTPUT_ATROPOS_IMAGE_POSTERIORS}]"
+
+    if [[ ! -f ${OUTPUT_ATROPOS_IMAGE} ]];
+      then
+        logCmd $SEG_BASE $SEG_0 $SEG_1 $SEG_2
+      fi
+
+    OUTPUT_ATROPOS_FEATURES_PREFIX=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM_
+
+    logCmd ${UTILPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
   done
-
-
-################################################################################
-#
-# Construct skeleton for each connected component and assign each pixel the
-# value of the number of pixels comprising the skeleton for that particular
-# component.
-#
-################################################################################
-
-
-
 
 ################################################################################
 #
