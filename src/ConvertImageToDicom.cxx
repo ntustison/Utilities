@@ -293,8 +293,29 @@ int convert( int argc, char* argv[] )
       std::cout << ( value2.str() ).c_str() << std::endl;
       itk::EncapsulateMetaData<std::string>( *dict,"0020|0037", value2.str() );
 
+      // Slice Location: For now, we store the z component of the Image
+      // Position Patient.
+//       value2.str( "" );
+//       if( Dimension >= 3 )
+//         {
+//         value2 << position[2];
+//         }
+//       else
+//         {
+//         value2 << 0.0;
+//         }
+//       itk::EncapsulateMetaData<std::string>( *dict,"0020|1041", value2.str() );
 
 
+      std::string tagkey, value;
+
+      std::cout << "t = " << t << ", s = " << s << std::endl;
+      for( unsigned int n = 0; n < tagkeys.size(); n++ )
+        {
+        std::cout << "  " << tagkeys[n] << " -> " << values[n][t*numberOfSlices + s]
+          << std::endl;
+        itk::EncapsulateMetaData<std::string>( *dict, tagkeys[n], values[n][t*numberOfSlices + s] );
+        }
 
       dictionaryArray.push_back( dict );
       }

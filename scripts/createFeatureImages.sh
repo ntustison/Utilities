@@ -3,20 +3,19 @@
 VERSION="0.0"
 
 ## need to change to put everything in ANTs (ImageMath?)
-UTILPATH=/Users/ntustison/Pkg/Utilities/bin
 
-if [[ ! -s ${ANTSPATH}/N4BiasFieldCorrection ]]; then
-  echo we cant find the N4 program -- does not seem to exist.  please \(re\)define \$ANTSPATH in your environment.
-  exit
-fi
-if [[ ! -s ${ANTSPATH}/Atropos ]]; then
-  echo we cant find the Atropos program -- does not seem to exist.  please \(re\)define \$ANTSPATH in your environment.
-  exit
-fi
-if [[ ! -s ${ANTSPATH}/ImageMath ]]; then
-  echo we cant find the Atropos program -- does not seem to exist.  please \(re\)define \$ANTSPATH in your environment.
-  exit
-fi
+UTILPATH=/Users/ntustison/Pkg/Utilities/bin/
+
+if [[ ! -d "$UTILPATH" ]];
+  then
+    echo We can\'t find the Utilities path -- does not seem to exist.  Please \(re\)define \$UTILPATH in your environment.
+    exit 1
+  fi
+if [[ ! -d "$ANTSPATH" ]];
+  then
+    echo We can\'t find the ANTs path -- does not seem to exist.  Please \(re\)define \$ANTSPATH in your environment.
+    exit 1
+  fi
 
 function Usage {
     cat <<USAGE
@@ -28,9 +27,11 @@ Usage:
 
 `basename $0` -d imageDimension
               -a inputImage(s)
+              -c clusterCenters
               -r neighgorhoodRadius
               -s smoothSigma
               -t symmetricTemplate(s)
+              -x maskImage
               -o outputPrefix
 
 Example:
@@ -46,8 +47,12 @@ Required arguments:
                                                    * brain extraction
                                                    * bias correction
                                                    * intensity normalized (i.e. histogram matching and intensity truncation)
+     -c:  cluster centers                       Array describing the intensity centers of the intensity normalized images.
+                                                Need one for each input image.  Should be of the form:  e.g. 0.14x0.57x0.37x0.83x0.95
+                                                (for 5 classes: csf, gm, wm, edema, and tumor)
      -t:  symmetric anatomical templates        Symmetric templates.  Need to be specified in the same order as
                                                 the input anatomical images.
+     -x:  mask image                            Mask image defining the region of interest.
      -o:  output prefix                         The following images are created:
                                                   * ${OUTPUT_PREFIX}N4Corrected.${OUTPUT_SUFFIX}
                                                   * ${OUTPUT_PREFIX}Segmentation.${OUTPUT_SUFFIX}
@@ -71,7 +76,8 @@ echoParameters() {
     Using createFeatureImages with the following arguments:
       image dimension         = ${DIMENSION}
       anatomical image        = ${ANATOMICAL_IMAGES[@]}
-      symmetric template      = ${SYMMETRIC_TEMPLAGE}
+      symmetric templates     = ${SYMMETRIC_TEMPLATES[@]}
+      cluster centers         = ${CLUSTER_CENTERS[@]}
       radius                  = ${RADIUS}
       smoothing sigma         = ${SMOOTHING_SIGMA}
       output prefix           = ${OUTPUT_PREFIX}
@@ -112,6 +118,9 @@ DIMENSION=3
 
 ANATOMICAL_IMAGES=()
 SYMMETRIC_TEMPLATE=()
+CLUSTER_CENTERS=()
+
+MASK_IMAGE=""
 
 RADIUS=2
 SMOOTHING_SIGMA=0
@@ -126,11 +135,14 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:d:h:o:r:s:t:" OPT
+  while getopts "a:c:d:h:o:r:s:t:x:" OPT
     do
       case $OPT in
-          a) #anatomical t1 image
+          a) #anatomical image
        ANATOMICAL_IMAGES[${#ANATOMICAL_IMAGES[@]}]=$OPTARG
+       ;;
+          c) # cluster centers
+       CLUSTER_CENTERS[${#CLUSTER_CENTERS[@]}]=$OPTARG
        ;;
           d) #dimensions
        DIMENSION=$OPTARG
@@ -156,6 +168,9 @@ else
           t)
        SYMMETRIC_TEMPLATES[${#SYMMETRIC_TEMPLATES[@]}]=$OPTARG
        ;;
+          x)
+       MASK_IMAGE=$OPTARG
+       ;;
           *) # getopts issues an error message
        echo "ERROR:  unrecognized option -$OPT $OPTARG"
        exit 1
@@ -174,27 +189,51 @@ fi
 
 for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
-  if [[ ! -f ${ANATOMICAL_IMAGES[$i]} ]];
-    then
-      echo "The specified image \"${ANATOMICAL_IMAGES[$i]}\" does not exist."
-      exit 1
-    fi
+    if [[ ! -f ${ANATOMICAL_IMAGES[$i]} ]];
+      then
+        echo "The specified image \"${ANATOMICAL_IMAGES[$i]}\" does not exist."
+        exit 1
+      fi
   done
 
 for (( i = 0; i < ${#SYMMETRIC_TEMPLATES[@]}; i++ ))
   do
-  if [[ ! -f ${SYMMETRIC_TEMPLATES[$i]} ]];
-    then
-      echo "The specified image \"${SYMMETRIC_TEMPLATES[$i]}\" does not exist."
-      exit 1
-    fi
+    if [[ ! -f ${SYMMETRIC_TEMPLATES[$i]} ]];
+      then
+        echo "The specified template image \"${SYMMETRIC_TEMPLATES[$i]}\" does not exist."
+        exit 1
+      fi
   done
 
-if [[ ! ${ANATOMICAL_IMAGES[$i]} -neq ${SYMMETRIC_TEMPLATES[$i]} ]]
+if [[ ! -f ${MASK_IMAGE} ]];
+  then
+    echo "The specified mask image \"${MASK_IMAGE}\" does not exist."
+    exit 1
+  fi
+
+if [[ ${#ANATOMICAL_IMAGES[@]} -ne ${#SYMMETRIC_TEMPLATES[@]} ]];
   then
       echo "The number of symmetric templates does not match the number of anatomical images."
       exit 1
   fi
+
+if [[ ${#ANATOMICAL_IMAGES[@]} -ne ${#CLUSTER_CENTERS[@]} ]]
+  then
+      echo "The number of cluster center arrays does not match the number of anatomical images."
+      exit 1
+  fi
+
+CLUSTERS=( `echo ${CLUSTER_CENTERS[0]} | tr 'x' ' '` )
+NUMBER_OF_LABELS=${#CLUSTERS[@]}
+for (( i = 1; i < ${#CLUSTER_CENTERS[@]}; i++ ))
+  do
+    CLUSTERS=( `echo ${CLUSTER_CENTERS[i]} | tr 'x' ' '` )
+    if [[ ${#CLUSTERS[@]} -ne NUMBER_OF_LABELS ]];
+      then
+        echo "The number of labels is not equal across the cluster center arrays."
+        exit 1
+      fi
+  done
 
 OUTPUT_DIR=${OUTPUT_PREFIX%\/*}
 if [[ ! -e $OUTPUT_PREFIX ]];
@@ -252,14 +291,11 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 DISTANCE=${UTILPATH}/GenerateDistanceImage
 
 OUTPUT_IMAGE=${OUTPUT_PREFIX}NORMALIZED_DISTANCE.${OUTPUT_SUFFIX}
-TMP_IMAGE=${OUTPUT_PREFIX}TMP.${OUTPUT_SUFFIX}
-if [[ -f ${OUTPUT_IMAGE} ]];
+if [[ ! -f ${OUTPUT_IMAGE} ]];
   then
-    logCmd ${ANTSPATH}ThresholdImage 3 ${ANATOMICAL_IMAGES[0]} $TMP_IMAGE 0 0 0 1
-    logCmd $DISTANCE ${DIMENSION} $TMP_IMAGE $OUTPUT_IMAGE 0
-    logCmd ${ANTSPATH}ImageMath 3 $OUTPUT_IMAGE m $TMP_IMAGE $OUTPUT_IMAGE
+    logCmd $DISTANCE ${DIMENSION} $MASK_IMAGE $OUTPUT_IMAGE 0
+    logCmd ${ANTSPATH}ImageMath 3 $OUTPUT_IMAGE m $MASK_IMAGE $OUTPUT_IMAGE
     logCmd ${ANTSPATH}ImageMath 3 $OUTPUT_IMAGE Normalize $OUTPUT_IMAGE
-    logCmd rm $TMP_IMAGE
   fi
 
 ################################################################################
@@ -271,15 +307,19 @@ if [[ -f ${OUTPUT_IMAGE} ]];
 OUTPUT_REGISTRATION_PREFIX=${OUTPUT_PREFIX}ANTs_REGISTRATION
 
 REG_BASE="${ANTSPATH}/antsRegistration -d ${DIMENSION} -w [0.025,0.975] -o ${OUTPUT_REGISTRATION_PREFIX}"
-REG_LEV0="-t Rigid[0.2] -m MI[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
-REG_LEV1="-t Affine[0.2] -m MI[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
-REG_LEV2="-t SyN[0.1,3,0.2] -m CC[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,4] -s 3x2x1x0 -f 8x4x2x1 -c [100x50x40x0,1e-8,15]"
-
-logCmd $REG_BASE $REG_LEV0 $REG_LEV1 $REG_LEV2
+REG_LEV0="-r [${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1]"
+REG_LEV1="-t Rigid[0.2] -m MI[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
+REG_LEV2="-t Affine[0.2] -m MI[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
+REG_LEV3="-t BSplineSyN[0.1,10x10x11,0x0x0] -m CC[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,4] -s 2x1x0 -f 4x2x1 -c [70x50x10,1e-8,15]"
 
 AFFINE=${OUTPUT_REGISTRATION_PREFIX}0GenericAffine.mat
 WARP=${OUTPUT_REGISTRATION_PREFIX}1Warp.nii.gz
 INVERSE_WARP=${OUTPUT_REGISTRATION_PREFIX}1InverseWarp.nii.gz
+
+if [[ ! -f $WARP ]];
+  then
+    logCmd $REG_BASE $REG_LEV0 $REG_LEV1 $REG_LEV2 $REG_LEV3
+  fi
 
 # log jacobian image
 OUTPUT_IMAGE=${OUTPUT_PREFIX}LOG_JACOBIAN.${OUTPUT_SUFFIX}
@@ -318,13 +358,26 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 
 ################################################################################
 #
-# Construct GMM for each class
+# Construct GMM probability images for each anatomical image
 #
 ################################################################################
 
+for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
+  do
+    OUTPUT_ATROPOS_IMAGE=${OUTPUT_PREFIX}IMAGE${i}_ATROPOS.${OUTPUT_SUFFIX}
+    OUTPUT_ATROPOS_IMAGE_POSTERIORS=${OUTPUT_PREFIX}IMAGE${i}_ATROPOS_POSTERIORS%d.${OUTPUT_SUFFIX}
 
-
-
+    logCmd ${ANTSPATH}/Atropos \
+                          -d ${DIMENSION} \
+                          -a ${ANATOMICAL_IMAGES[$i]} \
+                          -i KMeans[${NUMBER_OF_LABELS},${CLUSTER_CENTERS[i]}] \
+                          -p Socrates[1] \
+                          -x $MASK_IMAGE \
+                          -c [0,0] \
+                          -k Gaussian \
+                          -m [0.1,1x1x1] \
+                          -o [${ OUTPUT_ATROPOS_IMAGE},${OUTPUT_ATROPOS_IMAGE_POSTERIORS}]
+  done
 
 
 ################################################################################

@@ -177,6 +177,9 @@ TARGET_link_libraries(ConvertImage ${ITK_LIBRARIES})
 add_executable(ConvertImageToDicom ConvertImageToDicom.cxx )
 target_link_libraries(ConvertImageToDicom ${ITK_LIBRARIES})
 
+add_executable(CopyDicomHeader CopyDicomHeader.cxx )
+target_link_libraries(CopyDicomHeader ${ITK_LIBRARIES})
+
 add_executable(ImageReadDicomSeriesWrite ImageReadDicomSeriesWrite.cxx )
 target_link_libraries(ImageReadDicomSeriesWrite ${ITK_LIBRARIES})
 
