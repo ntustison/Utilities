@@ -97,9 +97,9 @@ int convert( int argc, char* argv[] )
 
   typename ImageType::IndexType start = region.GetIndex();
   typename ImageType::IndexType row = start;
-  row[0] += 1;
+  row[1] += 1;
   typename ImageType::IndexType col = start;
-  col[1] += 1;
+  col[0] += 1;
 
   typename ImageType::PointType origin = reader->GetOutput()->GetOrigin();
 
@@ -226,15 +226,15 @@ int convert( int argc, char* argv[] )
           values[n][t*numberOfSlices + s] );
         }
 
-//       itk::EncapsulateMetaData<std::string>( *dict,"0020|000e", seriesUID );
-//       itk::EncapsulateMetaData<std::string>( *dict,"0020|0052", frameOfReferenceUID );
+      itk::EncapsulateMetaData<std::string>( *dict,"0020|000e", seriesUID );
+      itk::EncapsulateMetaData<std::string>( *dict,"0020|0052", frameOfReferenceUID );
 
       gdcm::UIDGenerator sopuid;
       std::string sopInstanceUID = sopuid.Generate();
-//       itk::EncapsulateMetaData<std::string>( *dict, "0008|0018", sopInstanceUID );
+      itk::EncapsulateMetaData<std::string>( *dict, "0008|0018", sopInstanceUID );
       itk::EncapsulateMetaData<std::string>( *dict, "0002|0003", sopInstanceUID );
 
-      // instance number
+      // instance(image) number
       typename itksys_ios::ostringstream value2;
       value2.str( "" );
       value2 << ( t * numberOfSlices + s + 1 );
@@ -267,6 +267,25 @@ int convert( int argc, char* argv[] )
         }
       itk::EncapsulateMetaData<std::string>( *dict,"0020|0032", value2.str() );
 
+      // Slice Location: For now, we store the z component of the Image
+      // Position Patient.
+      value2.str( "" );
+      if( Dimension >= 3 )
+        {
+        value2 << position[2];
+        }
+      else
+        {
+        value2 << 0.0;
+        }
+      itk::EncapsulateMetaData<std::string>( *dict,"0020|1041", value2.str() );
+
+
+
+
+
+
+
       value2.str( "" );
       value2 << colVector[0] << "\\" << colVector[1] << "\\" << colVector[2] << "\\"
              << rowVector[0] << "\\" << rowVector[1] << "\\" << rowVector[2];
@@ -276,18 +295,6 @@ int convert( int argc, char* argv[] )
 
 
 
-      // Slice Location: For now, we store the z component of the Image
-      // Position Patient.
-//       value2.str( "" );
-//       if( Dimension >= 3 )
-//         {
-//         value2 << position[2];
-//         }
-//       else
-//         {
-//         value2 << 0.0;
-//         }
-//       itk::EncapsulateMetaData<std::string>( *dict,"0020|1041", value2.str() );
 
       dictionaryArray.push_back( dict );
       }

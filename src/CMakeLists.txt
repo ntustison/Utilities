@@ -304,8 +304,8 @@ target_link_libraries(GetPhysicalSpaceToParaviewAffine ${ITK_LIBRARIES})
 add_executable(GetConnectedComponents GetConnectedComponents.cxx )
 target_link_libraries(GetConnectedComponents ${ITK_LIBRARIES})
 
-add_executable( GetConnectedComponentsVolumeRatio GetConnectedComponentsVolumeRatio.cxx )
-target_link_libraries(GetConnectedComponentsVolumeRatio ${ITK_LIBRARIES} )
+add_executable( GetConnectedComponentsFeatureImages GetConnectedComponentsFeatureImages.cxx )
+target_link_libraries(GetConnectedComponentsFeatureImages ${ITK_LIBRARIES} )
 
 add_executable(GenerateAttenuationMask GenerateAttenuationMask.cxx )
 target_link_libraries(GenerateAttenuationMask ${ITK_LIBRARIES})

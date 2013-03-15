@@ -57,8 +57,8 @@ int LabelGeometryMeasures( int argc, char * argv[] )
 //   std::cout << "Number of labels: " << labelGeometryFilter->GetNumberOfLabels() << std::endl;
 //   std::cout << "Label geometry measures." << std::endl;
   std::cout << std::left << std::setw( 7 )  << "Label"
-            << std::left << std::setw( 10 ) << "Volume"
-            << std::left << std::setw( 15 ) << "Surface Area"
+            << std::left << std::setw( 10 ) << "Volume(vox)"
+            << std::left << std::setw( 15 ) << "SurfArea(mm^2)"
             << std::left << std::setw( 15 ) << "Eccentricity"
             << std::left << std::setw( 15 ) << "Elongation"
             << std::left << std::setw( 15 ) << "Orientation"
