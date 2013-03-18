@@ -8,8 +8,58 @@
 #include "itkRelabelComponentImageFilter.h"
 #include "itkLabelGeometryImageFilter.h"
 #include "itkLabelPerimeterEstimationCalculator.h"
+#include "itkLabelStatisticsImageFilter.h"
+#include "itkMultiplyImageFilter.h"
+#include "itkSignedMaurerDistanceMapImageFilter.h"
 
+#include <string>
 #include <vector>
+
+template<class TValue>
+TValue Convert( std::string optionString )
+{
+  TValue value;
+  std::istringstream iss( optionString );
+  iss >> value;
+  return value;
+}
+
+template<class TValue>
+std::vector<TValue> ConvertVector( std::string optionString )
+{
+  std::vector<TValue> values;
+  std::string::size_type crosspos = optionString.find( 'x', 0 );
+
+  if ( crosspos == std::string::npos )
+    {
+    values.push_back( Convert<TValue>( optionString ) );
+    }
+  else
+    {
+    std::string element = optionString.substr( 0, crosspos ) ;
+    TValue value;
+    std::istringstream iss( element );
+    iss >> value;
+    values.push_back( value );
+    while ( crosspos != std::string::npos )
+      {
+      std::string::size_type crossposfrom = crosspos;
+      crosspos = optionString.find( 'x', crossposfrom + 1 );
+      if ( crosspos == std::string::npos )
+        {
+        element = optionString.substr( crossposfrom + 1, optionString.length() );
+        }
+      else
+        {
+        element = optionString.substr( crossposfrom + 1, crosspos ) ;
+        }
+      std::istringstream iss2( element );
+      iss2 >> value;
+      values.push_back( value );
+      }
+    }
+  return values;
+}
 
 template <unsigned int ImageDimension>
 int GetConnectedComponents(int argc, char* argv[] )
@@ -26,12 +76,10 @@ int GetConnectedComponents(int argc, char* argv[] )
   // Output images:
   // [0] = volume (in physical coordinates)
   // [1] = volume / surface area
-  // [2] = eccentricity
-  // [3] = elongation
-  // [4] = orientation
+  // [2] = normalized distance within the last two labels (assumed to be tumor + edema)
 
   std::vector<typename RealImageType::Pointer> outputImages;
-  for( unsigned int n = 0; n < 5; n++ )
+  for( unsigned int n = 0; n < 3; n++ )
     {
     typename RealImageType::Pointer output = RealImageType::New();
     output->CopyInformation( reader->GetOutput() );
@@ -54,7 +102,9 @@ int GetConnectedComponents(int argc, char* argv[] )
   relabeler->SetInput( reader->GetOutput() );
   relabeler->Update();
 
-  for ( unsigned int i = 1; i <= relabeler->GetNumberOfObjects(); i++ )
+//   std::vector<unsigned int> tumorLabels = ConvertVector<unsigned int>( std::string( argv[4] ) );
+
+  for( unsigned int i = 1; i <= relabeler->GetNumberOfObjects(); i++ )
     {
     typedef itk::BinaryThresholdImageFilter<ImageType, ImageType> ThresholderType;
     typename ThresholderType::Pointer thresholder = ThresholderType::New();
@@ -102,17 +152,87 @@ int GetConnectedComponents(int argc, char* argv[] )
         // Output images:
         // [0] = volume (in physical coordinates)
         // [1] = volume / surface area
-        // [2] = eccentricity
-        // [3] = elongation
-        // [4] = orientation
+        // [2] = tumor + edema normalized distance
 
         float volume = prefactor * static_cast<float>( geometry->GetVolume( label ) );
 
         outputImages[0]->SetPixel( index, volume );
         outputImages[1]->SetPixel( index, area->GetPerimeter( label ) / volume );
-        outputImages[2]->SetPixel( index, geometry->GetEccentricity( label ) );
-        outputImages[3]->SetPixel( index, geometry->GetElongation( label ) );
-        outputImages[4]->SetPixel( index, geometry->GetOrientation( label ) );
+        }
+      }
+    }
+
+  typename ImageType::Pointer relabeledImage = ImageType::New();
+  relabeledImage->CopyInformation( relabeler->GetOutput() );
+  relabeledImage->SetRegions( relabeler->GetOutput()->GetRequestedRegion() );
+  relabeledImage->Allocate();
+  relabeledImage->FillBuffer( 0 );
+
+  itk::ImageRegionIteratorWithIndex<ImageType> ItR( relabeler->GetOutput(),
+    relabeler->GetOutput()->GetRequestedRegion() );
+  for( ItR.GoToBegin(); !ItR.IsAtEnd(); ++ItR )
+    {
+    PixelType label = ItR.Get();
+    if( label != 0 )
+      {
+      relabeledImage->SetPixel( ItR.GetIndex(), label );
+//       for( unsigned int n = 1; n < tumorLabels.size(); n++ )
+//         {
+//         if( label == tumorLabels[n] )
+//           {
+//           relabeledImage->SetPixel( ItR.GetIndex(), tumorLabels[0] );
+//           }
+//         }
+      }
+    }
+
+  typename RelabelerType::Pointer relabeler3 = RelabelerType::New();
+  relabeler3->SetInput( relabeledImage );
+  relabeler3->Update();
+
+  for( unsigned int i = 1; i <= relabeler3->GetNumberOfObjects(); i++ )
+    {
+    typedef itk::BinaryThresholdImageFilter<ImageType, ImageType> ThresholderType;
+    typename ThresholderType::Pointer thresholder = ThresholderType::New();
+    thresholder->SetInput( relabeler3->GetOutput() );
+    thresholder->SetLowerThreshold( i );
+    thresholder->SetUpperThreshold( i );
+    thresholder->SetInsideValue( 1 );
+    thresholder->SetOutsideValue( 0 );
+    thresholder->Update();
+
+    typedef itk::SignedMaurerDistanceMapImageFilter<ImageType, RealImageType> FilterType;
+    typename FilterType::Pointer filter = FilterType::New();
+    filter->SetInput( thresholder->GetOutput() );
+    filter->SetSquaredDistance( false );
+    filter->SetUseImageSpacing( true );
+    filter->SetInsideIsPositive( true );
+    filter->Update();
+
+    typedef itk::LabelStatisticsImageFilter<RealImageType, ImageType> HistogramGeneratorType;
+    typename HistogramGeneratorType::Pointer stats = HistogramGeneratorType::New();
+    stats->SetInput( filter->GetOutput() );
+    stats->SetLabelInput( thresholder->GetOutput() );
+    stats->Update();
+
+    float maxDistance = stats->GetMaximum( 1 );
+
+    typedef itk::MultiplyImageFilter<RealImageType, RealImageType, RealImageType> MultiplierType;
+    typename MultiplierType::Pointer multiplier = MultiplierType::New();
+    multiplier->SetInput( filter->GetOutput() );
+    multiplier->SetConstant( 1.0 /* / maxDistance */ );
+    multiplier->Update();
+
+    itk::ImageRegionIterator<ImageType> ItT( thresholder->GetOutput(),
+      thresholder->GetOutput()->GetRequestedRegion() );
+    itk::ImageRegionIteratorWithIndex<RealImageType> ItM( multiplier->GetOutput(),
+      multiplier->GetOutput()->GetRequestedRegion() );
+    for( ItT.GoToBegin(), ItM.GoToBegin(); !ItT.IsAtEnd(); ++ItT, ++ItM )
+      {
+      int label = ItT.Get();
+      if( label != 0 )
+        {
+        outputImages[2]->SetPixel( ItM.GetIndex(), ItM.Get() );
         }
       }
     }
@@ -136,36 +256,19 @@ int GetConnectedComponents(int argc, char* argv[] )
   }
 
   {
-  std::string filename = std::string( argv[3] ) + std::string( "ECCENTRICITY.nii.gz" );
+  std::string filename = std::string( argv[3] ) + std::string( "COMPONENT_DISTANCE.nii.gz" );
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( filename.c_str() );
   writer->SetInput( outputImages[2] );
   writer->Update();
   }
 
-  {
-  std::string filename = std::string( argv[3] ) + std::string( "ELONGATION.nii.gz" );
-  typename WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( filename.c_str() );
-  writer->SetInput( outputImages[3] );
-  writer->Update();
-  }
-
-  {
-  std::string filename = std::string( argv[3] ) + std::string( "ORIENTATION.nii.gz" );
-  typename WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( filename.c_str() );
-  writer->SetInput( outputImages[4] );
-  writer->Update();
-  }
-
-
   return 0;
 }
 
 int main( int argc, char *argv[] )
 {
-  if ( argc < 4 )
+  if ( argc < 5 )
     {
     std::cerr << "Usage: " << argv[0] << " imageDimension "
               << "inputSegmentationImage outputImagePrefix" << std::endl;
