@@ -268,7 +268,7 @@ int GetConnectedComponents(int argc, char* argv[] )
 
 int main( int argc, char *argv[] )
 {
-  if ( argc < 5 )
+  if ( argc < 4 )
     {
     std::cerr << "Usage: " << argv[0] << " imageDimension "
               << "inputSegmentationImage outputImagePrefix" << std::endl;
