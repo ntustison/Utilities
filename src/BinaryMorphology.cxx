@@ -5,6 +5,7 @@
 
 #include "itkBinaryDilateImageFilter.h"
 #include "itkBinaryErodeImageFilter.h"
+#include "itkBinaryFillholeImageFilter.h"
 #include "itkBinaryMorphologicalClosingImageFilter.h"
 #include "itkBinaryMorphologicalOpeningImageFilter.h"
 #include "itkBinaryBallStructuringElement.h"
@@ -44,8 +45,24 @@ int BinaryMorphology( int argc, char * argv[] )
     background = static_cast<PixelType>( atof( argv[8] ) );
     }
 
-
   unsigned int operation = static_cast<unsigned int>( atoi( argv[4] ) );
+
+  if( operation == 5 )
+    {
+    typedef itk::BinaryFillholeImageFilter<ImageType>  FilterType;
+    typename FilterType::Pointer  filter = FilterType::New();
+    filter->SetInput( reader->GetOutput() );
+    filter->SetForegroundValue( foreground );
+    filter->SetFullyConnected( true );
+    filter->Update();
+    typedef itk::ImageFileWriter<ImageType>  WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( filter->GetOutput() );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+
+    return EXIT_SUCCESS;
+    }
 
   if ( argc < 6 || atoi( argv[6] ) == 1 )
     {
@@ -368,6 +385,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    2. close " << std::endl;
     std::cerr << "    3. open " << std::endl;
     std::cerr << "    4. thin " << std::endl;
+    std::cerr << "    5. file holes" << std::endl;
     return EXIT_FAILURE;
     }
 
