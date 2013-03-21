@@ -76,10 +76,11 @@ int GetConnectedComponents(int argc, char* argv[] )
   // Output images:
   // [0] = volume (in physical coordinates)
   // [1] = volume / surface area
-  // [2] = normalized distance within the last two labels (assumed to be tumor + edema)
+  // [2] = eccentricity
+  // [3] = elongation
 
   std::vector<typename RealImageType::Pointer> outputImages;
-  for( unsigned int n = 0; n < 3; n++ )
+  for( unsigned int n = 0; n < 4; n++ )
     {
     typename RealImageType::Pointer output = RealImageType::New();
     output->CopyInformation( reader->GetOutput() );
@@ -152,90 +153,93 @@ int GetConnectedComponents(int argc, char* argv[] )
         // Output images:
         // [0] = volume (in physical coordinates)
         // [1] = volume / surface area
-        // [2] = tumor + edema normalized distance
+        // [2] = eccentricity
+        // [3] = elongation
 
         float volume = prefactor * static_cast<float>( geometry->GetVolume( label ) );
 
         outputImages[0]->SetPixel( index, volume );
         outputImages[1]->SetPixel( index, area->GetPerimeter( label ) / volume );
+        outputImages[2]->SetPixel( index, geometry->GetEccentricity( label ) );
+        outputImages[3]->SetPixel( index, geometry->GetElongation( label ) );
         }
       }
     }
 
-  typename ImageType::Pointer relabeledImage = ImageType::New();
-  relabeledImage->CopyInformation( relabeler->GetOutput() );
-  relabeledImage->SetRegions( relabeler->GetOutput()->GetRequestedRegion() );
-  relabeledImage->Allocate();
-  relabeledImage->FillBuffer( 0 );
-
-  itk::ImageRegionIteratorWithIndex<ImageType> ItR( relabeler->GetOutput(),
-    relabeler->GetOutput()->GetRequestedRegion() );
-  for( ItR.GoToBegin(); !ItR.IsAtEnd(); ++ItR )
-    {
-    PixelType label = ItR.Get();
-    if( label != 0 )
-      {
-      relabeledImage->SetPixel( ItR.GetIndex(), label );
-//       for( unsigned int n = 1; n < tumorLabels.size(); n++ )
+//   typename ImageType::Pointer relabeledImage = ImageType::New();
+//   relabeledImage->CopyInformation( relabeler->GetOutput() );
+//   relabeledImage->SetRegions( relabeler->GetOutput()->GetRequestedRegion() );
+//   relabeledImage->Allocate();
+//   relabeledImage->FillBuffer( 0 );
+//
+//   itk::ImageRegionIteratorWithIndex<ImageType> ItR( relabeler->GetOutput(),
+//     relabeler->GetOutput()->GetRequestedRegion() );
+//   for( ItR.GoToBegin(); !ItR.IsAtEnd(); ++ItR )
+//     {
+//     PixelType label = ItR.Get();
+//     if( label != 0 )
+//       {
+//       relabeledImage->SetPixel( ItR.GetIndex(), label );
+// //       for( unsigned int n = 1; n < tumorLabels.size(); n++ )
+// //         {
+// //         if( label == tumorLabels[n] )
+// //           {
+// //           relabeledImage->SetPixel( ItR.GetIndex(), tumorLabels[0] );
+// //           }
+// //         }
+//       }
+//     }
+//
+//   typename RelabelerType::Pointer relabeler3 = RelabelerType::New();
+//   relabeler3->SetInput( relabeledImage );
+//   relabeler3->Update();
+//
+//   for( unsigned int i = 1; i <= relabeler3->GetNumberOfObjects(); i++ )
+//     {
+//     typedef itk::BinaryThresholdImageFilter<ImageType, ImageType> ThresholderType;
+//     typename ThresholderType::Pointer thresholder = ThresholderType::New();
+//     thresholder->SetInput( relabeler3->GetOutput() );
+//     thresholder->SetLowerThreshold( i );
+//     thresholder->SetUpperThreshold( i );
+//     thresholder->SetInsideValue( 1 );
+//     thresholder->SetOutsideValue( 0 );
+//     thresholder->Update();
+//
+//     typedef itk::SignedMaurerDistanceMapImageFilter<ImageType, RealImageType> FilterType;
+//     typename FilterType::Pointer filter = FilterType::New();
+//     filter->SetInput( thresholder->GetOutput() );
+//     filter->SetSquaredDistance( false );
+//     filter->SetUseImageSpacing( true );
+//     filter->SetInsideIsPositive( true );
+//     filter->Update();
+//
+//     typedef itk::LabelStatisticsImageFilter<RealImageType, ImageType> HistogramGeneratorType;
+//     typename HistogramGeneratorType::Pointer stats = HistogramGeneratorType::New();
+//     stats->SetInput( filter->GetOutput() );
+//     stats->SetLabelInput( thresholder->GetOutput() );
+//     stats->Update();
+//
+//     float maxDistance = stats->GetMaximum( 1 );
+//
+//     typedef itk::MultiplyImageFilter<RealImageType, RealImageType, RealImageType> MultiplierType;
+//     typename MultiplierType::Pointer multiplier = MultiplierType::New();
+//     multiplier->SetInput( filter->GetOutput() );
+//     multiplier->SetConstant( 1.0 /* / maxDistance */ );
+//     multiplier->Update();
+//
+//     itk::ImageRegionIterator<ImageType> ItT( thresholder->GetOutput(),
+//       thresholder->GetOutput()->GetRequestedRegion() );
+//     itk::ImageRegionIteratorWithIndex<RealImageType> ItM( multiplier->GetOutput(),
+//       multiplier->GetOutput()->GetRequestedRegion() );
+//     for( ItT.GoToBegin(), ItM.GoToBegin(); !ItT.IsAtEnd(); ++ItT, ++ItM )
+//       {
+//       int label = ItT.Get();
+//       if( label != 0 )
 //         {
-//         if( label == tumorLabels[n] )
-//           {
-//           relabeledImage->SetPixel( ItR.GetIndex(), tumorLabels[0] );
-//           }
+//         outputImages[2]->SetPixel( ItM.GetIndex(), ItM.Get() );
 //         }
-      }
-    }
-
-  typename RelabelerType::Pointer relabeler3 = RelabelerType::New();
-  relabeler3->SetInput( relabeledImage );
-  relabeler3->Update();
-
-  for( unsigned int i = 1; i <= relabeler3->GetNumberOfObjects(); i++ )
-    {
-    typedef itk::BinaryThresholdImageFilter<ImageType, ImageType> ThresholderType;
-    typename ThresholderType::Pointer thresholder = ThresholderType::New();
-    thresholder->SetInput( relabeler3->GetOutput() );
-    thresholder->SetLowerThreshold( i );
-    thresholder->SetUpperThreshold( i );
-    thresholder->SetInsideValue( 1 );
-    thresholder->SetOutsideValue( 0 );
-    thresholder->Update();
-
-    typedef itk::SignedMaurerDistanceMapImageFilter<ImageType, RealImageType> FilterType;
-    typename FilterType::Pointer filter = FilterType::New();
-    filter->SetInput( thresholder->GetOutput() );
-    filter->SetSquaredDistance( false );
-    filter->SetUseImageSpacing( true );
-    filter->SetInsideIsPositive( true );
-    filter->Update();
-
-    typedef itk::LabelStatisticsImageFilter<RealImageType, ImageType> HistogramGeneratorType;
-    typename HistogramGeneratorType::Pointer stats = HistogramGeneratorType::New();
-    stats->SetInput( filter->GetOutput() );
-    stats->SetLabelInput( thresholder->GetOutput() );
-    stats->Update();
-
-    float maxDistance = stats->GetMaximum( 1 );
-
-    typedef itk::MultiplyImageFilter<RealImageType, RealImageType, RealImageType> MultiplierType;
-    typename MultiplierType::Pointer multiplier = MultiplierType::New();
-    multiplier->SetInput( filter->GetOutput() );
-    multiplier->SetConstant( 1.0 /* / maxDistance */ );
-    multiplier->Update();
-
-    itk::ImageRegionIterator<ImageType> ItT( thresholder->GetOutput(),
-      thresholder->GetOutput()->GetRequestedRegion() );
-    itk::ImageRegionIteratorWithIndex<RealImageType> ItM( multiplier->GetOutput(),
-      multiplier->GetOutput()->GetRequestedRegion() );
-    for( ItT.GoToBegin(), ItM.GoToBegin(); !ItT.IsAtEnd(); ++ItT, ++ItM )
-      {
-      int label = ItT.Get();
-      if( label != 0 )
-        {
-        outputImages[2]->SetPixel( ItM.GetIndex(), ItM.Get() );
-        }
-      }
-    }
+//       }
+//     }
 
   typedef itk::ImageFileWriter<RealImageType> WriterType;
 
@@ -256,10 +260,18 @@ int GetConnectedComponents(int argc, char* argv[] )
   }
 
   {
-  std::string filename = std::string( argv[3] ) + std::string( "COMPONENT_DISTANCE.nii.gz" );
+  std::string filename = std::string( argv[3] ) + std::string( "ECCENTRICITY.nii.gz" );
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( filename.c_str() );
   writer->SetInput( outputImages[2] );
+  writer->Update();
+  }
+
+  {
+  std::string filename = std::string( argv[3] ) + std::string( "ELONGATION.nii.gz" );
+  typename WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName( filename.c_str() );
+  writer->SetInput( outputImages[3] );
   writer->Update();
   }
 
