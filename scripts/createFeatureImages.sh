@@ -247,7 +247,7 @@ for (( i = 1; i < ${#CLUSTER_CENTERS[@]}; i++ ))
   done
 
 OUTPUT_DIR=${OUTPUT_PREFIX%\/*}
-if [[ ! -e $OUTPUT_PREFIX ]];
+if [[ ! -d $OUTPUT_DIR ]];
   then
     echo "The output directory \"$OUTPUT_DIR\" does not exist. Making it."
     mkdir -p $OUTPUT_DIR
@@ -289,6 +289,13 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
     if [[ ! -f ${OUTPUT_IMAGE} ]];
       then
         logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 5 ${RADIUS}
+      fi
+
+    # entropy image
+    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ENTROPY_RADIUS_${RADIUS}.${OUTPUT_SUFFIX}
+    if [[ ! -f ${OUTPUT_IMAGE} ]];
+      then
+        logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 7 ${RADIUS}
       fi
 
   done
@@ -391,7 +398,10 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 
     OUTPUT_ATROPOS_FEATURES_PREFIX=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM_
 
-    logCmd ${UTILPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
+    if [[ ! -f ${OUTPUT_ATROPOS_FEATURES_PREFIX}ECCENTRICITY.nii.gz ]];
+      then
+        logCmd ${UTILPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
+      fi
   done
 
 ################################################################################
