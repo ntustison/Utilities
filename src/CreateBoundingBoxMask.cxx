@@ -5,6 +5,8 @@
 #include "itkGroupSpatialObject.h"
 #include "itkSpatialObjectToImageFilter.h"
 
+#include "itkVector.h"
+
 #include <string>
 #include <vector>
 
@@ -68,8 +70,7 @@ int main( int argc, char *argv[] )
   typedef itk::Image<PixelType, ImageDimension> ImageType;
 
   typedef itk::GroupSpatialObject<ImageDimension> SceneType;
-  typedef itk::SpatialObjectToImageFilter<SceneType, ImageType>
-    SpatialObjectToImageFilterType;
+  typedef itk::SpatialObjectToImageFilter<SceneType, ImageType> SpatialObjectToImageFilterType;
   SceneType::Pointer scene = SceneType::New();
 
   typedef itk::ImageFileReader<ImageType> ReaderType;
@@ -77,13 +78,9 @@ int main( int argc, char *argv[] )
   reader->SetFileName( argv[1] );
   reader->Update();
 
-  std::vector<float> center =
-    ConvertVector<float>( std::string( argv[3] ) );
-  std::vector<float> dimensions =
-    ConvertVector<float>( std::string( argv[4] ) );
-  std::vector<float> normal =
-    ConvertVector<float>( std::string( argv[5] ) );
-
+  std::vector<float> center = ConvertVector<float>( std::string( argv[3] ) );
+  std::vector<float> dimensions = ConvertVector<float>( std::string( argv[4] ) );
+  std::vector<float> normal = ConvertVector<float>( std::string( argv[5] ) );
 
   // Find the angle between initial (assume initial = 1,0,0) and normal
   std::vector<float> initial;
@@ -119,6 +116,18 @@ int main( int argc, char *argv[] )
   crossProduct.push_back( -initial[0] * normal[2] + initial[2] * normal[0] );
   crossProduct.push_back( initial[0] * normal[1] - initial[1] * normal[0] );
 
+  float magnitudeCrossProduct = 0.0;
+  for( unsigned int i = 0; i < ImageDimension; i++ )
+    {
+    magnitudeCrossProduct += vnl_math_sqr( crossProduct[i] );
+    }
+
+  magnitudeCrossProduct = vcl_sqrt( magnitudeCrossProduct );
+  for( unsigned int i = 0; i < ImageDimension; i++ )
+    {
+    crossProduct[i] /= magnitudeCrossProduct;
+    }
+
   // Set up the box spatial object
 
   typedef itk::BoxSpatialObject<ImageDimension> BoxType;
@@ -131,57 +140,86 @@ int main( int argc, char *argv[] )
   dimensions2[1] = dimensions[1];
   dimensions2[2] = dimensions[2];
 
-  BoxType::TransformType::MatrixType matrix;
+  BoxType::TransformType::MatrixType matrixImage = reader->GetOutput()->GetDirection();
+
+  BoxType::TransformType::MatrixType matrixNormal;
   BoxType::TransformType::OffsetType offset;
 
-  matrix.SetIdentity();
+  matrixNormal.SetIdentity();
 
-  float u = crossProduct[0];
-  float v = crossProduct[1];
-  float w = crossProduct[2];
+  if( theta != 0.0 )
+    {
+    float u = crossProduct[0];
+    float v = crossProduct[1];
+    float w = crossProduct[2];
 
-  float u2 = vnl_math_sqr( u );
-  float v2 = vnl_math_sqr( v );
-  float w2 = vnl_math_sqr( w );
+    float u2 = vnl_math_sqr( u );
+    float v2 = vnl_math_sqr( v );
+    float w2 = vnl_math_sqr( w );
 
-  matrix[0][0] = u2 + (v2 + w2) * vcl_cos( theta );
-  matrix[1][0] = u * v * ( 1.0 - vcl_cos( theta ) ) + w * vcl_sin( theta );
-  matrix[2][0] = u * w * ( 1.0 - vcl_cos( theta ) ) - v * vcl_sin( theta );
+    float cos_theta = vcl_cos( theta );
+    float sin_theta = vcl_sin( theta );
 
-  matrix[0][1] = u * v * ( 1.0 - vcl_cos( theta ) ) - w * vcl_sin( theta );
-  matrix[1][1] = v2 + (u2 + w2) * vcl_cos( theta );
-  matrix[2][1] = v * w * ( 1.0 - vcl_cos( theta ) ) + u * vcl_sin( theta );
+    matrixNormal[0][0] = cos_theta + u2 * ( 1.0 - cos_theta );
+    matrixNormal[1][0] = u * v * ( 1.0 - cos_theta ) - w * sin_theta;
+    matrixNormal[2][0] = u * w * ( 1.0 - cos_theta ) + v * sin_theta;
 
-  matrix[0][2] = u * w * ( 1.0 - vcl_cos( theta ) ) + v * vcl_sin( theta );
-  matrix[1][2] = v * w * ( 1.0 - vcl_cos( theta ) ) - u * vcl_sin( theta );
-  matrix[2][2] = w2 + (u2 + v2) * vcl_cos( theta );
+    matrixNormal[0][1] = u * v * ( 1.0 - cos_theta ) + w * sin_theta;
+    matrixNormal[1][1] = cos_theta + v2 * ( 1.0 - cos_theta );
+    matrixNormal[2][1] = v * w * ( 1.0 - cos_theta ) - u * sin_theta;
 
-  BoxType::TransformType::MatrixType matrix2;
-  matrix2.SetIdentity();
+    matrixNormal[0][2] = u * w * ( 1.0 - cos_theta ) - v * sin_theta;
+    matrixNormal[1][2] = v * w * ( 1.0 - cos_theta ) + u * sin_theta;
+    matrixNormal[2][2] = cos_theta + w2 * ( 1.0 - cos_theta );
+    }
+
+  BoxType::TransformType::MatrixType matrixInPlane;
+  matrixInPlane.SetIdentity();
 
   theta = atof( argv[6] );
 
-  u = normal[0];
-  v = normal[1];
-  w = normal[2];
+  if( theta != 0 )
+    {
+    itk::Vector<float, 3> normalVector;
 
-  u2 = vnl_math_sqr( u );
-  v2 = vnl_math_sqr( v );
-  w2 = vnl_math_sqr( w );
+    normalVector[0] = normal[0];
+    normalVector[1] = normal[1];
+    normalVector[2] = normal[2];
 
-  matrix2[0][0] = u2 + (v2 + w2) * vcl_cos( theta );
-  matrix2[1][0] = u * v * ( 1.0 - vcl_cos( theta ) ) + w * vcl_sin( theta );
-  matrix2[2][0] = u * w * ( 1.0 - vcl_cos( theta ) ) - v * vcl_sin( theta );
+//     normalVector = matrixImage * normalVector;
 
-  matrix2[0][1] = u * v * ( 1.0 - vcl_cos( theta ) ) - w * vcl_sin( theta );
-  matrix2[1][1] = v2 + (u2 + w2) * vcl_cos( theta );
-  matrix2[2][1] = v * w * ( 1.0 - vcl_cos( theta ) ) + u * vcl_sin( theta );
+    float u = normalVector[0];
+    float v = normalVector[1];
+    float w = normalVector[2];
 
-  matrix2[0][2] = u * w * ( 1.0 - vcl_cos( theta ) ) + v * vcl_sin( theta );
-  matrix2[1][2] = v * w * ( 1.0 - vcl_cos( theta ) ) - u * vcl_sin( theta );
-  matrix2[2][2] = w2 + (u2 + v2) * vcl_cos( theta );
+    float u2 = vnl_math_sqr( u );
+    float v2 = vnl_math_sqr( v );
+    float w2 = vnl_math_sqr( w );
 
-  matrix2 *= matrix;
+    float cos_theta = vcl_cos( theta );
+    float sin_theta = vcl_sin( theta );
+
+    matrixInPlane[0][0] = cos_theta + u2 * ( 1.0 - cos_theta );
+    matrixInPlane[1][0] = u * v * ( 1.0 - cos_theta ) - w * sin_theta;
+    matrixInPlane[2][0] = u * w * ( 1.0 - cos_theta ) + v * sin_theta;
+
+    matrixInPlane[0][1] = u * v * ( 1.0 - cos_theta ) + w * sin_theta;
+    matrixInPlane[1][1] = cos_theta + v2 * ( 1.0 - cos_theta );
+    matrixInPlane[2][1] = v * w * ( 1.0 - cos_theta ) - u * sin_theta;
+
+    matrixInPlane[0][2] = u * w * ( 1.0 - cos_theta ) - v * sin_theta;
+    matrixInPlane[1][2] = v * w * ( 1.0 - cos_theta ) + u * sin_theta;
+    matrixInPlane[2][2] = cos_theta + w2 * ( 1.0 - cos_theta );
+    }
+
+  BoxType::TransformType::MatrixType matrix = matrixInPlane * matrixNormal;
+
+  std::cout << matrixNormal << std::endl;
+  std::cout << matrixInPlane << std::endl;
+  std::cout << matrixImage << std::endl;
+  std::cout << matrix << std::endl;
+
+//   matrixInPlane *= matrix;
 
   for( unsigned int i = 0; i < ImageDimension; i++ )
       {
@@ -189,23 +227,20 @@ int main( int argc, char *argv[] )
       offset[i] = center[i];
       for( unsigned int j = 0; j < ImageDimension; j++ )
         {
-        offset[i] -= matrix2[i][j] * ( 0.5 * dimensions[j] );
+        offset[i] -= matrix[i][j] * ( 0.5 * dimensions[j] );
         }
       }
 
   box->SetSize( dimensions2 );
-  box->GetObjectToParentTransform()->SetMatrix( matrix2 );
+  box->GetObjectToParentTransform()->SetMatrix( matrix );
   box->GetObjectToParentTransform()->SetOffset( offset );
   box->ComputeObjectToWorldTransform();
 
   box->GetObjectToParentTransform()->Print( std::cout, 3 );
 
-//  box->GetParent()->GetObjectToWorldTransform()->Print( std::cout, 3 );
+  box->GetParent()->GetObjectToWorldTransform()->Print( std::cout, 3 );
 
-
-
-  SpatialObjectToImageFilterType::Pointer filter =
-    SpatialObjectToImageFilterType::New();
+  SpatialObjectToImageFilterType::Pointer filter = SpatialObjectToImageFilterType::New();
   filter->SetInput( scene );
   filter->SetSize( reader->GetOutput()->GetLargestPossibleRegion().GetSize() );
   filter->SetOrigin( reader->GetOutput()->GetOrigin() );
