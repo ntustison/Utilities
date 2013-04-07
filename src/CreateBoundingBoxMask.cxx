@@ -136,9 +136,9 @@ bool IsInsideBox( std::vector<float> point,
 
 int main( int argc, char *argv[] )
 {
-  if ( argc < 7 )
+  if ( argc < 6 )
     {
-    std::cout << argv[0] << " inputImage outputImage position dimensions row column inplaneRotationAngle" << std::endl;
+    std::cout << argv[0] << " inputImage outputImage position dimensions row column" << std::endl;
     exit( 1 );
     }
 
@@ -184,9 +184,9 @@ int main( int argc, char *argv[] )
     output->TransformIndexToPhysicalPoint( It.GetIndex(), point );
 
     std::vector<float> pointVector( 3 );
-    pointVector[0] = point[0];
-    pointVector[1] = point[1];
-    pointVector[2] = point[2];
+    pointVector[0] = point[0] + 0.5 * ( dimensions[0] * rowVector[0] + dimensions[1] * columnVector[0] + dimensions[2] * crossProduct[0] );
+    pointVector[1] = point[1] + 0.5 * ( dimensions[0] * rowVector[1] + dimensions[1] * columnVector[1] + dimensions[2] * crossProduct[1] );
+    pointVector[2] = point[2] + 0.5 * ( dimensions[0] * rowVector[2] + dimensions[1] * columnVector[2] + dimensions[2] * crossProduct[2] );
 
     if( IsInsideBox( pointVector, positionVector, rowVector, columnVector, crossProduct, dimensions ) )
       {

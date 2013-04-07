@@ -66,6 +66,8 @@ Optional arguments:
                                                 the following images:
                                                   * symmetric template difference
                                                   * contralateral difference
+     -p:  Brain segmentation priors             Tissue *probability* priors. Specified using c-style formatting, e.g.
+                                                -p labelsPriors%02d.nii.gz.
      -n   imageNames                            used in the naming of the images (otherwise, labeled IMAGE0, IMAGE1, etc)
 
 USAGE
@@ -83,6 +85,7 @@ echoParameters() {
       image names             = ${IMAGE_NAMES[@]}
       radius                  = ${RADIUS}
       smoothing sigma         = ${SMOOTHING_SIGMA}
+      priors                  = ${SEGMENTATION_PRIOR}
       output prefix           = ${OUTPUT_PREFIX}
 
 PARAMETERS
@@ -124,6 +127,8 @@ SYMMETRIC_TEMPLATE=()
 CLUSTER_CENTERS=()
 IMAGE_NAMES=()
 
+SEGMENTATION_PRIOR=""
+
 MASK_IMAGE=""
 
 RADIUS=2
@@ -139,7 +144,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:c:d:h:n:o:r:s:t:x:" OPT
+  while getopts "a:c:d:h:n:o:p:r:s:t:x:" OPT
     do
       case $OPT in
           a) #anatomical image
@@ -165,6 +170,9 @@ else
        ;;
           o) #output prefix
        OUTPUT_PREFIX=$OPTARG
+       ;;
+          p) #brain segmentation label prior image
+       SEGMENTATION_PRIOR=$OPTARG
        ;;
           r)
        RADIUS=$OPTARG
@@ -386,21 +394,60 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
     OUTPUT_ATROPOS_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM.${OUTPUT_SUFFIX}
     OUTPUT_ATROPOS_IMAGE_POSTERIORS=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM_POSTERIORS%d.${OUTPUT_SUFFIX}
 
-    SEG_BASE="${ANTSPATH}/Atropos -d ${DIMENSION} -a ${ANATOMICAL_IMAGES[$i]}"
-    SEG_0="-i KMeans[${NUMBER_OF_LABELS},${CLUSTER_CENTERS[i]}] -p Socrates[1] -x $MASK_IMAGE"
-    SEG_1="-c [0,0] -k Gaussian -m [0.1,1x1x1]"
-    SEG_2="-o [${OUTPUT_ATROPOS_IMAGE},${OUTPUT_ATROPOS_IMAGE_POSTERIORS}]"
-
-    if [[ ! -f ${OUTPUT_ATROPOS_IMAGE} ]];
+    if [[ -n ${SEGMENTATION_PRIOR} ]];
       then
-        logCmd $SEG_BASE $SEG_0 $SEG_1 $SEG_2
+
+        if [[ ! -f ${OUTPUT_ATROPOS_IMAGE} ]];
+          then
+
+            bash ${ANTSPATH}/antsAtroposN4.sh \
+              -d ${DIMENSION} \
+              -a ${ANATOMICAL_IMAGES[$i]} \
+              -x ${MASK_IMAGE} \
+              -m 3 \
+              -n 5 \
+              -c 5 \
+              -l 3 \
+              -l 2 \
+              -p ${SEGMENTATION_PRIOR} \
+              -w 0.5 \
+              -o ${OUTPUT_PREFIX}${IMAGE_NAMES[$i]} \
+              -k 0 \
+              -s ${OUTPUT_SUFFIX}
+
+            f=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}Segmentation.${OUTPUT_SUFFIX}
+            newfile=${f/Segmentation/_ATROPOS_GMM};
+            logCmd mv $f $newfile
+
+            for f in `ls ${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}SegmentationPosteriors*.nii.gz`;
+              do
+                newfile=${f/SegmentationPosteriors/_ATROPOS_GMM_POSTERIORS};
+                logCmd mv $f $newfile
+              done
+          fi
+
+      else
+
+        SEG_BASE="${ANTSPATH}/Atropos -d ${DIMENSION} -a ${ANATOMICAL_IMAGES[$i]}"
+        SEG_0="-i KMeans[${NUMBER_OF_LABELS},${CLUSTER_CENTERS[i]}] -p Socrates[1] -x $MASK_IMAGE"
+        SEG_1="-c [0,0] -k Gaussian -m [0.1,1x1x1]"
+        SEG_2="-o [${OUTPUT_ATROPOS_IMAGE},${OUTPUT_ATROPOS_IMAGE_POSTERIORS}]"
+
+        if [[ ! -f ${OUTPUT_ATROPOS_IMAGE} ]];
+          then
+            logCmd $SEG_BASE $SEG_0 $SEG_1 $SEG_2
+          fi
       fi
 
     OUTPUT_ATROPOS_FEATURES_PREFIX=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM_
 
+    OUTPUT_ATROPOS_DISTANCE_IMAGE=${OUTPUT_ATROPOS_FEATURES_PREFIX}LABEL5_DISTANCE.${OUTPUT_SUFFIX}
+
     if [[ ! -f ${OUTPUT_ATROPOS_FEATURES_PREFIX}ECCENTRICITY.nii.gz ]];
       then
         logCmd ${UTILPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
+        logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 5 5 1 0
+        logCmd ${UTILPATH}/GenerateDistanceImage ${DIMENSION} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 1
       fi
   done
 
