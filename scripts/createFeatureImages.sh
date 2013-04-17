@@ -4,8 +4,6 @@ VERSION="0.0"
 
 ## need to change to put everything in ANTs (ImageMath?)
 
-UTILPATH=/Users/ntustison/Pkg/Utilities/bin/
-
 if [[ ! -d "$UTILPATH" ]];
   then
     echo We can\'t find the Utilities path -- does not seem to exist.  Please \(re\)define \$UTILPATH in your environment.
@@ -50,7 +48,10 @@ Required arguments:
                                                    * intensity normalized (i.e. histogram matching and intensity truncation)
      -c:  cluster centers                       Array describing the intensity centers of the intensity normalized images.
                                                 Need one for each input image.  Should be of the form:  e.g. 0.14x0.57x0.37x0.83x0.95
-                                                (for 5 classes: csf, gm, wm, edema, and tumor)
+                                                (for 5 classes: csf, gm, wm, edema, and tumor).  Note that either the cluster
+                                                centers are specified (for testing) or the truth labels (for training) but not both.
+     -g:  truth labels                          Truth labels.  Note that either the cluster centers are specified (for testing)
+                                                or the truth labels (for training) but not both.
      -t:  symmetric anatomical templates        Symmetric templates.  Need to be specified in the same order as
                                                 the input anatomical images.
      -x:  mask image                            Mask image defining the region of interest.
@@ -144,7 +145,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:c:d:h:n:o:p:r:s:t:x:" OPT
+  while getopts "a:c:d:g:h:n:o:p:r:s:t:x:" OPT
     do
       case $OPT in
           a) #anatomical image
@@ -160,6 +161,9 @@ else
            echo " Error:  ImageDimension must be 2, 3, or 4 "
            exit 1
          fi
+       ;;
+          g)
+       TRUTH_LABELS=$OPTARG
        ;;
           h) #help
        Usage >&2
@@ -332,10 +336,10 @@ if [[ ! -f ${OUTPUT_IMAGE} ]];
 
 OUTPUT_REGISTRATION_PREFIX=${OUTPUT_PREFIX}ANTs_REGISTRATION
 
-REG_BASE="${ANTSPATH}/antsRegistration -d ${DIMENSION} -w [0.025,0.975] -o ${OUTPUT_REGISTRATION_PREFIX}"
+REG_BASE="${ANTSPATH}/antsRegistration -d ${DIMENSION} -w [0.01,0.995] -o ${OUTPUT_REGISTRATION_PREFIX}"
 REG_LEV0="-r [${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1]"
-REG_LEV1="-t Rigid[0.2] -m MI[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
-REG_LEV2="-t Affine[0.2] -m MI[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
+REG_LEV1="-t Rigid[0.2] -m MI[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
+REG_LEV2="-t Affine[0.2] -m MI[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
 REG_LEV3="-t BSplineSyN[0.1,10x10x11,0x0x0] -m CC[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,4] -s 2x1x0 -f 4x2x1 -c [70x50x10,1e-8,15]"
 
 AFFINE=${OUTPUT_REGISTRATION_PREFIX}0GenericAffine.mat
@@ -391,11 +395,12 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 
 for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
-    OUTPUT_ATROPOS_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM.${OUTPUT_SUFFIX}
-    OUTPUT_ATROPOS_IMAGE_POSTERIORS=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM_POSTERIORS%d.${OUTPUT_SUFFIX}
 
     if [[ -n ${SEGMENTATION_PRIOR} ]];
       then
+
+        OUTPUT_ATROPOS_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_MAP_MRF.${OUTPUT_SUFFIX}
+        OUTPUT_ATROPOS_IMAGE_POSTERIORS=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_MAP_MRF_POSTERIORS%d.${OUTPUT_SUFFIX}
 
         if [[ ! -f ${OUTPUT_ATROPOS_IMAGE} ]];
           then
@@ -404,29 +409,42 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
               -d ${DIMENSION} \
               -a ${ANATOMICAL_IMAGES[$i]} \
               -x ${MASK_IMAGE} \
-              -m 3 \
+              -m 1 \
               -n 5 \
               -c 5 \
               -l 3 \
               -l 2 \
               -p ${SEGMENTATION_PRIOR} \
-              -w 0.5 \
+              -w 0.0 \
               -o ${OUTPUT_PREFIX}${IMAGE_NAMES[$i]} \
               -k 0 \
               -s ${OUTPUT_SUFFIX}
 
             f=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}Segmentation.${OUTPUT_SUFFIX}
-            newfile=${f/Segmentation/_ATROPOS_GMM};
+            newfile=${f/Segmentation/_ATROPOS_MAP_MRF};
             logCmd mv $f $newfile
 
             for f in `ls ${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}SegmentationPosteriors*.nii.gz`;
               do
-                newfile=${f/SegmentationPosteriors/_ATROPOS_GMM_POSTERIORS};
+                newfile=${f/SegmentationPosteriors/_ATROPOS_MAP_MRF_POSTERIORS};
                 logCmd mv $f $newfile
               done
           fi
 
+        OUTPUT_ATROPOS_FEATURES_PREFIX=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_MAP_MRF_
+        OUTPUT_ATROPOS_DISTANCE_IMAGE=${OUTPUT_ATROPOS_FEATURES_PREFIX}LABEL5_DISTANCE.${OUTPUT_SUFFIX}
+
+        if [[ ! -f ${OUTPUT_ATROPOS_FEATURES_PREFIX}ECCENTRICITY.nii.gz ]];
+          then
+            logCmd ${UTILPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
+            logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 5 5 1 0
+            logCmd ${UTILPATH}/GenerateDistanceImage ${DIMENSION} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 1
+          fi
+
       else
+
+        OUTPUT_ATROPOS_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM.${OUTPUT_SUFFIX}
+        OUTPUT_ATROPOS_IMAGE_POSTERIORS=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM_POSTERIORS%d.${OUTPUT_SUFFIX}
 
         SEG_BASE="${ANTSPATH}/Atropos -d ${DIMENSION} -a ${ANATOMICAL_IMAGES[$i]}"
         SEG_0="-i KMeans[${NUMBER_OF_LABELS},${CLUSTER_CENTERS[i]}] -p Socrates[1] -x $MASK_IMAGE"
@@ -437,17 +455,17 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
           then
             logCmd $SEG_BASE $SEG_0 $SEG_1 $SEG_2
           fi
-      fi
 
-    OUTPUT_ATROPOS_FEATURES_PREFIX=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM_
+        OUTPUT_ATROPOS_FEATURES_PREFIX=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM_
+        OUTPUT_ATROPOS_DISTANCE_IMAGE=${OUTPUT_ATROPOS_FEATURES_PREFIX}LABEL5_DISTANCE.${OUTPUT_SUFFIX}
 
-    OUTPUT_ATROPOS_DISTANCE_IMAGE=${OUTPUT_ATROPOS_FEATURES_PREFIX}LABEL5_DISTANCE.${OUTPUT_SUFFIX}
+        if [[ ! -f ${OUTPUT_ATROPOS_FEATURES_PREFIX}ECCENTRICITY.nii.gz ]];
+          then
+            logCmd ${UTILPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
+            logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 5 5 1 0
+            logCmd ${UTILPATH}/GenerateDistanceImage ${DIMENSION} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 1
+          fi
 
-    if [[ ! -f ${OUTPUT_ATROPOS_FEATURES_PREFIX}ECCENTRICITY.nii.gz ]];
-      then
-        logCmd ${UTILPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
-        logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 5 5 1 0
-        logCmd ${UTILPATH}/GenerateDistanceImage ${DIMENSION} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 1
       fi
   done
 
