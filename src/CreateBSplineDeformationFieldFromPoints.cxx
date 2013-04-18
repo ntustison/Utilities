@@ -160,6 +160,7 @@ int BSpline( int argc, char *argv[] )
   bspliner->SetSplineOrder( splineOrder );
   bspliner->SetNumberOfControlPoints( ncps );
   bspliner->SetInput( fieldPoints );
+  bspliner->Update();
 
   typedef itk::ImageFileWriter<DeformationFieldType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
