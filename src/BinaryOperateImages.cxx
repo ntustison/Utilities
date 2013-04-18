@@ -162,6 +162,13 @@ int BinaryOperateImages( int argc, char * argv[] )
       {
       It.SetCenterPixel( vnl_math_max( It1.GetCenterPixel(), It2.GetCenterPixel() ) );
       }
+    else if( op.compare( "replace" ) == 0 )
+      {
+      if( It2.GetCenterPixel() != 0 )
+        {
+        It1.SetCenterPixel( It2.GetCenterPixel() );
+        }
+      }
     else if( op.compare( "isgreaterthan" ) == 0 )
       {
       It.SetCenterPixel( ( It1.GetCenterPixel() > It2.GetCenterPixel() ) ? 1 : 0 );
@@ -246,6 +253,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    -:   Subtract" << std::endl;
     std::cerr << "    x:   Multiply" << std::endl;
     std::cerr << "    /:   Divide" << std::endl;
+    std::cerr << "    replace:  replace pixels in image1 with the non-zero pixels in image2" << std::endl;
     std::cerr << "    min: voxel-wise minimum" << std::endl;
     std::cerr << "    max: voxel-wise maximum" << std::endl;
     std::cerr << "    zscore:  inputImage1 = meanImage, inputImage2 = varianceImage, z = (pixel - mean)/std" << std::endl;

@@ -2,6 +2,7 @@
 #include "itkImageFileWriter.h"
 
 #include "itkInvertDisplacementFieldImageFilter.h"
+#include "itkInverseDisplacementFieldImageFilter.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkDisplacementFieldToBSplineImageFilter.h"
 #include "itkVector.h"
@@ -146,7 +147,7 @@ int BSplineInvertField( int argc, char *argv[] )
   inverter->SetNumberOfFittingLevels( numberOfFittingLevels );
   inverter->SetSplineOrder( splineOrder );
   inverter->SetNumberOfControlPoints( numberOfControlPoints );
-  inverter->SetEstimateInverse( false );
+  inverter->SetEstimateInverse( true );
   inverter->Update();
 
   typedef itk::ImageFileWriter<DisplacementFieldType> WriterType;
@@ -429,8 +430,35 @@ int Invert2( int argc, char *argv[] )
   writer->SetInput( inverseField );
   writer->Update();
 
+  return EXIT_SUCCESS;
+}
 
+template <unsigned int ImageDimension>
+int InvertTPS( int argc, char *argv[] )
+{
+  typedef itk::Vector<double, ImageDimension> VectorType;
+  typedef itk::Image<VectorType, ImageDimension> DisplacementFieldType;
 
+  typedef itk::ImageFileReader<DisplacementFieldType> ReaderType;
+  typename ReaderType::Pointer reader = ReaderType::New();
+  reader->SetFileName( argv[2] );
+  reader->Update();
+
+  typedef itk::InverseDisplacementFieldImageFilter<DisplacementFieldType, DisplacementFieldType> InverterType;
+  typename InverterType::Pointer inverter = InverterType::New();
+  inverter->SetInput( reader->GetOutput() );
+  inverter->SetSubsamplingFactor( 8 );
+  inverter->SetOutputSpacing( reader->GetOutput()->GetSpacing() );
+  inverter->SetOutputOrigin( reader->GetOutput()->GetOrigin() );
+  inverter->SetSize( reader->GetOutput()->GetRequestedRegion().GetSize() );
+
+  typedef itk::ImageFileWriter<DisplacementFieldType> WriterType;
+  typename WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName( argv[3] );
+  writer->SetInput( inverter->GetOutput() );
+  writer->Update();
+
+  return EXIT_SUCCESS;
 }
 
 
@@ -445,9 +473,11 @@ int main( int argc, char *argv[] )
   switch( atoi( argv[1] ) )
    {
    case 2:
+//      InvertTPS<2>( argc, argv );
      BSplineInvertField<2>( argc, argv );
      break;
    case 3:
+//      InvertTPS<3>( argc, argv );
      BSplineInvertField<3>( argc, argv );
      break;
    default:
