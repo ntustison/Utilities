@@ -91,53 +91,74 @@ parallelPredict <- function( i ) {
   return( predict( modelForest, subjectData[threadIndexRange,], type = "prob" ) )
 }
 
-# Initialize the cluster
-sfInit( parallel = TRUE, cpus = numberOfThreads, type = 'SOCK' )
-
-# Make data available to each R instance / node
-sfExport( list = c( "modelForest", "subjectData", "numberOfThreads" ) )
-
-# Load library on each R instance / node
-sfClusterEval( library( randomForest ) )
-
-# Use a parallel random number generator to avoid correlated random numbers
-# this requires rlecuyer (which is default)
-sfClusterSetupRNG()
-
-# build the random forests
-parallelProbabilities <- sfClusterApply( 1:numberOfThreads, parallelPredict )
-
-sfStop()
-
-# everything finished so merge all forests into one
-subjectProbabilities <- parallelProbabilities[[1]]
-if( numberOfThreads > 1 )
+subjectProbabilities
+if( numberOfThreads == 1 )
   {
+  subjectProbabilities <- predict( modelForest, subjectData[threadIndexRange,], type = "prob" )
+
+  # Stop the clock
+  elapsedTime <- proc.time() - ptm
+  cat( "Prediction took ", as.numeric( elapsedTime[3] ), " seconds.\n", sep = "" )
+
+  ###############################################
+  #
+  # Write the probability images to disk
+  #
+  ###############################################
+
+  for( i in 1:ncol( subjectProbabilities ) )
+    {
+    probImage <- antsImageClone( maskImage, "float" )
+    probImage[maskImage != 0] <- subjectProbabilities[,i];
+    probFileName <- paste( probImagePrefix, i, ".nii.gz", sep = "" )
+    cat( "Writing ", probFileName, ".\n" )
+    antsImageWrite( probImage, probFileName )
+    }
+  }
+else
+  {
+  # Initialize the cluster
+  sfInit( parallel = TRUE, cpus = numberOfThreads, type = 'SOCK' )
+
+  # Make data available to each R instance / node
+  sfExport( list = c( "modelForest", "subjectData", "numberOfThreads" ) )
+
+  # Load library on each R instance / node
+  sfClusterEval( library( randomForest ) )
+
+  # Use a parallel random number generator to avoid correlated random numbers
+  # this requires rlecuyer (which is default)
+  sfClusterSetupRNG()
+
+  # build the random forests
+  parallelProbabilities <- sfClusterApply( 1:numberOfThreads, parallelPredict )
+
+  sfStop()
+
+  # everything finished so merge all forests into one
+  subjectProbabilities <- parallelProbabilities[[1]]
   for( i in 2:numberOfThreads )
     {
     subjectProbabilities <- rbind( subjectProbabilities, parallelProbabilities[[i]] )
     }
+
+  # Stop the clock
+  elapsedTime <- proc.time() - ptm
+  cat( "Prediction took ", as.numeric( elapsedTime[3] ), " seconds.\n", sep = "" )
+
+  ###############################################
+  #
+  # Write the probability images to disk
+  #
+  ###############################################
+
+  for( i in 1:ncol( subjectProbabilities ) )
+    {
+    probImage <- antsImageClone( maskImage, "float" )
+    probImage[maskImage != 0] <- subjectProbabilities[,i];
+    probFileName <- paste( probImagePrefix, i, ".nii.gz", sep = "" )
+    cat( "Writing ", probFileName, ".\n" )
+    antsImageWrite( probImage, probFileName )
+    }
   }
-
-# Stop the clock
-elapsedTime <- proc.time() - ptm
-cat( "Prediction took ", as.numeric( elapsedTime[3] ), " seconds.\n", sep = "" )
-###############################################
-#
-# Write the probability images to disk
-#
-###############################################
-
-for( i in 1:ncol( subjectProbabilities ) )
-  {
-  probImage <- antsImageClone( maskImage, "float" )
-  probImage[maskImage != 0] <- subjectProbabilities[,i];
-  probFileName <- paste( probImagePrefix, i, ".nii.gz", sep = "" )
-  cat( "Writing ", probFileName, ".\n" )
-  antsImageWrite( probImage, probFileName )
-  }
-
-
-
-
 

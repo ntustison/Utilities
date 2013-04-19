@@ -139,42 +139,61 @@ parallelRF <- function( i ) {
   return( randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification ) )
 }
 
-# Initialize the cluster
-sfInit( parallel = TRUE, cpus = numberOfThreads, type = 'SOCK' )
-
-# Make data available to each R instance / node
-sfExport( list = c( "modelData", "modelFormula", "numberOfTreesPerThread" ) )
-
-# Load library on each R instance / node
-sfClusterEval( library( randomForest ) )
-
-# Use a parallel random number generator to avoid correlated random numbers
-# this requires rlecuyer (which is default)
-sfClusterSetupRNG()
-
-# build the random forests
-parallelForests <- sfClusterApply( 1:numberOfThreads, parallelRF )
-
-sfStop()
-
-# everything finished so merge all forests into one
-modelForest <- parallelForests[[1]]
-if( numberOfThreads > 1 )
+if( numberOfThreads == 1 )
   {
-  for( i in 2:numberOfThreads )
-    {
-    modelForest <- combine( modelForest, parallelForests[[i]] )
-    }
+  modelForest <- randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification )
+
+  # Stop the clock
+  elapsedTime <- proc.time() - ptm
+  cat( "Model creation took ", as.numeric( elapsedTime[3] ), " seconds.\n", sep = "" )
+
+  ###############################################
+  #
+  # Save the model
+  #
+  ###############################################
+
+  save( modelForest, file = outputModelName )
   }
+else
+  {
+  # Initialize the cluster
+  sfInit( parallel = TRUE, cpus = numberOfThreads, type = 'SOCK' )
 
-# Stop the clock
-elapsedTime <- proc.time() - ptm
-cat( "Model creation took ", as.numeric( elapsedTime[3] ), " seconds.\n", sep = "" )
+  # Make data available to each R instance / node
+  sfExport( list = c( "modelData", "modelFormula", "numberOfTreesPerThread" ) )
 
-###############################################
-#
-# Save the model
-#
-###############################################
+  # Load library on each R instance / node
+  sfClusterEval( library( randomForest ) )
 
-save( modelForest, file = outputModelName )
+  # Use a parallel random number generator to avoid correlated random numbers
+  # this requires rlecuyer (which is default)
+  sfClusterSetupRNG()
+
+  # build the random forests
+  parallelForests <- sfClusterApply( 1:numberOfThreads, parallelRF )
+
+  sfStop()
+
+  # everything finished so merge all forests into one
+  modelForest <- parallelForests[[1]]
+  if( numberOfThreads > 1 )
+    {
+    for( i in 2:numberOfThreads )
+      {
+      modelForest <- combine( modelForest, parallelForests[[i]] )
+      }
+    }
+
+  # Stop the clock
+  elapsedTime <- proc.time() - ptm
+  cat( "Model creation took ", as.numeric( elapsedTime[3] ), " seconds.\n", sep = "" )
+
+  ###############################################
+  #
+  # Save the model
+  #
+  ###############################################
+
+  save( modelForest, file = outputModelName )
+  }
