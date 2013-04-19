@@ -114,9 +114,7 @@ if( numberOfThreads == 1 )
     cat( "Writing ", probFileName, ".\n" )
     antsImageWrite( probImage, probFileName )
     }
-  }
-else
-  {
+  } else {
   # Initialize the cluster
   sfInit( parallel = TRUE, cpus = numberOfThreads, type = 'SOCK' )
 

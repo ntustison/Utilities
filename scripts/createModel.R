@@ -154,9 +154,8 @@ if( numberOfThreads == 1 )
   ###############################################
 
   save( modelForest, file = outputModelName )
-  }
-else
-  {
+
+  } else {
   # Initialize the cluster
   sfInit( parallel = TRUE, cpus = numberOfThreads, type = 'SOCK' )
 
