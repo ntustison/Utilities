@@ -91,7 +91,6 @@ parallelPredict <- function( i ) {
   return( predict( modelForest, subjectData[threadIndexRange,], type = "prob" ) )
 }
 
-subjectProbabilities
 if( numberOfThreads == 1 )
   {
   subjectProbabilities <- predict( modelForest, subjectData[threadIndexRange,], type = "prob" )
