@@ -93,7 +93,7 @@ parallelPredict <- function( i ) {
 
 if( numberOfThreads == 1 )
   {
-  subjectProbabilities <- predict( modelForest, subjectData[threadIndexRange,], type = "prob" )
+  subjectProbabilities <- predict( modelForest, subjectData, type = "prob" )
 
   # Stop the clock
   elapsedTime <- proc.time() - ptm
