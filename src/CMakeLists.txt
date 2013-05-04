@@ -436,6 +436,9 @@ target_link_libraries(OrderDicomSeries ${ITK_LIBRARIES})
 add_executable(PadImage PadImage.cxx )
 target_link_libraries(PadImage ${ITK_LIBRARIES})
 
+add_executable(PadImageForIsotropicBSplineMesh PadImageForIsotropicBSplineMesh.cxx )
+target_link_libraries(PadImageForIsotropicBSplineMesh ${ITK_LIBRARIES})
+
 add_executable(PasteImageIntoImage PasteImageIntoImage.cxx )
 target_link_libraries(PasteImageIntoImage ${ITK_LIBRARIES})
 
