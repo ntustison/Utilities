@@ -36,6 +36,11 @@ int PadImageForIsotropicBSplineMesh( unsigned int argc, char *argv[] )
     {
     padValue = static_cast<PixelType>( atof( argv[6] ) );
     }
+  bool writeImage = true;
+  if( argc > 7 )
+    {
+    writeImage = static_cast<bool>( atoi( argv[7] ) );
+    }
 
   unsigned long lowerBound[ImageDimension];
   unsigned long upperBound[ImageDimension];
@@ -53,19 +58,22 @@ int PadImageForIsotropicBSplineMesh( unsigned int argc, char *argv[] )
     numberOfControlPoints[d] = numberOfSpans + splineOrder;
     }
 
-  typedef itk::ConstantPadImageFilter<ImageType, ImageType> PadderType;
-  typename PadderType::Pointer padder = PadderType::New();
-  padder->SetInput( inputImage );
-  padder->SetPadLowerBound( lowerBound );
-  padder->SetPadUpperBound( upperBound );
-  padder->SetConstant( padValue );
-  padder->Update();
+  if( writeImage )
+    {
+    typedef itk::ConstantPadImageFilter<ImageType, ImageType> PadderType;
+    typename PadderType::Pointer padder = PadderType::New();
+    padder->SetInput( inputImage );
+    padder->SetPadLowerBound( lowerBound );
+    padder->SetPadUpperBound( upperBound );
+    padder->SetConstant( padValue );
+    padder->Update();
 
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-  typename WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( argv[3] );
-  writer->SetInput( padder->GetOutput() );
-  writer->Update();
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetFileName( argv[3] );
+    writer->SetInput( padder->GetOutput() );
+    writer->Update();
+    }
 
   for( unsigned int d = 0; d < ImageDimension-1; d++ )
     {
@@ -80,7 +88,7 @@ int main( int argc, char *argv[] )
 {
   if ( argc < 4 )
     {
-    std::cout << argv[0] << " imageDimension inputImage outputImage [splineDistance=200] [splineOrder=3] [padValue=0]" << std::endl;
+    std::cout << argv[0] << " imageDimension inputImage outputImage [splineDistance=200] [splineOrder=3] [padValue=0] [writeImage=1]" << std::endl;
     exit( 1 );
     }
 
