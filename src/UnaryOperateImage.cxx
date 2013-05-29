@@ -81,6 +81,25 @@ int UnaryOperateImage( int argc, char * argv[] )
       reader->GetOutput()->SetPixel( index, constant );
       }
     }
+  else if( argv[3][0] == 'q' )
+    {
+    PixelType constant = static_cast<PixelType>( atof( argv[4] ) );
+
+    for( unsigned int n = 6; n < static_cast<unsigned int>( argc ); n++ )
+      {
+      typename ImageType::IndexType index;
+      typename ImageType::PointType point;
+
+      std::vector<float> pt = ConvertVector<float>( std::string( argv[n] ) );
+      for( unsigned int d = 0; d < ImageDimension; d++ )
+        {
+        point[d] = pt[d];
+        }
+      reader->GetOutput()->TransformPhysicalPointToIndex( point, index );
+
+      reader->GetOutput()->SetPixel( index, constant );
+      }
+    }
   else if( argv[3][0] == 'g' )
     {
     typedef itk::GaussianInterpolateImageFunction<ImageType, double>
@@ -235,6 +254,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    /:   Divide" << std::endl;
     std::cerr << "    ^:   pow" << std::endl;
     std::cerr << "    p:   set pixel to constant value [index1] [index2] ... index[n]" <<  std::endl;
+    std::cerr << "    q:  set pixel at physical point to constant value [point1] [point2] ... point[n]" <<  std::endl;
     std::cerr << "    g:   get pixel value at physical point (gaussian interpolation)" << std::endl;
     std::cerr << "  The following operations ignore the \'constant\' argument." << std::endl;
     std::cerr << "    e:   exp" << std::endl;

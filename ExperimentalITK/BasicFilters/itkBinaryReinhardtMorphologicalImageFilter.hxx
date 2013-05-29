@@ -222,7 +222,7 @@ BinaryReinhardtMorphologicalImageFilter<TInputImage, TOutput, TKernel>
     labeler->GetOutput()->GetRequestedRegion() );
   for ( It.GoToBegin(); !It.IsAtEnd(); ++It )
     {
-    if ( It.Get() > static_cast<OutputPixelType>( 
+    if ( It.Get() > static_cast<OutputPixelType>(
          this->m_NumberOfConnectedComponents ) || It.Get() == 0 )
       {
       It.Set( NumericTraits<OutputPixelType>::Zero );
@@ -261,7 +261,7 @@ BinaryReinhardtMorphologicalImageFilter<TInputImage, TOutput, TKernel>
     boxDilater->GetOutput()->GetRequestedRegion() );
   ImageRegionIterator<OutputImageType> ItI( image,
     image->GetRequestedRegion() );
-  for ( ItB.GoToBegin(), ItI.GoToBegin(); !ItB.IsAtEnd(), !ItI.IsAtEnd(); ++ItB, ++ItI )
+  for ( ItB.GoToBegin(), ItI.GoToBegin(); !ItI.IsAtEnd(); ++ItB, ++ItI )
     {
     if ( ItB.Get() != NumericTraits<OutputPixelType>::One &&
          ItI.Get() == static_cast<OutputPixelType>( this->GetForegroundValue() ) )
@@ -283,7 +283,7 @@ BinaryReinhardtMorphologicalImageFilter<TInputImage, TOutput, TKernel>
   /**
    * Add attachments to other regions
    */
-  for ( unsigned int i = 1; i <= static_cast<unsigned int>( 
+  for ( unsigned int i = 1; i <= static_cast<unsigned int>(
           stats->GetMaximum() ); i++ )
     {
     typedef BinaryThresholdImageFilter<OutputImageType, OutputImageType> ThresholderType;
@@ -478,7 +478,7 @@ BinaryReinhardtMorphologicalImageFilter<TInputImage, TOutput, TKernel>
     dilater->GetOutput()->GetRequestedRegion() );
   ImageRegionIterator<OutputImageType> ItI( image,
     image->GetRequestedRegion() );
-  for ( ItB.GoToBegin(), ItI.GoToBegin(); !ItB.IsAtEnd(), !ItI.IsAtEnd(); ++ItB, ++ItI )
+  for ( ItB.GoToBegin(), ItI.GoToBegin(); !ItI.IsAtEnd(); ++ItB, ++ItI )
     {
     if ( ItB.Get() == NumericTraits<OutputPixelType>::One &&
          ItI.Get() == static_cast<OutputPixelType>( this->GetForegroundValue() ) )
@@ -537,7 +537,7 @@ BinaryReinhardtMorphologicalImageFilter<TInputImage, TOutput, TKernel>
   for ( ItI.GoToBegin(), ItL.GoToBegin(); !ItI.IsAtEnd(); ++ItI, ++ItL )
     {
     OutputPixelType currentLabel = ItI.Get();
-    if ( ItL.Get() > 0 && ItL.Get() <= static_cast<OutputPixelType>( 
+    if ( ItL.Get() > 0 && ItL.Get() <= static_cast<OutputPixelType>(
           this->m_NumberOfConnectedComponents ) )
       {
       ItI.Set( static_cast<OutputPixelType>( this->GetForegroundValue() ) );
