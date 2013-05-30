@@ -490,8 +490,8 @@ target_link_libraries(SegmentAirways ${ITK_LIBRARIES})
 # add_executable(SeparateLungs SeparateLungs.cxx )
 # target_link_libraries(SeparateLungs ${ITK_LIBRARIES})
 
-# add_executable(ShapeMorphology ShapeMorphology.cxx )
-# target_link_libraries(ShapeMorphology ${ITK_LIBRARIES})
+add_executable(ShapeMorphology ShapeMorphology.cxx )
+target_link_libraries(ShapeMorphology ${ITK_LIBRARIES})
 
 add_executable(ShapePriorLevelSet ShapePriorLevelSet.cxx )
 target_link_libraries(ShapePriorLevelSet ${ITK_LIBRARIES})

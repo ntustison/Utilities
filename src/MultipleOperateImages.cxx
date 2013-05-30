@@ -636,7 +636,7 @@ int MultipleOperateImages( int argc, char * argv[] )
       output->GetLargestPossibleRegion() );
     for( ItO.GoToBegin(); !ItO.IsAtEnd(); ++ItO )
       {
-      if( mask && mask->GetPixel( ItO.GetIndex() ) != 0 )
+      if( !mask || mask->GetPixel( ItO.GetIndex() ) != 0 )
         {
         float maxProbability = 0;
         float maxLabel = 0;
@@ -648,7 +648,10 @@ int MultipleOperateImages( int argc, char * argv[] )
             maxLabel = i + 1;
             }
           }
-        ItO.Set( maxLabel );
+        if( maxProbability > 0 )
+          {
+          ItO.Set( maxLabel );
+          }
         }
       }
     typedef itk::ImageFileWriter<ImageType> WriterType;
