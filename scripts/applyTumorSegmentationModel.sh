@@ -86,6 +86,8 @@ Optional arguments:
                                                 the following images:
                                                   * symmetric template difference
                                                   * contralateral difference
+     -p:  Brain segmentation priors             Tissue *probability* priors. Specified using c-style formatting, e.g.
+                                                -p labelsPriors%02d.nii.gz.
      -n   imageNames                            used in the naming of the images (otherwise, labeled IMAGE0, IMAGE1, etc)
 
 USAGE
