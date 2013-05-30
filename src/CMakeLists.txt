@@ -406,6 +406,9 @@ target_link_libraries(InvertDisplacementField ${ITK_LIBRARIES} )
 add_executable(LabelGeometryMeasures LabelGeometryMeasures.cxx )
 target_link_libraries(LabelGeometryMeasures ${ITK_LIBRARIES})
 
+add_executable(LevelSets LevelSets.cxx )
+target_link_libraries(LevelSets ${ITK_LIBRARIES})
+
 #add_executable(MakePDFImageFromPointSet MakePDFImageFromPointSet.cxx )
 #target_link_libraries(MakePDFImageFromPointSet ${ITK_LIBRARIES})
 
