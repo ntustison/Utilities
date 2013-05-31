@@ -48,7 +48,7 @@ Required arguments:
                                                    * intensity normalized (i.e. histogram matching and intensity truncation)
      -c:  cluster centers                       Array describing the intensity centers of the intensity normalized images.
                                                 Need one for each input image.  Should be of the form:  e.g. 0.14x0.57x0.37x0.83x0.95
-                                                (for 5 classes: csf, gm, wm, edema, and tumor).  Note that either the cluster
+                                                (for 7 classes: csf, gm, wm, edema, tumor, core, enhancement).  Note that either the cluster
                                                 centers are specified (for testing) or the truth labels (for training) but not both.
      -g:  truth labels                          Truth labels.  Note that either the cluster centers are specified (for testing)
                                                 or the truth labels (for training) but not both.
@@ -69,6 +69,7 @@ Optional arguments:
                                                   * contralateral difference
      -p:  Brain segmentation priors             Tissue *probability* priors. Specified using c-style formatting, e.g.
                                                 -p labelsPriors%02d.nii.gz.
+     -l:  tumor core label                      used to create distance feature map (default = 5)
      -n   imageNames                            used in the naming of the images (otherwise, labeled IMAGE0, IMAGE1, etc)
 
 USAGE
@@ -134,6 +135,7 @@ MASK_IMAGE=""
 
 RADIUS=2
 SMOOTHING_SIGMA=0
+CORE_LABEL=5
 
 ################################################################################
 #
@@ -432,12 +434,12 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
           fi
 
         OUTPUT_ATROPOS_FEATURES_PREFIX=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_MAP_MRF_
-        OUTPUT_ATROPOS_DISTANCE_IMAGE=${OUTPUT_ATROPOS_FEATURES_PREFIX}LABEL5_DISTANCE.${OUTPUT_SUFFIX}
+        OUTPUT_ATROPOS_DISTANCE_IMAGE=${OUTPUT_ATROPOS_FEATURES_PREFIX}LABEL${CORE_LABEL}_DISTANCE.${OUTPUT_SUFFIX}
 
         if [[ ! -f ${OUTPUT_ATROPOS_FEATURES_PREFIX}ECCENTRICITY.nii.gz ]];
           then
             logCmd ${UTILPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
-            logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 5 5 1 0
+            logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${CORE_LABEL} ${CORE_LABEL} 1 0
             logCmd ${UTILPATH}/GenerateDistanceImage ${DIMENSION} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 1
           fi
 
@@ -457,12 +459,12 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
           fi
 
         OUTPUT_ATROPOS_FEATURES_PREFIX=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM_
-        OUTPUT_ATROPOS_DISTANCE_IMAGE=${OUTPUT_ATROPOS_FEATURES_PREFIX}LABEL5_DISTANCE.${OUTPUT_SUFFIX}
+        OUTPUT_ATROPOS_DISTANCE_IMAGE=${OUTPUT_ATROPOS_FEATURES_PREFIX}LABEL${CORE_LABEL}_DISTANCE.${OUTPUT_SUFFIX}
 
         if [[ ! -f ${OUTPUT_ATROPOS_FEATURES_PREFIX}ECCENTRICITY.nii.gz ]];
           then
             logCmd ${UTILPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
-            logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 5 5 1 0
+            logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${CORE_LABEL} ${CORE_LABEL} 1 0
             logCmd ${UTILPATH}/GenerateDistanceImage ${DIMENSION} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 1
           fi
 
