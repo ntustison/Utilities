@@ -147,7 +147,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:c:d:g:h:n:o:p:r:s:t:x:" OPT
+  while getopts "a:c:d:g:h:l:n:o:p:r:s:t:x:" OPT
     do
       case $OPT in
           a) #anatomical image
@@ -170,6 +170,9 @@ else
           h) #help
        Usage >&2
        exit 0
+       ;;
+          l)
+       CORE_LABEL=$OPTARG
        ;;
           n)
        IMAGE_NAMES[${#IMAGE_NAMES[@]}]=$OPTARG
