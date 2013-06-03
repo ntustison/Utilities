@@ -78,7 +78,7 @@ for( i in indices )
 
   mask <- as.array( antsImageRead( as.character( masks[i] ), dimension = 3, pixeltype = 'unsigned int' ) )
   truth <- as.array( antsImageRead( as.character( truthLabels[i] ), dimension = 3, pixeltype = 'unsigned int' ) )
-  if( is.na( numberOfUniqueLabels )
+  if( is.na( numberOfUniqueLabels ) )
     {
     uniqueTruthLabels <- sort( unique( truth[which( mask == 1 )] ) )
     uniqueTruthLabels <- uniqueTruthLabels[which( uniqueTruthLabels != 0 )]
