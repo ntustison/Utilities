@@ -97,11 +97,6 @@ for( i in indices )
     featureImage <- as.array( antsImageRead( as.character( featureImages[i,j] ), dimension = 3, pixeltype = 'float' ) )
     for( n in 1:length( uniqueTruthLabels ) )
       {
-      if( numberOfSamplesPerLabelInSubjectData[n] == 0 )
-        {
-        next
-        }
-
       values <- featureImage[truthLabelIndices[[n]]]
 
       startIndex <- 1
