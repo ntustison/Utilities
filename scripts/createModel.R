@@ -88,10 +88,6 @@ for( i in indices )
       {
       truthLabelIndices[[n]] <- labelIndices[sample.int( length( labelIndices ), numberOfSamplesPerLabelInSubjectData[n], replace = FALSE )]
       }
-    else
-      {
-      truthLabelIndices[[n]] <- NA
-      }
     }
 
   subjectData <- matrix( NA, nrow = sum( numberOfSamplesPerLabelInSubjectData ), ncol = length( featureNames ) + 1 )
@@ -101,7 +97,7 @@ for( i in indices )
     featureImage <- as.array( antsImageRead( as.character( featureImages[i,j] ), dimension = 3, pixeltype = 'float' ) )
     for( n in 1:length( uniqueTruthLabels ) )
       {
-      if( is.na( truthLabelIndices[[n]] ) )
+      if( numberOfSamplesPerLabelInSubjectData[n] == 0 )
         {
         next
         }
