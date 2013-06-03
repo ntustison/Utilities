@@ -88,6 +88,7 @@ Optional arguments:
                                                   * contralateral difference
      -p:  Brain segmentation priors             Tissue *probability* priors. Specified using c-style formatting, e.g.
                                                 -p labelsPriors%02d.nii.gz.
+     -l:  tumor core label                      used to create distance feature map (default = 5)
      -n   imageNames                            used in the naming of the images (otherwise, labeled IMAGE0, IMAGE1, etc)
 
 USAGE
@@ -154,6 +155,7 @@ MASK_IMAGE=""
 
 RADIUS=2
 SMOOTHING_SIGMA=0
+CORE_LABEL=5
 
 ################################################################################
 #
@@ -165,7 +167,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:c:d:h:m:n:o:p:r:s:t:x:" OPT
+  while getopts "a:c:d:h:l:m:n:o:p:r:s:t:x:" OPT
     do
       case $OPT in
           a) #anatomical image
@@ -188,6 +190,9 @@ else
        ;;
           m)
        MODEL=$OPTARG
+       ;;
+          l)
+       CORE_LABEL=$OPTARG
        ;;
           n)
        IMAGE_NAMES[${#IMAGE_NAMES[@]}]=$OPTARG
@@ -311,7 +316,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
     COMMAND_LINE="${COMMAND_LINE} -c ${CLUSTER_CENTERS[$i]}"
     COMMAND_LINE="${COMMAND_LINE} -n ${IMAGE_NAMES[$i]}"
   done
-COMMAND_LINE="${COMMAND_LINE} -r ${RADIUS} -s ${SMOOTHING_SIGMA}"
+COMMAND_LINE="${COMMAND_LINE} -r ${RADIUS} -s ${SMOOTHING_SIGMA} -l ${CORE_LABEL}"
 
 if [[ ! -z "${SEGMENTATION_PRIOR}" ]];
   then
