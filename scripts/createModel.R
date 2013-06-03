@@ -84,7 +84,14 @@ for( i in indices )
     {
     labelIndices <- which( truth == uniqueTruthLabels[n] )
     numberOfSamplesPerLabelInSubjectData[n] <- min( numberOfSamplesPerLabel, length( labelIndices ) )
-    truthLabelIndices[[n]] <- labelIndices[sample.int( length( labelIndices ), numberOfSamplesPerLabelInSubjectData[n], replace = FALSE )]
+    if( length( labelIndices ) > 0 )
+      {
+      truthLabelIndices[[n]] <- labelIndices[sample.int( length( labelIndices ), numberOfSamplesPerLabelInSubjectData[n], replace = FALSE )]
+      }
+    else
+      {
+      truthLabelIndices[[n]] <- c()
+      }
     }
 
   subjectData <- matrix( NA, nrow = sum( numberOfSamplesPerLabelInSubjectData ), ncol = length( featureNames ) + 1 )
@@ -94,6 +101,11 @@ for( i in indices )
     featureImage <- as.array( antsImageRead( as.character( featureImages[i,j] ), dimension = 3, pixeltype = 'float' ) )
     for( n in 1:length( uniqueTruthLabels ) )
       {
+      if( is.null( truthLabelIndices[[n]] ) )
+        {
+        next
+        }
+
       values <- featureImage[truthLabelIndices[[n]]]
 
       startIndex <- 1
