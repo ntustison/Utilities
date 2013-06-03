@@ -90,7 +90,7 @@ for( i in indices )
       }
     else
       {
-      truthLabelIndices[[n]] <- c()
+      truthLabelIndices[[n]] <- NA
       }
     }
 
@@ -101,7 +101,7 @@ for( i in indices )
     featureImage <- as.array( antsImageRead( as.character( featureImages[i,j] ), dimension = 3, pixeltype = 'float' ) )
     for( n in 1:length( uniqueTruthLabels ) )
       {
-      if( is.null( truthLabelIndices[[n]] ) )
+      if( is.na( truthLabelIndices[[n]] ) )
         {
         next
         }
