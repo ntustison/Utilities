@@ -416,7 +416,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
               -x ${MASK_IMAGE} \
               -m 1 \
               -n 5 \
-              -c 5 \
+              -c ${NUMBER_OF_LABELS} \
               -l 3 \
               -l 2 \
               -p ${SEGMENTATION_PRIOR} \

@@ -21,7 +21,7 @@ if( length( args ) < 2 )
   {
   cat( "Usage: Rscript createModel.R inputFileList outputModelPrefix ",
        "<numberOfThreads=4> <trainingPortion=1.0> <numberOfTreesPerThread=1000> ",
-       "<numberOfSamplesPerLabel=1000>", sep = "" )
+       "<numberOfSamplesPerLabel=1000> <numberOfUniqueLabels=NA>", sep = "" )
   stopQuietly()
   }
 
@@ -48,6 +48,11 @@ if( length( args ) >= 6 )
   {
   numberOfTreesPerThread <- as.numeric( args[6] )
   }
+numberOfUniqueLabels <- NA
+if( length( args ) >= 7 )
+  {
+  numberOfUniqueLabels <- as.numeric( args[7] )
+  }
 
 ###############################################
 #
@@ -73,9 +78,15 @@ for( i in indices )
 
   mask <- as.array( antsImageRead( as.character( masks[i] ), dimension = 3, pixeltype = 'unsigned int' ) )
   truth <- as.array( antsImageRead( as.character( truthLabels[i] ), dimension = 3, pixeltype = 'unsigned int' ) )
-
-  uniqueTruthLabels <- sort( unique( truth[which( mask == 1 )] ) )
-  uniqueTruthLabels <- uniqueTruthLabels[which( uniqueTruthLabels != 0 )]
+  if( is.na( numberOfUniqueLabels ) )
+    {
+    uniqueTruthLabels <- sort( unique( truth[which( mask == 1 )] ) )
+    uniqueTruthLabels <- uniqueTruthLabels[which( uniqueTruthLabels != 0 )]
+    }
+  else
+    {
+    uniqueTruthLabels <- 1:numberOfUniqueLabels
+    }
   cat( "Unique truth labels: ", uniqueTruthLabels, "\n", sep = " " )
 
   truthLabelIndices <- list()
@@ -84,7 +95,10 @@ for( i in indices )
     {
     labelIndices <- which( truth == uniqueTruthLabels[n] )
     numberOfSamplesPerLabelInSubjectData[n] <- min( numberOfSamplesPerLabel, length( labelIndices ) )
-    truthLabelIndices[[n]] <- labelIndices[sample.int( length( labelIndices ), numberOfSamplesPerLabelInSubjectData[n], replace = FALSE )]
+    if( length( labelIndices ) > 0 )
+      {
+      truthLabelIndices[[n]] <- labelIndices[sample.int( length( labelIndices ), numberOfSamplesPerLabelInSubjectData[n], replace = FALSE )]
+      }
     }
 
   subjectData <- matrix( NA, nrow = sum( numberOfSamplesPerLabelInSubjectData ), ncol = length( featureNames ) + 1 )
@@ -94,6 +108,11 @@ for( i in indices )
     featureImage <- as.array( antsImageRead( as.character( featureImages[i,j] ), dimension = 3, pixeltype = 'float' ) )
     for( n in 1:length( uniqueTruthLabels ) )
       {
+      if( numberOfSamplesPerLabelInSubjectData[n] == 0 )
+        {
+        next
+        }
+
       values <- featureImage[truthLabelIndices[[n]]]
 
       startIndex <- 1
