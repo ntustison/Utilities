@@ -51,7 +51,7 @@ int LevelSetSegmentation( unsigned int argc, char *argv[] )
   unsigned int numberOfIterations = 200;
   if( argc > 8 )
     {
-    numberOfIterations = atof( argv[8] );
+    numberOfIterations = atoi( argv[8] );
     }
   float maxRMSError = 0.03;
   if( argc > 9 )
