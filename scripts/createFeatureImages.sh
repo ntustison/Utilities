@@ -30,6 +30,7 @@ Usage:
               -n imageNames
               -r neighgorhoodRadius
               -s smoothSigma
+              -f differencePair
               -x maskImage
               -o outputPrefix
 
@@ -69,6 +70,7 @@ Optional arguments:
                                                   * contralateral difference
      -p:  Brain segmentation priors             Tissue *probability* priors. Specified using c-style formatting, e.g.
                                                 -p labelsPriors%02d.nii.gz.
+     -f:  difference pair                       pair of indices \"i.e. 3x1\" to create difference image \"image[3] - image[1]\"
      -l:  tumor core label                      used to create distance feature map (default = 5)
      -n   imageNames                            used in the naming of the images (otherwise, labeled IMAGE0, IMAGE1, etc)
 
@@ -88,6 +90,7 @@ echoParameters() {
       radius                  = ${RADIUS}
       smoothing sigma         = ${SMOOTHING_SIGMA}
       priors                  = ${SEGMENTATION_PRIOR}
+      difference pairs        = ${DIFFERENCE_PAIRS[@]}
       output prefix           = ${OUTPUT_PREFIX}
 
 PARAMETERS
@@ -128,6 +131,7 @@ ANATOMICAL_IMAGES=()
 SYMMETRIC_TEMPLATE=()
 CLUSTER_CENTERS=()
 IMAGE_NAMES=()
+DIFFERENCE_PAIRS=()
 
 SEGMENTATION_PRIOR=""
 
@@ -147,7 +151,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:c:d:g:h:l:n:o:p:r:s:t:x:" OPT
+  while getopts "a:c:d:f:g:h:l:n:o:p:r:s:t:x:" OPT
     do
       case $OPT in
           a) #anatomical image
@@ -163,6 +167,9 @@ else
            echo " Error:  ImageDimension must be 2, 3, or 4 "
            exit 1
          fi
+       ;;
+          f)
+       DIFFERENCE_PAIRS[${#DIFFERENCE_PAIRS[@]}]=$OPTARG
        ;;
           g)
        TRUTH_LABELS=$OPTARG
@@ -393,7 +400,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 
 ################################################################################
 #
-# Construct GMM probability images for each anatomical image
+# Construct GMM or MAP-MRF probability images for each anatomical image
 # Also create geometric feature images for each atropos labeled output
 #
 ################################################################################
@@ -471,6 +478,27 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
             logCmd ${UTILPATH}/GenerateDistanceImage ${DIMENSION} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 1
           fi
 
+      fi
+  done
+
+################################################################################
+#
+# Create difference pairs images
+#
+################################################################################
+
+for (( i = 0; i < ${#DIFFERENCE_PAIRS[@]}; i++ ))
+  do
+    DIFFERENCE_PAIR_ARRAY=( ${DIFFERENCE_PAIRS//x/ } )
+
+    if [[ ${#DIFFERENCE_PAIR_ARRAY[@]} -eq 2 ]];
+      then
+        MINUEND_INDEX=${DIFFERENCE_PAIR_ARRAY[0]}
+        SUBTRAHEND_INDEX=${DIFFERENCE_PAIR_ARRAY[1]}
+
+        OUTPUT_DIFFERENCE_PAIR_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[${MINUEND_INDEX}]}_${IMAGE_NAMES[${SUBTRAHEND_INDEX}]}_DIFFERENCE.${OUTPUT_PREFIX}
+
+        logCmd ${ANTSPATH}/ImageMath ${DIMENSION} ${OUTPUT_DIFFERENCE_PAIR_IMAGE} - ${ANATOMICAL_IMAGES[${MINUEND_INDEX}]} ${ANATOMICAL_IMAGES[${SUBTRAHEND_INDEX}]}
       fi
   done
 
