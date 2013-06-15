@@ -33,6 +33,7 @@ Usage:
               -r neighgorhoodRadius
               -s smoothSigma
               -x maskImage
+              -f differencePair
               -o outputPrefix
 
 Example:
@@ -88,6 +89,7 @@ Optional arguments:
                                                   * contralateral difference
      -p:  Brain segmentation priors             Tissue *probability* priors. Specified using c-style formatting, e.g.
                                                 -p labelsPriors%02d.nii.gz.
+     -f:  difference pair                       pair of indices \"i.e. 3x1\" to create difference image \"image[3] - image[1]\"
      -l:  tumor core label                      used to create distance feature map (default = 5)
      -n   imageNames                            used in the naming of the images (otherwise, labeled IMAGE0, IMAGE1, etc)
 
@@ -107,6 +109,7 @@ echoParameters() {
       radius                  = ${RADIUS}
       smoothing sigma         = ${SMOOTHING_SIGMA}
       priors                  = ${SEGMENTATION_PRIOR}
+      difference pairs        = ${DIFFERENCE_PAIRS[@]}
       output prefix           = ${OUTPUT_PREFIX}
 
 PARAMETERS
@@ -147,6 +150,7 @@ ANATOMICAL_IMAGES=()
 SYMMETRIC_TEMPLATE=()
 CLUSTER_CENTERS=()
 IMAGE_NAMES=()
+DIFFERENCE_PAIRS=()
 
 MODEL=""
 SEGMENTATION_PRIOR=""
@@ -167,7 +171,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:c:d:h:l:m:n:o:p:r:s:t:x:" OPT
+  while getopts "a:c:d:f:h:l:m:n:o:p:r:s:t:x:" OPT
     do
       case $OPT in
           a) #anatomical image
@@ -183,6 +187,9 @@ else
            echo " Error:  ImageDimension must be 2, 3, or 4 "
            exit 1
          fi
+       ;;
+          f)
+       DIFFERENCE_PAIRS[${#DIFFERENCE_PAIRS[@]}]=$OPTARG
        ;;
           h) #help
        Usage >&2
@@ -322,6 +329,12 @@ if [[ ! -z "${SEGMENTATION_PRIOR}" ]];
   then
     COMMAND_LINE="${COMMAND_LINE} -p ${SEGMENTATION_PRIOR}"
   fi
+
+for (( i = 0; i < ${#DIFFERENCE_PAIRS[@]}; i++ ))
+  do
+    COMMAND_LINE="${COMMAND_LINE} -f ${DIFFERENCE_PAIRS[$i]}"
+  done
+
 
 sh ${UTILPATH}/../scripts/createFeatureImages.sh ${COMMAND_LINE}
 
