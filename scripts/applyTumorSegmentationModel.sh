@@ -100,13 +100,13 @@ USAGE
 echoParameters() {
     cat <<PARAMETERS
 
-    Using createFeatureImages with the following arguments:
+    Using applyTumorSegmentationModel with the following arguments:
       image dimension         = ${DIMENSION}
       anatomical image        = ${ANATOMICAL_IMAGES[@]}
       symmetric templates     = ${SYMMETRIC_TEMPLATES[@]}
       cluster centers         = ${CLUSTER_CENTERS[@]}
       image names             = ${IMAGE_NAMES[@]}
-      radius                  = ${RADIUS}
+      radii                   = ${RADII[@]}
       smoothing sigma         = ${SMOOTHING_SIGMA}
       priors                  = ${SEGMENTATION_PRIOR}
       difference pairs        = ${DIFFERENCE_PAIRS[@]}
@@ -157,7 +157,7 @@ SEGMENTATION_PRIOR=""
 
 MASK_IMAGE=""
 
-RADIUS=2
+RADII=()
 SMOOTHING_SIGMA=0
 CORE_LABEL=5
 
@@ -211,7 +211,7 @@ else
        SEGMENTATION_PRIOR=$OPTARG
        ;;
           r)
-       RADIUS=$OPTARG
+       RADII[${#RADII[@]}]=$OPTARG
        ;;
           s)
        SMOOTHING_SIGMA=$OPTARG
@@ -323,18 +323,23 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
     COMMAND_LINE="${COMMAND_LINE} -c ${CLUSTER_CENTERS[$i]}"
     COMMAND_LINE="${COMMAND_LINE} -n ${IMAGE_NAMES[$i]}"
   done
-COMMAND_LINE="${COMMAND_LINE} -r ${RADIUS} -s ${SMOOTHING_SIGMA} -l ${CORE_LABEL}"
 
-if [[ ! -z "${SEGMENTATION_PRIOR}" ]];
-  then
-    COMMAND_LINE="${COMMAND_LINE} -p ${SEGMENTATION_PRIOR}"
-  fi
+for (( i = 0; i < ${#RADII[@]}; i++ ))
+  do
+    COMMAND_LINE="${COMMAND_LINE} -r ${RADII[$i]}"
+  done
 
 for (( i = 0; i < ${#DIFFERENCE_PAIRS[@]}; i++ ))
   do
     COMMAND_LINE="${COMMAND_LINE} -f ${DIFFERENCE_PAIRS[$i]}"
   done
 
+COMMAND_LINE="${COMMAND_LINE} -s ${SMOOTHING_SIGMA} -l ${CORE_LABEL}"
+
+if [[ ! -z "${SEGMENTATION_PRIOR}" ]];
+  then
+    COMMAND_LINE="${COMMAND_LINE} -p ${SEGMENTATION_PRIOR}"
+  fi
 
 sh ${UTILPATH}/../scripts/createFeatureImages.sh ${COMMAND_LINE}
 
