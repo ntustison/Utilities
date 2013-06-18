@@ -87,7 +87,7 @@ echoParameters() {
       symmetric templates     = ${SYMMETRIC_TEMPLATES[@]}
       cluster centers         = ${CLUSTER_CENTERS[@]}
       image names             = ${IMAGE_NAMES[@]}
-      radius                  = ${RADIUS}
+      radii                   = ${RADII[@]}
       smoothing sigma         = ${SMOOTHING_SIGMA}
       priors                  = ${SEGMENTATION_PRIOR}
       difference pairs        = ${DIFFERENCE_PAIRS[@]}
@@ -137,7 +137,7 @@ SEGMENTATION_PRIOR=""
 
 MASK_IMAGE=""
 
-RADIUS=2
+RADII=()
 SMOOTHING_SIGMA=0
 CORE_LABEL=5
 
@@ -191,7 +191,7 @@ else
        SEGMENTATION_PRIOR=$OPTARG
        ;;
           r)
-       RADIUS=$OPTARG
+       RADII[${#RADII[@]}]=$OPTARG
        ;;
           s)
        SMOOTHING_SIGMA=$OPTARG
@@ -294,34 +294,36 @@ STATS=${UTILPATH}/CalculateStatisticsImage
 for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
 
-    # mean image
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_MEAN_RADIUS_${RADIUS}.${OUTPUT_SUFFIX}
-    if [[ ! -f ${OUTPUT_IMAGE} ]];
-      then
-        logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 0 ${RADIUS}
-      fi
+    for (( j = 0; j < ${#RADII}; j++ ))
+      do
+        # mean image
+        OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_MEAN_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
+        if [[ ! -f ${OUTPUT_IMAGE} ]];
+          then
+            logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 0 ${RADII[$j]}
+          fi
 
-    # standard deviation image
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_SIGMA_RADIUS_${RADIUS}.${OUTPUT_SUFFIX}
-    if [[ ! -f ${OUTPUT_IMAGE} ]];
-      then
-        logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 4 ${RADIUS}
-      fi
+        # standard deviation image
+        OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_SIGMA_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
+        if [[ ! -f ${OUTPUT_IMAGE} ]];
+          then
+            logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 4 ${RADII[$j]}
+          fi
 
-    # skewness image
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_SKEWNESS_RADIUS_${RADIUS}.${OUTPUT_SUFFIX}
-    if [[ ! -f ${OUTPUT_IMAGE} ]];
-      then
-        logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 5 ${RADIUS}
-      fi
+        # skewness image
+        OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_SKEWNESS_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
+        if [[ ! -f ${OUTPUT_IMAGE} ]];
+          then
+            logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 5 ${RADII[$j]}
+          fi
 
-    # entropy image
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ENTROPY_RADIUS_${RADIUS}.${OUTPUT_SUFFIX}
-    if [[ ! -f ${OUTPUT_IMAGE} ]];
-      then
-        logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 7 ${RADIUS}
-      fi
-
+        # entropy image
+        OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ENTROPY_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
+        if [[ ! -f ${OUTPUT_IMAGE} ]];
+          then
+            logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 7 ${RADII[$j]}
+          fi
+      done
   done
 
 ################################################################################
@@ -498,7 +500,10 @@ for (( i = 0; i < ${#DIFFERENCE_PAIRS[@]}; i++ ))
 
         OUTPUT_DIFFERENCE_PAIR_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[${MINUEND_INDEX}]}_${IMAGE_NAMES[${SUBTRAHEND_INDEX}]}_DIFFERENCE.nii.gz
 
-        logCmd ${ANTSPATH}/ImageMath ${DIMENSION} ${OUTPUT_DIFFERENCE_PAIR_IMAGE} - ${ANATOMICAL_IMAGES[${MINUEND_INDEX}]} ${ANATOMICAL_IMAGES[${SUBTRAHEND_INDEX}]}
+        if [[ ! -f ${OUTPUT_DIFFERENCE_PAIR_IMAGE} ]];
+          then
+            logCmd ${ANTSPATH}/ImageMath ${DIMENSION} ${OUTPUT_DIFFERENCE_PAIR_IMAGE} - ${ANATOMICAL_IMAGES[${MINUEND_INDEX}]} ${ANATOMICAL_IMAGES[${SUBTRAHEND_INDEX}]}
+          fi
       fi
   done
 
