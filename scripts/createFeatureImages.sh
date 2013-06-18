@@ -427,7 +427,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
               -l 3 \
               -l 2 \
               -p ${SEGMENTATION_PRIOR} \
-              -w 0.1 \
+              -w 0.0 \
               -o ${OUTPUT_PREFIX}${IMAGE_NAMES[$i]} \
               -k 0 \
               -s ${OUTPUT_SUFFIX}
