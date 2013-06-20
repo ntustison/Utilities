@@ -100,6 +100,8 @@ int BinaryOperateImages( int argc, char * argv[] )
     reader1->GetOutput()->GetLargestPossibleRegion() );
   itk::NeighborhoodIterator<ImageType> It2( radius, reader2->GetOutput(),
     reader2->GetOutput()->GetLargestPossibleRegion() );
+  itk::NeighborhoodIterator<ImageType> It3( radius, reader3->GetOutput(),
+    reader3->GetOutput()->GetLargestPossibleRegion() );
 
   for( It.GoToBegin(), It1.GoToBegin(), It2.GoToBegin();
     !It.IsAtEnd(); ++It, ++It1, ++It2 )
@@ -164,9 +166,13 @@ int BinaryOperateImages( int argc, char * argv[] )
       }
     else if( op.compare( "replace" ) == 0 )
       {
-      if( It2.GetCenterPixel() != 0 )
+      if( It2.GetCenterPixel() == 0 )
         {
-        It1.SetCenterPixel( It2.GetCenterPixel() );
+        It.SetCenterPixel( It1.GetCenterPixel() );
+        }
+      else
+        {
+        It.SetCenterPixel( It2.GetCenterPixel() );
         }
       }
     else if( op.compare( "isgreaterthan" ) == 0 )
