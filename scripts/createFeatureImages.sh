@@ -435,7 +435,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
               -c ${NUMBER_OF_LABELS} \
               ${COMMAND_LINE_LABELS} \
               -p ${SEGMENTATION_PRIOR} \
-              -w 0.5 \
+              -w 0.4 \
               -o ${OUTPUT_PREFIX}${IMAGE_NAMES[$i]} \
               -k 0 \
               -t [50,0] \
