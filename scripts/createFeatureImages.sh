@@ -419,20 +419,26 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
         if [[ ! -f ${OUTPUT_ATROPOS_IMAGE} ]];
           then
 
+            COMMAND_LINE_LABELS=''
+            for (( j = 1; j <= ${NUMBER_OF_LABELS}; j++ ))
+              do
+                COMMAND_LINE_LABELS="${COMMAND_LINE_LABELS} -l $j"
+              done
+
             bash ${ANTSPATH}/antsAtroposN4.sh \
               -d ${DIMENSION} \
               -b "Socrates[0]" \
               -a ${ANATOMICAL_IMAGES[$i]} \
               -x ${MASK_IMAGE} \
-              -m 1 \
+              -m 5 \
               -n 5 \
               -c ${NUMBER_OF_LABELS} \
-              -l 3 \
-              -l 2 \
+              ${COMMAND_LINE_LABELS} \
               -p ${SEGMENTATION_PRIOR} \
-              -w 0.0 \
+              -w 0.5 \
               -o ${OUTPUT_PREFIX}${IMAGE_NAMES[$i]} \
               -k 0 \
+              -t [0,0] \
               -s ${OUTPUT_SUFFIX}
 
             f=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}Segmentation.${OUTPUT_SUFFIX}
