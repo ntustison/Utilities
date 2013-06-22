@@ -421,6 +421,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 
             bash ${ANTSPATH}/antsAtroposN4.sh \
               -d ${DIMENSION} \
+              -b "Socrates[0]" \
               -a ${ANATOMICAL_IMAGES[$i]} \
               -x ${MASK_IMAGE} \
               -m 1 \
