@@ -43,7 +43,49 @@ int GetConnectedComponents(int argc, char* argv[] )
   typedef itk::RelabelComponentImageFilter<ImageType, ImageType> RelabelerType;
   typename RelabelerType::Pointer relabeler = RelabelerType::New();
 
-  if( argc > 4 && atoi( argv[4] ) == 1 )
+  if( argc > 5 )
+    {
+    typedef itk::ConnectedComponentImageFilter<ImageType, ImageType> ConnectedComponentType;
+    typename ConnectedComponentType::Pointer filter = ConnectedComponentType::New();
+    filter->SetInput( reader->GetOutput() );
+    filter->Update();
+
+    typedef itk::RelabelComponentImageFilter<ImageType, ImageType> RelabelerType;
+    typename RelabelerType::Pointer relabeler = RelabelerType::New();
+    relabeler->SetInput( filter->GetOutput() );
+    relabeler->Update();
+
+    float thresholdSize = atof( argv[5] );
+    if( thresholdSize <= 1.0 )
+      {
+      thresholdSize *= relabeler->GetSizeOfObjectsInPixels()[0];
+
+      std::cout << "  Thresholding at size " << static_cast<typename RelabelerType::ObjectSizeType>( thresholdSize ) << std::endl;
+      }
+
+    for ( unsigned int i = 0; i < relabeler->GetNumberOfObjects(); i++ )
+      {
+      if( relabeler->GetSizeOfObjectsInPixels()[i] < static_cast<typename RelabelerType::ObjectSizeType>( thresholdSize ) )
+        {
+        itk::ImageRegionIterator<ImageType> It( relabeler->GetOutput(), relabeler->GetOutput()->GetRequestedRegion() );
+        for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+          {
+          if( It.Get() >= static_cast<PixelType>( i+1 ) )
+            {
+            It.Set( 0 );
+            }
+          }
+        break;
+        }
+      }
+
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetFileName( argv[3] );
+    writer->SetInput( relabeler->GetOutput() );
+    writer->Update();
+    }
+  else if( argc > 4 && atoi( argv[4] ) != 0 )
     {
     std::vector<PixelType> labels;
 
@@ -142,6 +184,7 @@ int main( int argc, char *argv[] )
     {
     std::cerr << "Usage: " << argv[0] << " imageDimension "
               << "inputImage outputImage [relabelOnly] "
+              << "[sizeInPixels_or_percentageOfLargest_to_threshold_out]"
               << std::endl;
     exit( 1 );
     }
