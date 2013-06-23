@@ -285,14 +285,21 @@ time_start=`date +%s`
 
 ################################################################################
 #
-# Calculate statistics images
+# Calculate fractal dimension and statistics images
 #
 ################################################################################
 
 STATS=${UTILPATH}/CalculateStatisticsImage
+SFD=${UTILPATH}/GenerateFractalImage
 
 for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
+
+    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_STOCHASTIC_FRACTAL_DIMENSION.${OUTPUT_SUFFIX}
+    if [[ ! -f ${OUTPUT_IMAGE} ]];
+      then
+        logCmd $SFD ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 1 $MASK_IMAGE
+      fi
 
     for (( j = 0; j < ${#RADII}; j++ ))
       do
