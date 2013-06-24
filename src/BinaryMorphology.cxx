@@ -13,7 +13,7 @@
 #include "itkBinaryDiamondStructuringElement.h"
 #include "itkBinaryThinning3DImageFilter.h"
 #include "itkBinaryThinningImageFilter.h"
-
+#include "itkVotingBinaryIterativeHoleFillingImageFilter.h"
 
 #include "vnl/vnl_math.h"
 
@@ -55,6 +55,7 @@ int BinaryMorphology( int argc, char * argv[] )
     filter->SetForegroundValue( foreground );
     filter->SetFullyConnected( true );
     filter->Update();
+
     typedef itk::ImageFileWriter<ImageType>  WriterType;
     typename WriterType::Pointer writer = WriterType::New();
     writer->SetInput( filter->GetOutput() );
@@ -63,6 +64,29 @@ int BinaryMorphology( int argc, char * argv[] )
 
     return EXIT_SUCCESS;
     }
+  else if( operation == 6 )
+    {
+    typedef itk::VotingBinaryIterativeHoleFillingImageFilter<ImageType>  FilterType;
+    typename FilterType::InputSizeType radii;
+    radii.Fill( radius );
+
+    typename FilterType::Pointer  filter = FilterType::New();
+    filter->SetInput( reader->GetOutput() );
+    filter->SetForegroundValue( foreground );
+    filter->SetMajorityThreshold( 1 );  // 1 == default
+    filter->SetRadius( radii );
+    filter->SetMaximumNumberOfIterations( 100000000 );
+    filter->Update();
+
+    typedef itk::ImageFileWriter<ImageType>  WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( filter->GetOutput() );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+
+    return EXIT_SUCCESS;
+    }
+
 
   if ( argc < 6 || atoi( argv[6] ) == 1 )
     {
@@ -385,7 +409,8 @@ int main( int argc, char *argv[] )
     std::cerr << "    2. close " << std::endl;
     std::cerr << "    3. open " << std::endl;
     std::cerr << "    4. thin " << std::endl;
-    std::cerr << "    5. file holes" << std::endl;
+    std::cerr << "    5. fill holes" << std::endl;
+    std::cerr << "    6. iterative hole filling (approx. convex hull)" << std::endl;
     return EXIT_FAILURE;
     }
 
