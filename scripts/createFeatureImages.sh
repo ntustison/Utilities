@@ -437,12 +437,12 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
               -b Socrates[0] \
               -a ${ANATOMICAL_IMAGES[$i]} \
               -x ${MASK_IMAGE} \
-              -m 5 \
+              -m 1 \
               -n 5 \
               -c ${NUMBER_OF_LABELS} \
               ${COMMAND_LINE_LABELS} \
               -p ${SEGMENTATION_PRIOR} \
-              -w 0.1 \
+              -w 0.0 \
               -o ${OUTPUT_PREFIX}${IMAGE_NAMES[$i]} \
               -k 0 \
               -t [50,0] \
