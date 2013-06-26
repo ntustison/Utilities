@@ -143,7 +143,7 @@ modelData <- as.data.frame( modelData )
 modelData$Labels <- as.factor( modelData$Labels )
 
 outputModelDataFileName <- paste0( args[2], "ModelData.RData" )
-save( modelData, filename = outputModelDataFileName )
+save( modelData, file = outputModelDataFileName )
 
 ###############################################
 #
