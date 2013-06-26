@@ -155,12 +155,14 @@ modelFormula <- as.formula( "Labels ~ . " )
 
 #the function each thread calls
 parallelRF <- function( i ) {
-  return( randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification ) )
+  modelData.imputed <- rfImpute( modelFormula, modelData )
+  return( randomForest( modelFormula, modelData.imputed, ntree = numberOfTreesPerThread, type = classification ) )
 }
 
 if( numberOfThreads == 1 )
   {
-  modelForest <- randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification )
+  modelData.imputed <- rfImpute( modelFormula, modelData )
+  modelForest <- randomForest( modelFormula, modelData.imputed, ntree = numberOfTreesPerThread, type = classification )
 
   # Stop the clock
   elapsedTime <- proc.time() - ptm
