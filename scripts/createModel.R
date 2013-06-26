@@ -142,6 +142,9 @@ colnames( modelData ) <- c( featureNames, "Labels" )
 modelData <- as.data.frame( modelData )
 modelData$Labels <- as.factor( modelData$Labels )
 
+outputModelDataFileName <- paste0( args[2], "ModelData.RData" )
+save( modelData, filename = outputModelDataFileName )
+
 ###############################################
 #
 # Create the random forest model in parallel
