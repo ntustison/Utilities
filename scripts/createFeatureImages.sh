@@ -285,21 +285,21 @@ time_start=`date +%s`
 
 ################################################################################
 #
-# Calculate fractal dimension and statistics images
+# Calculate fractal dimension (no---is not discriminative) and statistics images
 #
 ################################################################################
 
 STATS=${UTILPATH}/CalculateStatisticsImage
-SFD=${UTILPATH}/GenerateFractalImage
+# SFD=${UTILPATH}/GenerateFractalImage
 
 for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
 
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_STOCHASTIC_FRACTAL_DIMENSION.${OUTPUT_SUFFIX}
-    if [[ ! -f ${OUTPUT_IMAGE} ]];
-      then
-        logCmd $SFD ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 1 $MASK_IMAGE
-      fi
+#     OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_STOCHASTIC_FRACTAL_DIMENSION.${OUTPUT_SUFFIX}
+#     if [[ ! -f ${OUTPUT_IMAGE} ]];
+#       then
+#         logCmd $SFD ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 1 $MASK_IMAGE
+#       fi
 
     for (( j = 0; j < ${#RADII}; j++ ))
       do
@@ -325,11 +325,11 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
           fi
 
         # entropy image
-        OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ENTROPY_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
-        if [[ ! -f ${OUTPUT_IMAGE} ]];
-          then
-            logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 7 ${RADII[$j]}
-          fi
+#         OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ENTROPY_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
+#         if [[ ! -f ${OUTPUT_IMAGE} ]];
+#           then
+#             logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 7 ${RADII[$j]}
+#           fi
       done
   done
 
@@ -437,7 +437,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
               -b Socrates[0] \
               -a ${ANATOMICAL_IMAGES[$i]} \
               -x ${MASK_IMAGE} \
-              -m 1 \
+              -m 2 \
               -n 5 \
               -c ${NUMBER_OF_LABELS} \
               ${COMMAND_LINE_LABELS} \
@@ -445,7 +445,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
               -w 0.0 \
               -o ${OUTPUT_PREFIX}${IMAGE_NAMES[$i]} \
               -k 0 \
-              -t [50,0] \
+              -t [50x50x50x10,0] \
               -s ${OUTPUT_SUFFIX}
 
             f=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}Segmentation.${OUTPUT_SUFFIX}
