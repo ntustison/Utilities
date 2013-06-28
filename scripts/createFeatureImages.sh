@@ -301,7 +301,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 #         logCmd $SFD ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 1 $MASK_IMAGE
 #       fi
 
-    for (( j = 0; j < ${#RADII}; j++ ))
+    for (( j = 0; j < ${#RADII[@]}; j++ ))
       do
         # mean image
         OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_MEAN_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
