@@ -234,8 +234,8 @@ target_link_libraries(Check3TissueLabeling ${ITK_LIBRARIES})
 add_executable(CreateVirtualCT CreateVirtualCT.cxx )
 target_link_libraries(CreateVirtualCT ${ITK_LIBRARIES})
 
-add_executable(CreatePCAImageDecomposition CreatePCAImageDecomposition.cxx )
-target_link_libraries(CreatePCAImageDecomposition ${ITK_LIBRARIES})
+add_executable(PCAImageDecomposition PCAImageDecomposition.cxx )
+target_link_libraries(PCAImageDecomposition ${ITK_LIBRARIES})
 
 add_executable(CreatePrincipalStrainImages CreatePrincipalStrainImages.cxx )
 target_link_libraries(CreatePrincipalStrainImages ${ITK_LIBRARIES})
