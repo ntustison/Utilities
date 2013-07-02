@@ -142,6 +142,9 @@ colnames( modelData ) <- c( featureNames, "Labels" )
 modelData <- as.data.frame( modelData )
 modelData$Labels <- as.factor( modelData$Labels )
 
+# outputModelDataFileName <- paste0( args[2], "ModelData.RData" )
+# save( modelData, file = outputModelDataFileName )
+
 ###############################################
 #
 # Create the random forest model in parallel
@@ -155,12 +158,16 @@ modelFormula <- as.formula( "Labels ~ . " )
 
 #the function each thread calls
 parallelRF <- function( i ) {
-  return( randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification ) )
+#   modelData.imputed <- rfImpute( modelFormula, modelData )
+#   return( randomForest( modelFormula, modelData.imputed, ntree = numberOfTreesPerThread, type = classification ) )
+  return( randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification, na.action = na.omit ) )
 }
 
 if( numberOfThreads == 1 )
   {
-  modelForest <- randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification )
+#   modelData.imputed <- rfImpute( modelFormula, modelData )
+#   modelForest <- randomForest( modelFormula, modelData.imputed, ntree = numberOfTreesPerThread, type = classification )
+  modelForest <- randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification, na.action = na.omit )
 
   # Stop the clock
   elapsedTime <- proc.time() - ptm
