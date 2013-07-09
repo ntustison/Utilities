@@ -437,7 +437,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
               -b Socrates[0] \
               -a ${ANATOMICAL_IMAGES[$i]} \
               -x ${MASK_IMAGE} \
-              -m 2 \
+              -m 1 \
               -n 5 \
               -c ${NUMBER_OF_LABELS} \
               ${COMMAND_LINE_LABELS} \
@@ -445,7 +445,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
               -w 0.0 \
               -o ${OUTPUT_PREFIX}${IMAGE_NAMES[$i]} \
               -k 0 \
-              -t [50x50x50x10,0] \
+              -t [10x10x10x10,0] \
               -s ${OUTPUT_SUFFIX}
 
             f=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}Segmentation.${OUTPUT_SUFFIX}
