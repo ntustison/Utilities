@@ -295,11 +295,11 @@ SFD=${UTILPATH}/GenerateFractalImage
 for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
 
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_STOCHASTIC_FRACTAL_DIMENSION.${OUTPUT_SUFFIX}
-    if [[ ! -f ${OUTPUT_IMAGE} ]];
-      then
-        logCmd $SFD ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 1 $MASK_IMAGE
-      fi
+#     OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_STOCHASTIC_FRACTAL_DIMENSION.${OUTPUT_SUFFIX}
+#     if [[ ! -f ${OUTPUT_IMAGE} ]];
+#       then
+#         logCmd $SFD ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 1 $MASK_IMAGE
+#       fi
 
     for (( j = 0; j < ${#RADII[@]}; j++ ))
       do
@@ -325,11 +325,11 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
           fi
 
         # entropy image
-        OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ENTROPY_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
-        if [[ ! -f ${OUTPUT_IMAGE} ]];
-          then
-            logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 7 ${RADII[$j]}
-          fi
+#         OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ENTROPY_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
+#         if [[ ! -f ${OUTPUT_IMAGE} ]];
+#           then
+#             logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 7 ${RADII[$j]}
+#           fi
       done
   done
 
