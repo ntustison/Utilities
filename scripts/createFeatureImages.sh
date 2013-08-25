@@ -2,13 +2,6 @@
 
 VERSION="0.0"
 
-## need to change to put everything in ANTs (ImageMath?)
-
-if [[ ! -d "$UTILPATH" ]];
-  then
-    echo We can\'t find the Utilities path -- does not seem to exist.  Please \(re\)define \$UTILPATH in your environment.
-    exit 1
-  fi
 if [[ ! -d "$ANTSPATH" ]];
   then
     echo We can\'t find the ANTs path -- does not seem to exist.  Please \(re\)define \$ANTSPATH in your environment.
@@ -50,7 +43,9 @@ Required arguments:
      -c:  cluster centers                       Array describing the intensity centers of the intensity normalized images.
                                                 Need one for each input image.  Should be of the form:  e.g. 0.14x0.57x0.37x0.83x0.95
                                                 (for 7 classes: csf, gm, wm, edema, tumor, core, enhancement).  Note that either the cluster
-                                                centers are specified (for testing) or the truth labels (for training) but not both.
+                                                centers are specified (for testing) or the truth labels (for training) but not both. If these
+                                                aren't specified, the number of classes needs to be specified ('-b') option
+     -b:  number of clusters                    If -c is specified, this option is not needed.
      -g:  truth labels                          Truth labels.  Note that either the cluster centers are specified (for testing)
                                                 or the truth labels (for training) but not both.
      -t:  symmetric anatomical templates        Symmetric templates.  Need to be specified in the same order as
@@ -73,6 +68,7 @@ Optional arguments:
      -f:  difference pair                       pair of indices \"i.e. 3x1\" to create difference image \"image[3] - image[1]\"
      -l:  tumor core label                      used to create distance feature map (default = 5)
      -n   imageNames                            used in the naming of the images (otherwise, labeled IMAGE0, IMAGE1, etc)
+     -u   symmetric template mask
 
 USAGE
     exit 1
@@ -85,6 +81,7 @@ echoParameters() {
       image dimension         = ${DIMENSION}
       anatomical image        = ${ANATOMICAL_IMAGES[@]}
       symmetric templates     = ${SYMMETRIC_TEMPLATES[@]}
+      symmetric template mask = ${SYMMETRIC_TEMPLATE_MASK}
       cluster centers         = ${CLUSTER_CENTERS[@]}
       image names             = ${IMAGE_NAMES[@]}
       radii                   = ${RADII[@]}
@@ -128,8 +125,11 @@ OUTPUT_SUFFIX="nii.gz"
 DIMENSION=3
 
 ANATOMICAL_IMAGES=()
+NORMALIZED_IMAGES=()
 SYMMETRIC_TEMPLATE=()
+SYMMETRIC_TEMPLATE_MASK=""
 CLUSTER_CENTERS=()
+NUMBER_OF_LABELS=7
 IMAGE_NAMES=()
 DIFFERENCE_PAIRS=()
 
@@ -151,11 +151,14 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:c:d:f:g:h:l:n:o:p:r:s:t:x:" OPT
+  while getopts "a:b:c:d:f:g:h:l:n:o:p:r:s:t:u:x:" OPT
     do
       case $OPT in
           a) #anatomical image
        ANATOMICAL_IMAGES[${#ANATOMICAL_IMAGES[@]}]=$OPTARG
+       ;;
+          b)
+       NUMBER_OF_LABELS=$OPTARG
        ;;
           c) # cluster centers
        CLUSTER_CENTERS[${#CLUSTER_CENTERS[@]}]=$OPTARG
@@ -198,6 +201,9 @@ else
        ;;
           t)
        SYMMETRIC_TEMPLATES[${#SYMMETRIC_TEMPLATES[@]}]=$OPTARG
+       ;;
+          u)
+       SYMMETRIC_TEMPLATE_MASK=$OPTARG
        ;;
           x)
        MASK_IMAGE=$OPTARG
@@ -252,23 +258,27 @@ if [[ ${#ANATOMICAL_IMAGES[@]} -ne ${#SYMMETRIC_TEMPLATES[@]} ]];
       exit 1
   fi
 
-if [[ ${#ANATOMICAL_IMAGES[@]} -ne ${#CLUSTER_CENTERS[@]} ]]
-  then
-      echo "The number of cluster center arrays does not match the number of anatomical images."
-      exit 1
-  fi
 
-CLUSTERS=( `echo ${CLUSTER_CENTERS[0]} | tr 'x' ' '` )
-NUMBER_OF_LABELS=${#CLUSTERS[@]}
-for (( i = 1; i < ${#CLUSTER_CENTERS[@]}; i++ ))
-  do
-    CLUSTERS=( `echo ${CLUSTER_CENTERS[i]} | tr 'x' ' '` )
-    if [[ ${#CLUSTERS[@]} -ne NUMBER_OF_LABELS ]];
-      then
-        echo "The number of labels is not equal across the cluster center arrays."
-        exit 1
-      fi
-  done
+if [[ ${#CLUSTER_CENTERS[@]} -gt 0 ]];
+  then
+   if [[ ${#ANATOMICAL_IMAGES[@]} -ne ${#CLUSTER_CENTERS[@]} ]]
+     then
+         echo "The number of cluster center arrays does not match the number of anatomical images."
+         exit 1
+     fi
+
+    CLUSTERS=( `echo ${CLUSTER_CENTERS[0]} | tr 'x' ' '` )
+    NUMBER_OF_LABELS=${#CLUSTERS[@]}
+    for (( i = 1; i < ${#CLUSTER_CENTERS[@]}; i++ ))
+      do
+        CLUSTERS=( `echo ${CLUSTER_CENTERS[i]} | tr 'x' ' '` )
+        if [[ ${#CLUSTERS[@]} -ne NUMBER_OF_LABELS ]];
+          then
+            echo "The number of labels is not equal across the cluster center arrays."
+            exit 1
+          fi
+      done
+  fi
 
 OUTPUT_DIR=${OUTPUT_PREFIX%\/*}
 if [[ ! -d $OUTPUT_DIR ]];
@@ -285,21 +295,33 @@ time_start=`date +%s`
 
 ################################################################################
 #
-# Calculate fractal dimension (no---is not discriminative) and statistics images
+# Normalize images -> bias correction and/or intensity standardization
 #
 ################################################################################
 
-STATS=${UTILPATH}/CalculateStatisticsImage
-SFD=${UTILPATH}/GenerateFractalImage
-
 for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
+    OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_NORMALIZED.${OUTPUT_SUFFIX}
 
-#     OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_STOCHASTIC_FRACTAL_DIMENSION.${OUTPUT_SUFFIX}
-#     if [[ ! -f ${OUTPUT_IMAGE} ]];
-#       then
-#         logCmd $SFD ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 1 $MASK_IMAGE
-#       fi
+    NORMALIZED_IMAGES[${#NORMALIZED_IMAGES[@]}]=$OUTPUT_IMAGE
+    if [[ ! -f ${OUTPUT_IMAGE} ]];
+      then
+        logCmd ${ANTSPATH}ImageMath 3 $OUTPUT_IMAGE TruncateImageIntensity ${ANATOMICAL_IMAGES[$i]} 0.01 0.99 200
+#         logCmd ${ANTSPATH}N4BiasFieldCorrection -d 3 -c[20x20x20x10,0] -x $MASK_IMAGE -b [200] -s 2 -i $OUTPUT_IMAGE -o $OUTPUT_IMAGE
+        logCmd ${ANTSPATH}ImageMath 3 $OUTPUT_IMAGE m $MASK_IMAGE $OUTPUT_IMAGE
+        logCmd ${ANTSPATH}ImageMath 3 $OUTPUT_IMAGE RescaleImage $OUTPUT_IMAGE 0 1
+#         logCmd ${ANTSPATH}HistogramMatchImages 3 $OUTPUT_IMAGE ${SYMMETRIC_TEMPLATES[$i]} 200 12
+      fi
+  done
+
+################################################################################
+#
+# Calculate statistics images
+#
+################################################################################
+
+for (( i = 0; i < ${#NORMALIZED_IMAGES[@]}; i++ ))
+  do
 
     for (( j = 0; j < ${#RADII[@]}; j++ ))
       do
@@ -307,28 +329,28 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
         OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_MEAN_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
         if [[ ! -f ${OUTPUT_IMAGE} ]];
           then
-            logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 0 ${RADII[$j]}
+            logCmd ${ANTSPATH}/ImageMath ${DIMENSION} $OUTPUT_IMAGE NeighborhoodStats ${NORMALIZED_IMAGES[$i]} 0 ${RADII[$j]}
           fi
 
         # standard deviation image
         OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_SIGMA_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
         if [[ ! -f ${OUTPUT_IMAGE} ]];
           then
-            logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 4 ${RADII[$j]}
+            logCmd ${ANTSPATH}/ImageMath ${DIMENSION} $OUTPUT_IMAGE NeighborhoodStats ${NORMALIZED_IMAGES[$i]} 4 ${RADII[$j]}
           fi
 
         # skewness image
         OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_SKEWNESS_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
         if [[ ! -f ${OUTPUT_IMAGE} ]];
           then
-            logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 5 ${RADII[$j]}
+            logCmd ${ANTSPATH}/ImageMath ${DIMENSION} $OUTPUT_IMAGE NeighborhoodStats ${NORMALIZED_IMAGES[$i]} 5 ${RADII[$j]}
           fi
 
         # entropy image
 #         OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ENTROPY_RADIUS_${RADII[$j]}.${OUTPUT_SUFFIX}
 #         if [[ ! -f ${OUTPUT_IMAGE} ]];
 #           then
-#             logCmd $STATS ${DIMENSION} ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE 7 ${RADII[$j]}
+#             logCmd ${ANTSPATH}/ImageMath ${DIMENSION} $OUTPUT_IMAGE NeighborhoodStats ${NORMALIZED_IMAGES[$i]} 7 ${RADII[$j]}
 #           fi
       done
   done
@@ -339,14 +361,12 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 #
 ################################################################################
 
-DISTANCE=${UTILPATH}/GenerateDistanceImage
-
 OUTPUT_IMAGE=${OUTPUT_PREFIX}NORMALIZED_DISTANCE.${OUTPUT_SUFFIX}
 if [[ ! -f ${OUTPUT_IMAGE} ]];
   then
-    logCmd $DISTANCE ${DIMENSION} $MASK_IMAGE $OUTPUT_IMAGE 0
-    logCmd ${ANTSPATH}ImageMath 3 $OUTPUT_IMAGE m $MASK_IMAGE $OUTPUT_IMAGE
-    logCmd ${ANTSPATH}ImageMath 3 $OUTPUT_IMAGE Normalize $OUTPUT_IMAGE
+    logCmd ${ANTSPATH}ImageMath ${DIMENSION} $OUTPUT_IMAGE MaurerDistance $MASK_IMAGE 0
+    logCmd ${ANTSPATH}ImageMath ${DIMENSION} $OUTPUT_IMAGE m $MASK_IMAGE $OUTPUT_IMAGE
+    logCmd ${ANTSPATH}ImageMath ${DIMENSION} $OUTPUT_IMAGE Normalize $OUTPUT_IMAGE
   fi
 
 ################################################################################
@@ -357,11 +377,22 @@ if [[ ! -f ${OUTPUT_IMAGE} ]];
 
 OUTPUT_REGISTRATION_PREFIX=${OUTPUT_PREFIX}ANTs_REGISTRATION
 
+MESH_SIZE='10x10'
+MESH_SIZE2='0x0'
+if [[ $DIMENSION -eq 3 ]];
+  then
+    MESH_SIZE=${MESH_SIZE}x11
+    MESH_SIZE2=${MESH_SIZE2}x0
+  fi
+
 REG_BASE="${ANTSPATH}/antsRegistration -d ${DIMENSION} -w [0.01,0.995] -o ${OUTPUT_REGISTRATION_PREFIX}"
-REG_LEV0="-r [${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1]"
-REG_LEV1="-t Rigid[0.1] -m MI[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
-REG_LEV2="-t Affine[0.1] -m MI[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
-REG_LEV3="-t BSplineSyN[0.1,10x10x11,0x0x0] -m CC[${ANATOMICAL_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,4] -s 2x1x0 -f 4x2x1 -c [70x50x10,1e-8,15]"
+REG_LEV0="-r [${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1]"
+# REG_LEV1="-t Rigid[0.1] -m MI[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
+# REG_LEV2="-t Affine[0.1] -m MI[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
+# REG_LEV3="-t BSplineSyN[0.1,${MESH_SIZE},${MESH_SIZE2}] -m CC[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,4] -s 2x1x0 -f 4x2x1 -c [70x50x10,1e-8,15]"
+REG_LEV1="-t Rigid[0.1] -m MI[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 8x4x2 -c [500x250x100,1e-8,15]"
+REG_LEV2="-t Affine[0.1] -m MI[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 8x4x2 -c [500x250x100,1e-8,15]"
+REG_LEV3="-t BSplineSyN[0.1,${MESH_SIZE},${MESH_SIZE2}] -m CC[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,4] -s 2x1x0x0 -f 6x4x2x1 -c [70x50x10x0,1e-8,15]"
 
 AFFINE=${OUTPUT_REGISTRATION_PREFIX}0GenericAffine.mat
 WARP=${OUTPUT_REGISTRATION_PREFIX}1Warp.nii.gz
@@ -372,6 +403,13 @@ if [[ ! -f $WARP ]];
     logCmd $REG_BASE $REG_LEV0 $REG_LEV1 $REG_LEV2 $REG_LEV3
   fi
 
+# if template mask is specified, we warp it
+if [[ -f $SYMMETRIC_TEMPLATE_MASK ]];
+  then
+    OUTPUT_IMAGE=${OUTPUT_PREFIX}_SYMMETRIC_TEMPLATE_WARPED.${OUTPUT_SUFFIX}
+    logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n MultiLabel -r ${NORMALIZED_IMAGES[$i]} -i ${SYMMETRIC_TEMPLATE_MASK} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
+  fi
+
 # log jacobian image
 OUTPUT_IMAGE=${OUTPUT_PREFIX}LOG_JACOBIAN.${OUTPUT_SUFFIX}
 if [[ ! -f ${OUTPUT_IMAGE} ]];
@@ -380,16 +418,15 @@ if [[ ! -f ${OUTPUT_IMAGE} ]];
     logCmd mv ${OUTPUT_REGISTRATION_PREFIX}logjacobian.nii.gz $OUTPUT_IMAGE
   fi
 
-
-for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
+for (( i = 0; i < ${#NORMALIZED_IMAGES[@]}; i++ ))
   do
 
     # symmetric template difference images
     OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_SYMMETRIC_TEMPLATE_DIFFERENCE.${OUTPUT_SUFFIX}
     if [[ ! -f ${OUTPUT_IMAGE} ]];
       then
-        logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n BSpline -r ${ANATOMICAL_IMAGES[$i]} -i ${SYMMETRIC_TEMPLATES[$i]} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
-        logCmd ${ANTSPATH}/ImageMath ${DIMENSION} $OUTPUT_IMAGE - ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE
+        logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n BSpline -r ${NORMALIZED_IMAGES[$i]} -i ${SYMMETRIC_TEMPLATES[$i]} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
+        logCmd ${ANTSPATH}/ImageMath ${DIMENSION} $OUTPUT_IMAGE - ${NORMALIZED_IMAGES[$i]} $OUTPUT_IMAGE
         logCmd ${ANTSPATH}/SmoothImage ${DIMENSION} $OUTPUT_IMAGE $SMOOTHING_SIGMA $OUTPUT_IMAGE 1
       fi
 
@@ -397,11 +434,16 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
     OUTPUT_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_CONTRALATERAL_DIFFERENCE.${OUTPUT_SUFFIX}
     if [[ ! -f ${OUTPUT_IMAGE} ]];
       then
-        logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n BSpline -i ${ANATOMICAL_IMAGES[$i]} -r ${SYMMETRIC_TEMPLATES[$i]} -o ${OUTPUT_IMAGE} -t [$AFFINE,1] -t $INVERSE_WARP
-        logCmd ${UTILPATH}/FlipImage ${DIMENSION} $OUTPUT_IMAGE $OUTPUT_IMAGE 1x0x0
-        logCmd ${UTILPATH}/ChangeImageInformation ${DIMENSION} $OUTPUT_IMAGE $OUTPUT_IMAGE 4 ${SYMMETRIC_TEMPLATES[$i]}
-        logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n BSpline -i $OUTPUT_IMAGE -r ${ANATOMICAL_IMAGES[$i]} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
-        logCmd ${ANTSPATH}/ImageMath ${DIMENSION} $OUTPUT_IMAGE - ${ANATOMICAL_IMAGES[$i]} $OUTPUT_IMAGE
+        logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n BSpline -i ${NORMALIZED_IMAGES[$i]} -r ${SYMMETRIC_TEMPLATES[$i]} -o ${OUTPUT_IMAGE} -t [$AFFINE,1] -t $INVERSE_WARP
+        if [[ $DIMENSION -eq 3 ]];
+          then
+            logCmd ${ANTSPATH}/PermuteFlipImageOrientationAxes ${DIMENSION} $OUTPUT_IMAGE $OUTPUT_IMAGE 0 1 2 1 0 0
+          else
+            logCmd ${ANTSPATH}/PermuteFlipImageOrientationAxes ${DIMENSION} $OUTPUT_IMAGE $OUTPUT_IMAGE 0 1 1 0
+          fi
+        logCmd ${ANTSPATH}/CopyImageHeaderInformation ${DIMENSION} ${SYMMETRIC_TEMPLATES[$i]} $OUTPUT_IMAGE 1 1 1
+        logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n BSpline -i $OUTPUT_IMAGE -r ${NORMALIZED_IMAGES[$i]} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
+        logCmd ${ANTSPATH}/ImageMath ${DIMENSION} $OUTPUT_IMAGE - ${NORMALIZED_IMAGES[$i]} $OUTPUT_IMAGE
         logCmd ${ANTSPATH}/SmoothImage 3 $OUTPUT_IMAGE $SMOOTHING_SIGMA $OUTPUT_IMAGE 1
       fi
 
@@ -414,7 +456,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 #
 ################################################################################
 
-for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
+for (( i = 0; i < ${#NORMALIZED_IMAGES[@]}; i++ ))
   do
 
     if [[ -n ${SEGMENTATION_PRIOR} ]];
@@ -435,7 +477,7 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
             bash ${ANTSPATH}/antsAtroposN4.sh \
               -d ${DIMENSION} \
               -b Socrates[0] \
-              -a ${ANATOMICAL_IMAGES[$i]} \
+              -a ${NORMALIZED_IMAGES[$i]} \
               -x ${MASK_IMAGE} \
               -m 1 \
               -n 5 \
@@ -464,9 +506,9 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 
         if [[ ! -f ${OUTPUT_ATROPOS_FEATURES_PREFIX}ECCENTRICITY.nii.gz ]];
           then
-            logCmd ${UTILPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
+            logCmd ${ANTSPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
             logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${CORE_LABEL} ${CORE_LABEL} 1 0
-            logCmd ${UTILPATH}/GenerateDistanceImage ${DIMENSION} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 1
+            logCmd ${ANTSPATH}/ImageMath ${DIMENSION} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} MaurerDistance ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 1
           fi
 
       else
@@ -474,9 +516,17 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
         OUTPUT_ATROPOS_IMAGE=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM.${OUTPUT_SUFFIX}
         OUTPUT_ATROPOS_IMAGE_POSTERIORS=${OUTPUT_PREFIX}${IMAGE_NAMES[$i]}_ATROPOS_GMM_POSTERIORS%d.${OUTPUT_SUFFIX}
 
-        SEG_BASE="${ANTSPATH}/Atropos -d ${DIMENSION} -a ${ANATOMICAL_IMAGES[$i]}"
+        SEG_BASE="${ANTSPATH}/Atropos -d ${DIMENSION} -a ${NORMALIZED_IMAGES[$i]}"
         SEG_0="-i KMeans[${NUMBER_OF_LABELS},${CLUSTER_CENTERS[i]}] -p Socrates[1] -x $MASK_IMAGE"
-        SEG_1="-c [0,0] -k Gaussian -m [0.1,1x1x1]"
+        if [[ ${#CLUSTER_CENTERS[@]} -eq 0 ]];
+          then
+            SEG_0="-i KMeans[${NUMBER_OF_LABELS}] -p Socrates[1] -x $MASK_IMAGE"
+          fi
+        SEG_1="-c [0,0] -k Gaussian -m [0.1,1x1]"
+        if [[ $DIMENSION -eq 3 ]]
+          then
+            SEG_1="-c [0,0] -k Gaussian -m [0.1,1x1x1]"
+          fi
         SEG_2="-o [${OUTPUT_ATROPOS_IMAGE},${OUTPUT_ATROPOS_IMAGE_POSTERIORS}]"
 
         if [[ ! -f ${OUTPUT_ATROPOS_IMAGE} ]];
@@ -489,9 +539,9 @@ for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
 
         if [[ ! -f ${OUTPUT_ATROPOS_FEATURES_PREFIX}ECCENTRICITY.nii.gz ]];
           then
-            logCmd ${UTILPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
+            logCmd ${ANTSPATH}/GetConnectedComponentsFeatureImages ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_FEATURES_PREFIX}
             logCmd ${ANTSPATH}/ThresholdImage ${DIMENSION} ${OUTPUT_ATROPOS_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${CORE_LABEL} ${CORE_LABEL} 1 0
-            logCmd ${UTILPATH}/GenerateDistanceImage ${DIMENSION} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 1
+            logCmd ${ANTSPATH}/ImageMath ${DIMENSION} ${OUTPUT_ATROPOS_DISTANCE_IMAGE} MaurerDistance ${OUTPUT_ATROPOS_DISTANCE_IMAGE} 1
           fi
 
       fi
@@ -516,7 +566,7 @@ for (( i = 0; i < ${#DIFFERENCE_PAIRS[@]}; i++ ))
 
         if [[ ! -f ${OUTPUT_DIFFERENCE_PAIR_IMAGE} ]];
           then
-            logCmd ${ANTSPATH}/ImageMath ${DIMENSION} ${OUTPUT_DIFFERENCE_PAIR_IMAGE} - ${ANATOMICAL_IMAGES[${MINUEND_INDEX}]} ${ANATOMICAL_IMAGES[${SUBTRAHEND_INDEX}]}
+            logCmd ${ANTSPATH}/ImageMath ${DIMENSION} ${OUTPUT_DIFFERENCE_PAIR_IMAGE} - ${NORMALIZED_IMAGES[${MINUEND_INDEX}]} ${NORMALIZED_IMAGES[${SUBTRAHEND_INDEX}]}
           fi
       fi
   done
