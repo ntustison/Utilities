@@ -404,10 +404,10 @@ if [[ ! -f $WARP ]];
   fi
 
 # if template mask is specified, we warp it
-if [[ ! -f $SYMMETRIC_TEMPLATE_MASK ]];
+OUTPUT_IMAGE=${OUTPUT_PREFIX}_SYMMETRIC_TEMPLATE_MASK_WARPED.${OUTPUT_SUFFIX}
+if [[ ! -f $OUTPUT_IMAGE ]];
   then
-    OUTPUT_IMAGE=${OUTPUT_PREFIX}_SYMMETRIC_TEMPLATE_WARPED.${OUTPUT_SUFFIX}
-    logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n MultiLabel -r ${NORMALIZED_IMAGES[$i]} -i ${SYMMETRIC_TEMPLATE_MASK} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
+    logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n MultiLabel -r ${NORMALIZED_IMAGES[0]} -i ${SYMMETRIC_TEMPLATE_MASK} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
   fi
 
 # log jacobian image
