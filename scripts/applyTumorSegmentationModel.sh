@@ -2,13 +2,11 @@
 
 VERSION="0.0"
 
-## need to change to put everything in ANTs (ImageMath?)
+## need to change so that SCRIPTSPATH is where createFeatureImages.sh
+## and the other scripts are located.
 
-if [[ ! -d "$UTILPATH" ]];
-  then
-    echo We can\'t find the Utilities path -- does not seem to exist.  Please \(re\)define \$UTILPATH in your environment.
-    exit 1
-  fi
+SCRIPTSPATH=/Users/ntustison/Documents/Academic/SubmittedPapers/BRATS2013/Scripts/
+
 if [[ ! -d "$ANTSPATH" ]];
   then
     echo We can\'t find the ANTs path -- does not seem to exist.  Please \(re\)define \$ANTSPATH in your environment.
@@ -72,6 +70,7 @@ Required arguments:
      -c:  cluster centers                       Array describing the intensity centers of the intensity normalized images.
                                                 Need one for each input image.  Should be of the form:  e.g. 0.14x0.57x0.37x0.83x0.95
                                                 (for 5 classes: csf, gm, wm, edema, and tumor)
+     -b:  number of clusters                    If -c is specified, this option is not needed.
      -t:  symmetric anatomical templates        Symmetric templates.  Need to be specified in the same order as
                                                 the input anatomical images.
      -x:  mask image                            Mask image defining the region of interest.
@@ -171,11 +170,14 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:c:d:f:h:l:m:n:o:p:r:s:t:x:" OPT
+  while getopts "a:b:c:d:f:h:l:m:n:o:p:r:s:t:x:" OPT
     do
       case $OPT in
           a) #anatomical image
        ANATOMICAL_IMAGES[${#ANATOMICAL_IMAGES[@]}]=$OPTARG
+       ;;
+          b)
+       NUMBER_OF_LABELS=$OPTARG
        ;;
           c) # cluster centers
        CLUSTER_CENTERS[${#CLUSTER_CENTERS[@]}]=$OPTARG
@@ -278,23 +280,26 @@ if [[ ${#ANATOMICAL_IMAGES[@]} -ne ${#SYMMETRIC_TEMPLATES[@]} ]];
       exit 1
   fi
 
-if [[ ${#ANATOMICAL_IMAGES[@]} -ne ${#CLUSTER_CENTERS[@]} ]]
+if [[ ${#CLUSTER_CENTERS[@]} -gt 0 ]];
   then
-      echo "The number of cluster center arrays does not match the number of anatomical images."
-      exit 1
-  fi
+   if [[ ${#ANATOMICAL_IMAGES[@]} -ne ${#CLUSTER_CENTERS[@]} ]]
+     then
+         echo "The number of cluster center arrays does not match the number of anatomical images."
+         exit 1
+     fi
 
-CLUSTERS=( `echo ${CLUSTER_CENTERS[0]} | tr 'x' ' '` )
-NUMBER_OF_LABELS=${#CLUSTERS[@]}
-for (( i = 1; i < ${#CLUSTER_CENTERS[@]}; i++ ))
-  do
-    CLUSTERS=( `echo ${CLUSTER_CENTERS[i]} | tr 'x' ' '` )
-    if [[ ${#CLUSTERS[@]} -ne NUMBER_OF_LABELS ]];
-      then
-        echo "The number of labels is not equal across the cluster center arrays."
-        exit 1
-      fi
-  done
+    CLUSTERS=( `echo ${CLUSTER_CENTERS[0]} | tr 'x' ' '` )
+    NUMBER_OF_LABELS=${#CLUSTERS[@]}
+    for (( i = 1; i < ${#CLUSTER_CENTERS[@]}; i++ ))
+      do
+        CLUSTERS=( `echo ${CLUSTER_CENTERS[i]} | tr 'x' ' '` )
+        if [[ ${#CLUSTERS[@]} -ne NUMBER_OF_LABELS ]];
+          then
+            echo "The number of labels is not equal across the cluster center arrays."
+            exit 1
+          fi
+      done
+  fi
 
 OUTPUT_DIR=${OUTPUT_PREFIX%\/*}
 if [[ ! -d $OUTPUT_DIR ]];
@@ -315,14 +320,24 @@ time_start=`date +%s`
 #
 ################################################################################
 
-COMMAND_LINE="-d 3 -x ${MASK_IMAGE} -o ${OUTPUT_PREFIX}"
+COMMAND_LINE="-d ${DIMENSION} -x ${MASK_IMAGE} -o ${OUTPUT_PREFIX}"
 for (( i = 0; i < ${#ANATOMICAL_IMAGES[@]}; i++ ))
   do
     COMMAND_LINE="${COMMAND_LINE} -a ${ANATOMICAL_IMAGES[$i]}"
     COMMAND_LINE="${COMMAND_LINE} -t ${SYMMETRIC_TEMPLATES[$i]}"
-    COMMAND_LINE="${COMMAND_LINE} -c ${CLUSTER_CENTERS[$i]}"
+    if [[ ${#CLUSTER_CENTERS[@]} -gt 0 ]];
+      then
+        COMMAND_LINE="${COMMAND_LINE} -c ${CLUSTER_CENTERS[$i]}"
+      fi
     COMMAND_LINE="${COMMAND_LINE} -n ${IMAGE_NAMES[$i]}"
   done
+
+if [[ ${#CLUSTER_CENTERS[@]} -eq 0 ]];
+  then
+    COMMAND_LINE="${COMMAND_LINE} -b ${NUMBER_OF_LABELS}"
+  fi
+
+
 
 for (( i = 0; i < ${#RADII[@]}; i++ ))
   do
@@ -341,7 +356,7 @@ if [[ ! -z "${SEGMENTATION_PRIOR}" ]];
     COMMAND_LINE="${COMMAND_LINE} -p ${SEGMENTATION_PRIOR}"
   fi
 
-sh ${UTILPATH}/../scripts/createFeatureImages.sh ${COMMAND_LINE}
+sh ${SCRIPTSPATH}/createFeatureImages.sh ${COMMAND_LINE}
 
 ################################################################################
 #
@@ -350,7 +365,7 @@ sh ${UTILPATH}/../scripts/createFeatureImages.sh ${COMMAND_LINE}
 ################################################################################
 CSV_FILE=${OUTPUT_PREFIX}FeatureImageList.csv
 
-logCmd Rscript ${UTILPATH}/../scripts/createCSVFileFromModel.R ${MODEL} ${MASK_IMAGE} ${OUTPUT_PREFIX} ${CSV_FILE}
+logCmd Rscript ${SCRIPTSPATH}/createCSVFileFromModel.R ${MODEL} ${MASK_IMAGE} ${OUTPUT_PREFIX} ${CSV_FILE}
 
 ################################################################################
 #
@@ -358,7 +373,13 @@ logCmd Rscript ${UTILPATH}/../scripts/createCSVFileFromModel.R ${MODEL} ${MASK_I
 #
 ################################################################################
 
-logCmd Rscript ${UTILPATH}/../scripts/applyModel.R ${MODEL} ${CSV_FILE} ${OUTPUT_PREFIX}RF_POSTERIORS 1
+logCmd Rscript ${SCRIPTSPATH}/applyModel.R ${DIMENSION} ${MODEL} ${CSV_FILE} ${OUTPUT_PREFIX}RF_POSTERIORS 1
+
+################################################################################
+#
+# Need to refine the model
+#
+################################################################################
 
 ################################################################################
 #
