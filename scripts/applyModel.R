@@ -18,19 +18,20 @@ args <- commandArgs( trailingOnly = TRUE )
 
 if( length( args ) < 3 )
   {
-  cat( "Usage: Rscript applyModel.R inputModel inputCSVFile ",
+  cat( "Usage: Rscript applyModel.R dimension inputModel inputCSVFile ",
        "outputProbabilityImagePrefix <numberOfThreads=4>", sep = "" )
   stopQuietly()
   }
 
-inputModelName <- args[1]
-fileList <- read.csv( args[2] )
-probImagePrefix <- args[3]
+dimension <- as.numeric( args[1] )
+inputModelName <- args[2]
+fileList <- read.csv( args[3] )
+probImagePrefix <- args[4]
 
 numberOfThreads <- 4
-if( length( args ) >= 3 )
+if( length( args ) >= 5 )
   {
-  numberOfThreads <- as.numeric( args[4] )
+  numberOfThreads <- as.numeric( args[5] )
   }
 
 ###############################################
@@ -53,7 +54,7 @@ featureNames <- colnames( featureImages )
 
 ## Create the model data frame
 
-maskImage <- antsImageRead( as.character( maskName ), dimension = 3, pixeltype = 'unsigned int' )
+maskImage <- antsImageRead( as.character( maskName ), dimension = dimension, pixeltype = 'unsigned int' )
 mask <- as.array( maskImage )
 
 maskIndices <- which( mask != 0 )
@@ -62,7 +63,7 @@ subjectData <- matrix( NA, nrow = length( maskIndices ), ncol = length( featureN
 for( j in 1:length( featureNames ) )
   {
   cat( "  Reading feature image ", featureNames[j], ".\n", sep = "" )
-  featureImage <- as.array( antsImageRead( as.character( featureImages[1,j] ), dimension = 3, pixeltype = 'float' ) )
+  featureImage <- as.array( antsImageRead( as.character( featureImages[1,j] ), dimension = dimension, pixeltype = 'float' ) )
 
   values <- featureImage[maskIndices]
   subjectData[, j] <- values
