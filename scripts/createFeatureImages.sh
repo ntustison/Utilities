@@ -404,7 +404,7 @@ if [[ ! -f $WARP ]];
   fi
 
 # if template mask is specified, we warp it
-if [[ -f $SYMMETRIC_TEMPLATE_MASK ]];
+if [[ ! -f $SYMMETRIC_TEMPLATE_MASK ]];
   then
     OUTPUT_IMAGE=${OUTPUT_PREFIX}_SYMMETRIC_TEMPLATE_WARPED.${OUTPUT_SUFFIX}
     logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n MultiLabel -r ${NORMALIZED_IMAGES[$i]} -i ${SYMMETRIC_TEMPLATE_MASK} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
