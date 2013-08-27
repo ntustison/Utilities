@@ -8,38 +8,31 @@ stopQuietly <- function(...)
   stop( simpleError( blankMsg ) );
   } # stopQuietly()
 
-# args <- commandArgs( trailingOnly = TRUE )
-#
-# ###############################################
-# #
-# # Selected parameters
-# #
-# ###############################################
-#
-# if( length( args ) < 3 )
-#   {
-#   cat( "Usage: Rscript applyModel.R dimension inputModel inputCSVFile ",
-#        "outputProbabilityImagePrefix <numberOfThreads=4>", sep = "" )
-#   stopQuietly()
-#   }
-#
-# dimension <- as.numeric( args[1] )
-# inputModelName <- args[2]
-# fileList <- read.csv( args[3] )
-# probImagePrefix <- args[4]
-#
-# numberOfThreads <- 1
-# if( length( args ) >= 5 )
-#   {
-#   numberOfThreads <- as.numeric( args[5] )
-#   }
+args <- commandArgs( trailingOnly = TRUE )
 
-dimension <- 3
-inputModelName <- "BRATS_HG_GMM.RData"
-fileList <- read.csv( "test.csv" )
-probImagePrefix <- "testRF_POSTERIORS"
+###############################################
+#
+# Selected parameters
+#
+###############################################
+
+if( length( args ) < 3 )
+  {
+  cat( "Usage: Rscript applyModel.R dimension inputModel inputCSVFile ",
+       "outputProbabilityImagePrefix <numberOfThreads=4>", sep = "" )
+  stopQuietly()
+  }
+
+dimension <- as.numeric( args[1] )
+inputModelName <- args[2]
+fileList <- read.csv( args[3] )
+probImagePrefix <- args[4]
+
 numberOfThreads <- 1
-
+if( length( args ) >= 5 )
+  {
+  numberOfThreads <- as.numeric( args[5] )
+  }
 
 ###############################################
 #
