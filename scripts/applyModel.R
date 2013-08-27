@@ -8,31 +8,38 @@ stopQuietly <- function(...)
   stop( simpleError( blankMsg ) );
   } # stopQuietly()
 
-args <- commandArgs( trailingOnly = TRUE )
-
-###############################################
+# args <- commandArgs( trailingOnly = TRUE )
 #
-# Selected parameters
+# ###############################################
+# #
+# # Selected parameters
+# #
+# ###############################################
 #
-###############################################
+# if( length( args ) < 3 )
+#   {
+#   cat( "Usage: Rscript applyModel.R dimension inputModel inputCSVFile ",
+#        "outputProbabilityImagePrefix <numberOfThreads=4>", sep = "" )
+#   stopQuietly()
+#   }
+#
+# dimension <- as.numeric( args[1] )
+# inputModelName <- args[2]
+# fileList <- read.csv( args[3] )
+# probImagePrefix <- args[4]
+#
+# numberOfThreads <- 1
+# if( length( args ) >= 5 )
+#   {
+#   numberOfThreads <- as.numeric( args[5] )
+#   }
 
-if( length( args ) < 3 )
-  {
-  cat( "Usage: Rscript applyModel.R dimension inputModel inputCSVFile ",
-       "outputProbabilityImagePrefix <numberOfThreads=4>", sep = "" )
-  stopQuietly()
-  }
+dimension <- 3
+inputModelName <- "BRATS_HG_GMM.RData"
+fileList <- read.csv( "test.csv" )
+probImagePrefix <- "testRF_POSTERIORS"
+numberOfThreads <- 1
 
-dimension <- as.numeric( args[1] )
-inputModelName <- args[2]
-fileList <- read.csv( args[3] )
-probImagePrefix <- args[4]
-
-numberOfThreads <- 4
-if( length( args ) >= 5 )
-  {
-  numberOfThreads <- as.numeric( args[5] )
-  }
 
 ###############################################
 #
@@ -72,6 +79,11 @@ for( j in 1:length( featureNames ) )
 colnames( subjectData ) <- c( featureNames )
 subjectData <- as.data.frame( subjectData )
 
+# If the subject data has NA's, we need to get rid of them
+# since predict.randomForest will return NA's otherwise.
+# Setting NA's to 0 is a complete hack.
+subjectData[is.na( subjectData )] <- 0
+
 ###############################################
 #
 # Predict using the model (in parallel)
@@ -94,6 +106,7 @@ parallelPredict <- function( i ) {
 
 if( numberOfThreads == 1 )
   {
+
   subjectProbabilities <- predict( modelForest, subjectData, type = "prob" )
 
   # Stop the clock
