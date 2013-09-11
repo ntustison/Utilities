@@ -19,39 +19,40 @@ args <- commandArgs( trailingOnly = TRUE )
 
 if( length( args ) < 2 )
   {
-  cat( "Usage: Rscript createModel.R inputFileList outputModelPrefix ",
+  cat( "Usage: Rscript createModel.R dimension inputFileList outputModelPrefix ",
        "<numberOfThreads=4> <trainingPortion=1.0> <numberOfTreesPerThread=1000> ",
        "<numberOfSamplesPerLabel=1000> <numberOfUniqueLabels=NA>", sep = "" )
   stopQuietly()
   }
 
-fileList <- read.csv( args[1] )
-outputModelName <- paste0( args[2], ".RData" )
+dimension <- as.numeric( args[1] )
+fileList <- read.csv( args[2] )
+outputModelName <- paste0( args[3], ".RData" )
 
 numberOfThreads <- 4
-if( length( args ) >= 3 )
-  {
-  numberOfThreads <- as.numeric( args[3] )
-  }
-trainingPortion <- 1.0
 if( length( args ) >= 4 )
   {
-  trainingPortion <- as.numeric( args[4] )
+  numberOfThreads <- as.numeric( args[4] )
   }
-numberOfSamplesPerLabel <- 1000
+trainingPortion <- 1.0
 if( length( args ) >= 5 )
   {
-  numberOfSamplesPerLabel <- as.numeric( args[5] )
+  trainingPortion <- as.numeric( args[5] )
   }
-numberOfTreesPerThread <- 1000
+numberOfSamplesPerLabel <- 1000
 if( length( args ) >= 6 )
   {
-  numberOfTreesPerThread <- as.numeric( args[6] )
+  numberOfSamplesPerLabel <- as.numeric( args[6] )
   }
-numberOfUniqueLabels <- NA
+numberOfTreesPerThread <- 1000
 if( length( args ) >= 7 )
   {
-  numberOfUniqueLabels <- as.numeric( args[7] )
+  numberOfTreesPerThread <- as.numeric( args[7] )
+  }
+numberOfUniqueLabels <- NA
+if( length( args ) >= 8 )
+  {
+  numberOfUniqueLabels <- as.numeric( args[8] )
   }
 
 ###############################################
@@ -76,8 +77,8 @@ for( i in indices )
   {
   cat( as.character( truthLabels[i] ), "\n" )
 
-  mask <- as.array( antsImageRead( as.character( masks[i] ), dimension = 3, pixeltype = 'unsigned int' ) )
-  truth <- as.array( antsImageRead( as.character( truthLabels[i] ), dimension = 3, pixeltype = 'unsigned int' ) )
+  mask <- as.array( antsImageRead( as.character( masks[i] ), dimension = dimension, pixeltype = 'unsigned int' ) )
+  truth <- as.array( antsImageRead( as.character( truthLabels[i] ), dimension = dimension, pixeltype = 'unsigned int' ) )
   if( is.na( numberOfUniqueLabels ) )
     {
     uniqueTruthLabels <- sort( unique( truth[which( mask == 1 )] ) )
@@ -105,7 +106,7 @@ for( i in indices )
   for( j in 1:length( featureNames ) )
     {
     cat( "  Reading feature image ", featureNames[j], ".\n", sep = "" )
-    featureImage <- as.array( antsImageRead( as.character( featureImages[i,j] ), dimension = 3, pixeltype = 'float' ) )
+    featureImage <- as.array( antsImageRead( as.character( featureImages[i,j] ), dimension = dimension, pixeltype = 'float' ) )
     for( n in 1:length( uniqueTruthLabels ) )
       {
       if( numberOfSamplesPerLabelInSubjectData[n] == 0 )
@@ -150,6 +151,8 @@ modelData$Labels <- as.factor( modelData$Labels )
 # Create the random forest model in parallel
 #
 ###############################################
+
+cat( "\nCreating the RF model.  ", sep = "" )
 
 # Start the clock!
 ptm <- proc.time()
