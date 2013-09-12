@@ -408,6 +408,17 @@ OUTPUT_IMAGE=${OUTPUT_PREFIX}SYMMETRIC_TEMPLATE_MASK_WARPED.${OUTPUT_SUFFIX}
 if [[ ! -f $OUTPUT_IMAGE && -f $SYMMETRIC_TEMPLATE_MASK ]];
   then
     logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n MultiLabel -r ${NORMALIZED_IMAGES[0]} -i ${SYMMETRIC_TEMPLATE_MASK} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
+
+    # if the template mask is specified then we also calculate the distance
+    # image as a quasi-coordinate system and see how it is deformed with the
+    # warp.  This warped coordinate system is a better estimate of the
+    # mask of the individual subject.
+
+    OUTPUT_IMAGE=${OUTPUT_PREFIX}SYMMETRIC_TEMPLATE_MASK_WARPED_DISTANCE.${OUTPUT_SUFFIX}
+    logCmd ${ANTSPATH}ImageMath ${DIMENSION} $OUTPUT_IMAGE MaurerDistance $SYMMETRIC_TEMPLATE_MASK 0
+    logCmd ${ANTSPATH}ImageMath ${DIMENSION} $OUTPUT_IMAGE m $SYMMETRIC_TEMPLATE_MASK $OUTPUT_IMAGE
+    logCmd ${ANTSPATH}ImageMath ${DIMENSION} $OUTPUT_IMAGE Normalize $OUTPUT_IMAGE
+    logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n Linear -r ${NORMALIZED_IMAGES[0]} -i ${OUTPUT_IMAGE} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
   fi
 
 # log jacobian image
