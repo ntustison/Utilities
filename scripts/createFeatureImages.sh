@@ -362,12 +362,12 @@ for (( i = 0; i < ${#NORMALIZED_IMAGES[@]}; i++ ))
 ################################################################################
 
 OUTPUT_IMAGE=${OUTPUT_PREFIX}NORMALIZED_DISTANCE.${OUTPUT_SUFFIX}
-if [[ ! -f ${OUTPUT_IMAGE} ]];
-  then
+# if [[ ! -f ${OUTPUT_IMAGE} ]];
+#   then
     logCmd ${ANTSPATH}ImageMath ${DIMENSION} $OUTPUT_IMAGE MaurerDistance $MASK_IMAGE 0
     logCmd ${ANTSPATH}ImageMath ${DIMENSION} $OUTPUT_IMAGE m $MASK_IMAGE $OUTPUT_IMAGE
     logCmd ${ANTSPATH}ImageMath ${DIMENSION} $OUTPUT_IMAGE Normalize $OUTPUT_IMAGE
-  fi
+#   fi
 
 ################################################################################
 #
