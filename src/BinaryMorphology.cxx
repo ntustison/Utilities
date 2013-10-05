@@ -13,6 +13,8 @@
 #include "itkBinaryDiamondStructuringElement.h"
 #include "itkBinaryThinning3DImageFilter.h"
 #include "itkBinaryThinningImageFilter.h"
+
+#include "itkSliceBySliceImageFilter.h"
 #include "itkVotingBinaryIterativeHoleFillingImageFilter.h"
 
 #include "vnl/vnl_math.h"
@@ -343,6 +345,354 @@ int BinaryMorphology( int argc, char * argv[] )
         }
       }
     }
+  return EXIT_SUCCESS;
+}
+
+int BinaryMorphologySliceBySlice( int argc, char * argv[] )
+{
+  const unsigned int ImageDimension = 3;
+
+  typedef short PixelType;
+  typedef itk::Image<PixelType, ImageDimension> ImageType;
+
+  typedef itk::ImageFileReader<ImageType>  ReaderType;
+  ReaderType::Pointer reader = ReaderType::New();
+  reader->SetFileName( argv[2] );
+  reader->Update();
+
+  typedef itk::SliceBySliceImageFilter<ImageType, ImageType> SliceFilterType;
+  SliceFilterType::Pointer sliceFilter = SliceFilterType::New();
+  sliceFilter->SetInput( reader->GetOutput() );
+
+
+  unsigned int radius = 1;
+  if ( argc > 5 )
+    {
+    radius = atoi( argv[5] );
+    }
+
+  PixelType foreground = itk::NumericTraits<PixelType>::One;
+  PixelType background = itk::NumericTraits<PixelType>::Zero;
+  if ( argc > 7 )
+    {
+    foreground = static_cast<PixelType>( atof( argv[7] ) );
+    }
+  if ( argc > 8 )
+    {
+    background = static_cast<PixelType>( atof( argv[8] ) );
+    }
+
+  unsigned int operation = static_cast<unsigned int>( atoi( argv[4] ) );
+
+  if( operation == 5 )
+    {
+    typedef itk::BinaryFillholeImageFilter<SliceFilterType::InternalInputImageType>  FilterType;
+    FilterType::Pointer  filter = FilterType::New();
+    filter->SetForegroundValue( foreground );
+    filter->SetFullyConnected( true );
+
+    sliceFilter->SetFilter( filter );
+
+    typedef itk::ImageFileWriter<ImageType>  WriterType;
+    WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( sliceFilter->GetOutput() );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+
+    return EXIT_SUCCESS;
+    }
+  else if( operation == 6 )
+    {
+    typedef itk::VotingBinaryIterativeHoleFillingImageFilter<SliceFilterType::InternalInputImageType>  FilterType;
+    FilterType::InputSizeType radii;
+    radii.Fill( radius );
+
+    FilterType::Pointer  filter = FilterType::New();
+    filter->SetForegroundValue( foreground );
+    filter->SetMajorityThreshold( 1 );  // 1 == default
+    filter->SetRadius( radii );
+    filter->SetMaximumNumberOfIterations( 100000000 );
+    filter->Update();
+
+    sliceFilter->SetFilter( filter );
+
+    typedef itk::ImageFileWriter<ImageType>  WriterType;
+    WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( sliceFilter->GetOutput() );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+
+    return EXIT_SUCCESS;
+    }
+
+
+  if ( argc < 6 || atoi( argv[6] ) == 1 )
+    {
+    typedef itk::BinaryBallStructuringElement<
+                        PixelType,
+                        ImageDimension-1> StructuringElementType;
+    StructuringElementType  element;
+    element.SetRadius( radius );
+    element.CreateStructuringElement();
+
+    switch ( operation )
+      {
+      case 0:
+        {
+        typedef itk::BinaryDilateImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetBackgroundValue( background );
+        filter->SetForegroundValue( foreground );
+
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      case 1:
+        {
+        typedef itk::BinaryErodeImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetBackgroundValue( background );
+        filter->SetForegroundValue( foreground );
+
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      case 2:
+        {
+        typedef itk::BinaryMorphologicalClosingImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetForegroundValue( foreground );
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      case 3:
+        {
+        typedef itk::BinaryMorphologicalOpeningImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetBackgroundValue( background );
+        filter->SetForegroundValue( foreground );
+
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      default:
+        {
+        std::cerr << "Invalid operation choice." << std::endl;
+        return EXIT_FAILURE;
+        }
+      }
+    }
+  else if ( atoi( argv[6] ) == 0 )
+    {
+    typedef itk::BinaryBoxStructuringElement<
+                        PixelType,
+                        ImageDimension-1>  StructuringElementType;
+    StructuringElementType element;
+    element.SetRadius( radius );
+    element.CreateStructuringElement();
+
+    switch ( operation )
+      {
+      case 0:
+        {
+        typedef itk::BinaryDilateImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetBackgroundValue( background );
+        filter->SetForegroundValue( foreground );
+        filter->Update();
+
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      case 1:
+        {
+        typedef itk::BinaryErodeImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetBackgroundValue( background );
+        filter->SetForegroundValue( foreground );
+
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      case 2:
+        {
+        typedef itk::BinaryMorphologicalClosingImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetForegroundValue( foreground );
+        filter->Update();
+
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      case 3:
+        {
+        typedef itk::BinaryMorphologicalOpeningImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetBackgroundValue( background );
+        filter->SetForegroundValue( foreground );
+
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      default:
+        {
+        std::cerr << "Invalid operation choice." << std::endl;
+        return EXIT_FAILURE;
+        }
+      }
+    }
+  else
+    {
+    typedef itk::BinaryDiamondStructuringElement<
+                        PixelType,
+                        ImageDimension-1> StructuringElementType;
+    StructuringElementType  element;
+    element.SetRadius( radius );
+    element.CreateStructuringElement();
+
+    switch ( operation )
+      {
+      case 0:
+        {
+        typedef itk::BinaryDilateImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetBackgroundValue( background );
+        filter->SetForegroundValue( foreground );
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      case 1:
+        {
+        typedef itk::BinaryErodeImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetBackgroundValue( background );
+        filter->SetForegroundValue( foreground );
+
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      case 2:
+        {
+        typedef itk::BinaryMorphologicalClosingImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetForegroundValue( foreground );
+
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      case 3:
+        {
+        typedef itk::BinaryMorphologicalOpeningImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType,
+          StructuringElementType >  FilterType;
+        FilterType::Pointer  filter = FilterType::New();
+        filter->SetKernel( element );
+        filter->SetBackgroundValue( background );
+        filter->SetForegroundValue( foreground );
+
+								sliceFilter->SetFilter( filter );
+
+								typedef itk::ImageFileWriter<ImageType>  WriterType;
+								WriterType::Pointer writer = WriterType::New();
+								writer->SetInput( sliceFilter->GetOutput() );
+        writer->SetFileName( argv[3] );
+        writer->Update();
+        break;
+        }
+      default:
+        {
+        std::cerr << "Invalid operation choice." << std::endl;
+        return EXIT_FAILURE;
+        }
+      }
+    }
 
 
   return EXIT_SUCCESS;
@@ -414,35 +764,42 @@ int main( int argc, char *argv[] )
     return EXIT_FAILURE;
     }
 
-  if( atoi( argv[4] ) == 4 )
+  if( *argv[1] == 'X' )
     {
-    switch( atoi( argv[1] ) )
-     {
-     case 2:
-       BinaryThin2D( argc, argv );
-       break;
-     case 3:
-       BinaryThin3D( argc, argv );
-       break;
-     default:
-        std::cerr << "Unsupported dimension" << std::endl;
-        exit( EXIT_FAILURE );
-     }
+    BinaryMorphologySliceBySlice( argc, argv );
     }
   else
     {
-    switch( atoi( argv[1] ) )
-     {
-     case 2:
-       BinaryMorphology<2>( argc, argv );
-       break;
-     case 3:
-       BinaryMorphology<3>( argc, argv );
-       break;
-     default:
-        std::cerr << "Unsupported dimension" << std::endl;
-        exit( EXIT_FAILURE );
-     }
-   }
+				if( atoi( argv[4] ) == 4 )
+						{
+						switch( atoi( argv[1] ) )
+							{
+							case 2:
+									BinaryThin2D( argc, argv );
+									break;
+							case 3:
+									BinaryThin3D( argc, argv );
+									break;
+							default:
+										std::cerr << "Unsupported dimension" << std::endl;
+										exit( EXIT_FAILURE );
+							}
+						}
+				else
+						{
+						switch( atoi( argv[1] ) )
+							{
+							case 2:
+									BinaryMorphology<2>( argc, argv );
+									break;
+							case 3:
+									BinaryMorphology<3>( argc, argv );
+									break;
+							default:
+										std::cerr << "Unsupported dimension" << std::endl;
+										exit( EXIT_FAILURE );
+							}
+					}
+			}
 }
 
