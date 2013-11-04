@@ -163,14 +163,14 @@ modelFormula <- as.formula( "Labels ~ . " )
 parallelRF <- function( i ) {
 #   modelData.imputed <- rfImpute( modelFormula, modelData )
 #   return( randomForest( modelFormula, modelData.imputed, ntree = numberOfTreesPerThread, type = classification ) )
-  return( randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification, na.action = na.omit ) )
+  return( randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification, importance = TRUE, na.action = na.omit ) )
 }
 
 if( numberOfThreads == 1 )
   {
 #   modelData.imputed <- rfImpute( modelFormula, modelData )
 #   modelForest <- randomForest( modelFormula, modelData.imputed, ntree = numberOfTreesPerThread, type = classification )
-  modelForest <- randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification, na.action = na.omit )
+  modelForest <- randomForest( modelFormula, modelData, ntree = numberOfTreesPerThread, type = classification, importance = TRUE, na.action = na.omit )
 
   # Stop the clock
   elapsedTime <- proc.time() - ptm
