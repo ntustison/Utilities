@@ -1,4 +1,5 @@
 library( ggplot2 )
+library( grid )
 library( randomForest )
 
 stopQuietly <- function(...)
@@ -31,7 +32,7 @@ if( length( args ) > 2 )
 
 load( inputModel )
 
-forestImp <- importance( modelForest )
+forestImp <- importance( modelForest, type = 1 )
 forestImp.df <- data.frame( Statistic = names( forestImp[,1] ), Importance = as.numeric( forestImp[,1] )  )
 forestImp.df <- forestImp.df[order( forestImp.df$Importance ),]
 
@@ -40,13 +41,14 @@ forestImp.df$Statistic <- factor( x = forestImp.df$Statistic, levels = forestImp
 vPlot <- ggplot( data = forestImp.df, aes( x = Importance, y = Statistic ) ) +
          geom_point( aes( color = Importance ) ) +
          labs( title = plotTitle ) +
-         ylab( "Variable" ) +
-         xlab( "Importance" ) +
+         ylab( "" ) +
+         xlab( "MeanDecreaseAccuracy" ) +
          scale_color_continuous( low = "navyblue", high = "darkred" ) +
          theme( axis.text.y = element_text( size = 5 ) ) +
+         theme( plot.margin = unit( c( 0.1, 0.1, 0.1, -0.5 ), "cm" ) ) +
          theme( legend.position = "none" )
 
-ggsave( file = outputFile, plot = vPlot, width = 8, height = 8 )
+ggsave( file = outputFile, plot = vPlot, width = 4, height = 8 )
 
 
 

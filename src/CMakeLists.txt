@@ -418,8 +418,8 @@ target_link_libraries(MakeCheckerBoardImage ${ITK_LIBRARIES})
 add_executable(MakeHilbertPath MakeHilbertPath.cxx )
 target_link_libraries(MakeHilbertPath ${ITK_LIBRARIES})
 
-# add_executable( MinimalPath MinimalPath.cxx )
-# target_link_libraries( MinimalPath ${ITK_LIBRARIES} )
+add_executable( MinimalPath MinimalPath.cxx )
+target_link_libraries( MinimalPath ${ITK_LIBRARIES} )
 
 add_executable( STAPLEAnalysis STAPLEAnalysis.cxx )
 target_link_libraries( STAPLEAnalysis ${ITK_LIBRARIES} )
