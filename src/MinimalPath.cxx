@@ -20,10 +20,6 @@
 #include "itkGradientDescentOptimizer.h"
 #include "itkRegularStepGradientDescentOptimizer.h"
 #include "itkIterateNeighborhoodOptimizer.h"
-#include "itkTubeSpatialObject.h"
-#include "itkTubeSpatialObjectPoint.h"
-#include "itkSpatialObjectPoint.h"
-#include "itkSpatialObjectWriter.h"
 
 
 template<class TValue>
@@ -90,7 +86,7 @@ int SpeedToPath_RegularStepGradientDescent_ND(int argc, char* argv[])
 		typedef itk::PathIterator< OutputImageType, PathType > PathIteratorType;
 
 		// Get arguments
-		unsigned int argi = 1;
+		unsigned int argi = 3;
 		char* OutputFilename = argv[argi++];
 		char* SpeedFilename = argv[argi++];
 		float TerminationValue = atof( argv[argi++] );
@@ -234,7 +230,7 @@ int SpeedToPath_IterateNeighborhood_ND(int argc, char* argv[])
 		typedef itk::PathIterator< OutputImageType, PathType > PathIteratorType;
 
 		// Get arguments
-		unsigned int argi = 1;
+		unsigned int argi = 3;
 		char* OutputFilename = argv[argi++];
 		char* SpeedFilename = argv[argi++];
 		float TerminationValue = atof( argv[argi++] );
@@ -294,17 +290,23 @@ int SpeedToPath_IterateNeighborhood_ND(int argc, char* argv[])
 
     if( n == argi )
       {
+      std::cout << "start" << std::endl;
       info.SetStartPoint( pathPoint );
       }
     else if( n == argc - 1 )
       {
+      std::cout << "end" << std::endl;
       info.SetEndPoint( pathPoint );
       }
     else
       {
+      std::cout << "way" << std::endl;
       info.AddWayPoint( pathPoint );
       }
+    std::cout << pathPoint << std::endl;
     }
+  std::cout << "HERE " << std::endl;
+
   pathFilter->AddPathInfo( info );
 
 		// Compute the path
@@ -370,10 +372,11 @@ int main( int argc, char *argv[] )
   int optimizerType = atoi( argv[2] );
 
 		// Print header info
-		if ( optimizerType == 1 && argc < 7 )
+		if ( optimizerType == 1 && argc < 9 )
 		  {
 				std::cerr << "Usage: " << std::endl;
 				std::cerr << argv[0];
+				std::cerr << " ImageDimension OptimizerType";
 				std::cerr << " OutputFilename";
 				std::cerr << " SpeedFilename";
 				std::cerr << " TerminationValue(Good default = 2.0)";    // Good default = 2.0
@@ -382,10 +385,11 @@ int main( int argc, char *argv[] )
 				std::cerr << std::endl;
 				return EXIT_FAILURE;
   		}
-  else if ( optimizerType == 2 && argc < 9 )
+  else if ( optimizerType == 2 && argc < 11 )
     {
 				std::cerr << "Usage: " << std::endl;
 				std::cerr << argv[0];
+				std::cerr << " ImageDimension OptimizerType";
 				std::cerr << " OutputFilename";
 				std::cerr << " SpeedFilename";
 				std::cerr << " TerminationValue(Good default=2.0)";    // Good default = 2.0
@@ -401,7 +405,7 @@ int main( int argc, char *argv[] )
   switch( atoi( argv[1] ) )
    {
    case 2:
-     if( optimizerType == 1 )
+     if( optimizerType == 2 )
        {
        return SpeedToPath_RegularStepGradientDescent_ND<2>( argc, argv );
        }
@@ -411,7 +415,7 @@ int main( int argc, char *argv[] )
        }
      break;
    case 3:
-     if( optimizerType == 1 )
+     if( optimizerType == 2 )
        {
        return SpeedToPath_RegularStepGradientDescent_ND<3>( argc, argv );
        }

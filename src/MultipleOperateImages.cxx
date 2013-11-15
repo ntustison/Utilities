@@ -984,10 +984,10 @@ int MultipleOperateImages( int argc, char * argv[] )
       }
 
     std::string sampleFilename = std::string( argv[3] ) +
-      std::string( "Samples.txt" );
+      std::string( "Samples.csv" );
 
     std::string indexFilename = std::string( argv[3] ) +
-      std::string( "Indices.txt" );
+      std::string( "Indices.csv" );
 
     std::ofstream str( sampleFilename.c_str() );
     std::ofstream str2( indexFilename.c_str() );

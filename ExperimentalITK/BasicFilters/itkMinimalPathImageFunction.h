@@ -42,9 +42,10 @@ namespace itk
  * extraction", Medical Image Analysis, 1(4):331-341, 1996/7.
  * \ingroup ImageFunctions
  */
-template <class TInputImage, class TOutputPath>
+template <class TInputImage, class TOutputType = PolyLineParametricPath<
+  TInputImage::ImageDimension> >
 class ITK_EXPORT MinimalPathImageFunction
-: public ImageFunction<TInputImage, TOutputPath>
+: public ImageFunction<TInputImage, TOutputType>
 {
 
 public:
@@ -55,10 +56,10 @@ public:
   /** Standard class typedefs. */
   typedef MinimalPathImageFunction                         Self;
 
-  typedef PolyLineParametricPath<
-    itkGetStaticConstMacro( ImageDimension )>              OutputType;
-  typedef ImageFunction<TInputImage,
-    typename OutputType::Pointer>                          Superclass;
+//  typedef PolyLineParametricPath<
+//    itkGetStaticConstMacro( ImageDimension )>              TOutputType;
+  typedef ImageFunction<TInputImage, TOutputType>                          Superclass;
+
   typedef SmartPointer<Self>                               Pointer;
   typedef SmartPointer<const Self>                         ConstPointer;
 
@@ -79,11 +80,11 @@ public:
   typedef typename Superclass::PointType                    PointType;
   typedef typename Superclass::ContinuousIndexType          ContinuousIndexType;
 
-  typedef typename OutputType::VertexType                   VertexType;
+  typedef typename TOutputType::VertexType                  VertexType;
+  typedef typename TOutputType::Pointer                     OutputType;
 
   typedef float                                             RealType;
-  typedef Image<RealType,
-    itkGetStaticConstMacro( ImageDimension )>               RealImageType;
+  typedef Image<RealType, ImageDimension>                   RealImageType;
   typedef GradientImageFilter<InputImageType, RealType,
     RealType>                                               GradientFilterType;
   typedef typename GradientFilterType::OutputImageType      GradientImageType;
@@ -107,7 +108,7 @@ public:
   virtual void SetInputImage( const InputImageType *ptr );
 
   /** Evaluate the function at specified Point position. */
-  virtual typename OutputType::Pointer Evaluate( const PointType &point ) const
+  virtual typename TOutputType::Pointer Evaluate( const PointType &point ) const
 				{
 						IndexType index;
       this->ConvertPointToNearestIndex( point, index );
@@ -116,7 +117,7 @@ public:
 
   /** Evaluate the function at specified ContinousIndex position.
    * Subclasses must provide this method. */
-  virtual typename OutputType::Pointer
+  virtual typename TOutputType::Pointer
     EvaluateAtContinuousIndex( const ContinuousIndexType &cindex ) const
 				{
 						IndexType index;
@@ -126,8 +127,8 @@ public:
 
   /** Evaluate the function at specified Index position.
    * Subclasses must provide this method. */
-  virtual typename OutputType::Pointer
-    EvaluateAtIndex( const IndexType &index ) const;
+//   virtual typename TOutputType::Pointer
+//     EvaluateAtIndex( const IndexType &index ) const;
 
   itkSetMacro( MaskImage, typename MaskImageType::Pointer );
   itkGetConstMacro( MaskImage, typename MaskImageType::Pointer );

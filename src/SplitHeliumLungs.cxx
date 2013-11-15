@@ -1,445 +1,212 @@
-#include "itkBinaryThresholdImageFilter.h"
-#include "itkBinaryMorphologicalOpeningImageFilter.h"
-#include "itkBinaryMorphologicalClosingImageFilter.h"
-#include "itkBSplineScatteredDataPointSetToImageFilter.h"
-#include "itkConfidenceConnectedImageFilter.h"
-#include "itkConnectedComponentImageFilter.h"
+// ITK includes
+#include "itkNumericTraits.h"
 #include "itkExtractImageFilter.h"
-#include "itkGradientAnisotropicDiffusionImageFilter.h"
-#include "itkGridImageSource.h"
+#include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-#include "itkImageRegionIterator.h"
-#include "itkImageLinearIteratorWithIndex.h"
 #include "itkImageRegionIteratorWithIndex.h"
-#include "itkImageSliceIteratorWithIndex.h"
-#include "itkMinimalPathImageFunction.h"
-#include "itkMultiplyImageFilter.h"
-#include "itkOtsuThresholdImageFilter.h"
+#include "itkPolyLineParametricPath.h"
+#include "itkNearestNeighborInterpolateImageFunction.h"
+#include "itkLinearInterpolateImageFunction.h"
+#include "itkArrivalFunctionToPathFilter.h"
+#include "itkSpeedFunctionToPathFilter.h"
 #include "itkPathIterator.h"
-#include "itkPointSet.h"
-#include "itkRelabelComponentImageFilter.h"
-#include "itkRescaleIntensityImageFilter.h"
-#include "itkSignedMaurerDistanceMapImageFilter.h"
-#include "itkThresholdImageFilter.h"
+#include "itkGradientDescentOptimizer.h"
+#include "itkRegularStepGradientDescentOptimizer.h"
+#include "itkIterateNeighborhoodOptimizer.h"
 
-#include "itkVector.h"
-#include "itkVectorContainer.h"
+// General includes
+#include <iostream>
+#include <string>
+#include <vector>
+#include <iomanip>
+#include "itksys/SystemTools.hxx"
 
-template <unsigned int ImageDimension>
-int SplitHeliumLungs2D( int argc, char *argv[] )
+int main( int argc, char *argv[] )
 {
-  std::cout << "Not implemented." << std::endl;
-  return EXIT_FAILURE;
-}
+  if( argc < 3 )
+    {
+    std::cout << "Usage: "<< argv[0] << " inputSpeedImage outputImage [stepLengthFactor=0.1] [terminationValue=2.0]" << std::endl;
+    exit( 1 );
+    }
 
-template <unsigned int ImageDimension>
-int SplitHeliumLungs3D( int argc, char *argv[] )
-{
-  /**
-   * Get the initial segmentation of both lungs.
-   * Steps are:
-   *  2. Binary Thresholding
-   *  3. Check connected components
-   *  4. Split lungs and relabel left lung as '2' and right lung as '3'
-   */
+  const unsigned int ImageDimension = 3;
 
-  typedef itk::Image<unsigned int, ImageDimension> ImageType;
-  typedef itk::Image<float, ImageDimension> RealImageType;
+  float StepLengthFactor = 0.1;
+  if( argc > 3 )
+    {
+    StepLengthFactor = atof( argv[3] );
+    }
+  float TerminationValue = 2.0;
+  if( argc > 4 )
+    {
+    TerminationValue = atof( argv[4] );
+    }
 
-  typedef itk::ImageFileReader<RealImageType> ReaderType;
-  typename ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( argv[2] );
+  typedef itk::Image<float, ImageDimension> ImageType;
+
+  typedef itk::ImageFileReader<ImageType> ReaderType;
+  ReaderType::Pointer reader = ReaderType::New();
+  reader->SetFileName( argv[1] );
+
   reader->Update();
 
-  /**
-   * Step 2:  BinaryThresholding.
-   */
-  typedef itk::ConfidenceConnectedImageFilter<RealImageType, ImageType>
-    ThresholderType;
-  typename ThresholderType::Pointer thresholder = ThresholderType::New();
+  ImageType::Pointer outputImage = ImageType::New();
+  outputImage->CopyInformation( reader->GetOutput() );
+  outputImage->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
+  outputImage->Allocate();
+  outputImage->FillBuffer( 0 );
 
-  thresholder->SetInput( reader->GetOutput() );
+  typedef itk::Image<unsigned int, 2> OutputSliceType;
+  typedef itk::Image<float, 2> SliceType;
 
-  thresholder->SetNumberOfIterations( 5 );
-  thresholder->SetReplaceValue( 1 );
-  thresholder->SetInitialNeighborhoodRadius( 5 );
+		typedef itk::PolyLineParametricPath<2> PathType;
+		typedef itk::SpeedFunctionToPathFilter<SliceType, PathType> PathFilterType;
+		typedef PathFilterType::CostFunctionType::CoordRepType CoordRepType;
+		typedef itk::PathIterator<OutputSliceType, PathType> PathIteratorType;
 
-  typename ImageType::IndexType seed;
-  seed.Fill( 10 );
-
-  thresholder->SetSeed( seed );
-  thresholder->SetMultiplier( 5 );
-  thresholder->Update();
-
-
-  itk::ImageRegionIterator<ImageType> It( thresholder->GetOutput(),
-    thresholder->GetOutput()->GetLargestPossibleRegion() );
-  for( It.GoToBegin(); !It.IsAtEnd(); ++It )
-    {
-    It.Set( 1 - It.Get() );
-    }
-
-  /**
-   * Step 3:  Get connected components.
-   */
-
-  typedef itk::ConnectedComponentImageFilter
-    <ImageType, ImageType> ConnectedComponentType;
-  typename ConnectedComponentType::Pointer connecter
-    = ConnectedComponentType::New();
-  connecter->SetInput( thresholder->GetOutput() );
-
-  typedef itk::RelabelComponentImageFilter<ImageType, ImageType> RelabelerType;
-  typename RelabelerType::Pointer relabeler = RelabelerType::New();
-  relabeler->SetInput( connecter->GetOutput() );
-  relabeler->Update();
-
-// 		{
-// 		typedef itk::ImageFileWriter<ImageType> WriterType;
-// 		typename WriterType::Pointer writer = WriterType::New();
-// 		writer->SetInput( relabeler->GetOutput() );
-// 		writer->SetFileName( "relabeled.nii.gz" );
-// 		writer->Update();
-// 		}
-
-
-  unsigned int numberOfObjects = relabeler->GetNumberOfObjects();
-  if( numberOfObjects > 1 )
-    {
-    unsigned int start = 2;
-    if( relabeler->GetSizeOfObjectInPhysicalUnits( 2 ) >
-        0.5 * relabeler->GetSizeOfObjectInPhysicalUnits( 1 ) )
-      {
-      start = 3;
-      }
-
-    itk::ImageRegionIterator<ImageType> It( relabeler->GetOutput(),
-      relabeler->GetOutput()->GetLargestPossibleRegion() );
-    for( It.GoToBegin(); !It.IsAtEnd(); ++It )
-      {
-      if( It.Get() >= start )
-        {
-        It.Set( 0 );
-        }
-      if( It.Get() < start && It.Get() > 0 )
-        {
-        It.Set( 1 );
-        }
-      }
-    }
-
-  /**
-   * Step 4:  Split the lungs and relabel.
-   */
-
-  typename ImageType::Pointer labelImage = ImageType::New();
-  labelImage->SetOrigin( reader->GetOutput()->GetOrigin() );
-  labelImage->SetSpacing( reader->GetOutput()->GetSpacing() );
-  labelImage->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
-  labelImage->SetDirection( reader->GetOutput()->GetDirection() );
-  labelImage->Allocate();
-  labelImage->FillBuffer( 0 );
-
-  typedef itk::Image<unsigned int, 2> SliceType;
-  typedef itk::Image<float, 2> RealSliceType;
-
-  typename ImageType::RegionType region;
-  typename ImageType::RegionType::SizeType imageSize
+  ImageType::RegionType region;
+  ImageType::RegionType::SizeType imageSize
     = reader->GetOutput()->GetLargestPossibleRegion().GetSize();
-  typename ImageType::IndexType imageIndex
+  ImageType::IndexType imageIndex
     = reader->GetOutput()->GetLargestPossibleRegion().GetIndex();
 
-  typename ImageType::IndexType index;
-  typename ImageType::RegionType::SizeType size;
-  size[0] = static_cast<unsigned long>( vcl_floor( 0.5*imageSize[0] ) );
+  ImageType::IndexType index;
+  ImageType::RegionType::SizeType size;
+  size[0] = imageSize[0];
   size[1] = imageSize[1];
   size[2] = 0;
   region.SetSize( size );
-  index[0] = static_cast<unsigned long>(
-    vcl_floor( imageIndex[0] + 0.25*imageSize[0] ) );
+  index[0] = imageIndex[0];
   index[1] = imageIndex[1];
 
   long lastIndex = imageIndex[2] + imageSize[2]-1;
 
-  for( long n = imageIndex[2]; n <= lastIndex; n++ )
+  for( long n = imageIndex[2]; n < lastIndex; n++ )
     {
+    std::cout << "Processing slice " << n-imageIndex[2]+1 << " out of " << imageSize[2] - 1 << std::endl;
+
     index[2] = n;
     region.SetIndex( index );
 
     typedef itk::ExtractImageFilter<ImageType, SliceType> ExtracterType;
-    typename ExtracterType::Pointer extracter = ExtracterType::New();
-    extracter->SetInput( relabeler->GetOutput() );
+    ExtracterType::Pointer extracter = ExtracterType::New();
+    extracter->SetInput( reader->GetOutput() );
     extracter->SetDirectionCollapseToIdentity();
     extracter->SetExtractionRegion( region );
-    extracter->Update();
 
+    SliceType::Pointer speed = extracter->GetOutput();
+    speed->Update();
+    speed->DisconnectPipeline();
 
-    typedef itk::MinimalPathImageFunction<RealSliceType> FunctionType;
-    typename FunctionType::Pointer function = FunctionType::New();
+    // Compute the minimum spacing
+    SliceType::SpacingType spacing = speed->GetSpacing();
+    double minspacing = vnl_math_min( spacing[0], spacing[1] );
 
-    typename SliceType::IndexType anchor;
-    typename SliceType::IndexType free;
+    // Create Interpolator
+    typedef itk::LinearInterpolateImageFunction<SliceType, CoordRepType>
+      InterpolatorType;
+    InterpolatorType::Pointer interp = InterpolatorType::New();
+
+    // Create Cost Function
+    PathFilterType::CostFunctionType::Pointer cost =
+        PathFilterType::CostFunctionType::New();
+    cost->SetInterpolator( interp );
+
+    // Create IterateNeighborhoodOptimizer
+    typedef itk::IterateNeighborhoodOptimizer OptimizerType;
+    OptimizerType::Pointer optimizer = OptimizerType::New();
+    optimizer->MinimizeOn( );
+    optimizer->FullyConnectedOn( );
+    OptimizerType::NeighborhoodSizeType size( 2 );
+    for (unsigned int i=0; i<2; i++)
+      size[i] = speed->GetSpacing()[i] * StepLengthFactor;
+    optimizer->SetNeighborhoodSize( size );
+
+    // Create path filter
+    PathFilterType::Pointer pathFilter = PathFilterType::New();
+    pathFilter->SetInput( speed );
+    pathFilter->SetCostFunction( cost );
+    pathFilter->SetOptimizer( optimizer );
+    pathFilter->SetTerminationValue( TerminationValue );
+
+    // add start and end points
+    SliceType::IndexType anchor;
+    SliceType::IndexType free;
+
+    PathFilterType::PathInfo info;
 
     anchor[0] = static_cast<long>(
       vcl_floor( imageIndex[0] + 0.5*imageSize[0] + 0.5 ) );
     anchor[1] = imageIndex[1];
 
+    SliceType::PointType anchorPoint;
+    speed->TransformIndexToPhysicalPoint( anchor, anchorPoint );
+    PathFilterType::PointType anchorPathPoint;
+    anchorPathPoint.CastFrom( anchorPoint );
+    info.SetStartPoint( anchorPathPoint );
+
     free[0]   = static_cast<long>(
       vcl_floor( imageIndex[0] + 0.5*imageSize[0] + 0.5 ) );
     free[1]   = imageIndex[1] + imageSize[1]-1;
 
+    SliceType::PointType freePoint;
+    speed->TransformIndexToPhysicalPoint( free, freePoint );
+    PathFilterType::PointType freePathPoint;
+    freePathPoint.CastFrom( freePoint );
+    info.SetEndPoint( freePathPoint );
 
+    pathFilter->AddPathInfo( info );
+    pathFilter->Update( );
 
-    typedef itk::BinaryThresholdImageFilter
-      <SliceType, RealSliceType> ThresholderType;
+    OutputSliceType::Pointer output = OutputSliceType::New();
+    output->SetRegions( speed->GetLargestPossibleRegion() );
+    output->SetSpacing( speed->GetSpacing() );
+    output->SetOrigin( speed->GetOrigin() );
+    output->Allocate( );
+    output->FillBuffer( 0 );
 
-    typename ThresholderType::Pointer thresholder
-      = ThresholderType::New();
-
-    thresholder->SetInput( extracter->GetOutput() );
-
-    thresholder->SetLowerThreshold( 1 );
-
-    thresholder->SetUpperThreshold( 1 );
-
-    thresholder->SetInsideValue( 0 );
-
-    thresholder->SetOutsideValue( 1 );
-    thresholder->Update();
-
-    typename RealSliceType::Pointer speedImage = RealSliceType::New();
-    speedImage->SetRegions( thresholder->GetOutput()->GetLargestPossibleRegion() );
-    speedImage->SetOrigin( thresholder->GetOutput()->GetOrigin() );
-    speedImage->SetSpacing( thresholder->GetOutput()->GetSpacing() );
-    speedImage->Allocate();
-
-    float lambda = ( argc > 4 ) ? atof( argv[4] ) : 0.01;
-
-    itk::ImageRegionIteratorWithIndex<RealSliceType> ItD( speedImage,
-      speedImage->GetLargestPossibleRegion() );
-    for( ItD.GoToBegin(); !ItD.IsAtEnd(); ++ItD )
+    for (unsigned int i=0; i<pathFilter->GetNumberOfOutputs(); i++)
       {
-      typename ImageType::IndexType speedIndex;
-      speedIndex[0] = ItD.GetIndex()[0];
-      speedIndex[1] = ItD.GetIndex()[1];
-      speedIndex[2] = n;
-      float t = ItD.GetIndex()[0] - free[0];
-      ItD.Set( lambda*t*t + reader->GetOutput()->GetPixel( speedIndex ) );
-      }
+      // Get the path
+      PathType::Pointer path = pathFilter->GetOutput( i );
 
-    function->SetAnchorSeed( anchor );
-    function->SetInputImage( speedImage );
-
-    typename FunctionType::OutputType::Pointer path
-      = function->EvaluateAtIndex( free );
-
-    typedef itk::PathIterator<SliceType,
-      typename FunctionType::OutputType> IteratorType;
-
-    IteratorType It( extracter->GetOutput(), path );
-    It.GoToBegin();
-    while ( !It.IsAtEnd() )
-      {
-      typename ImageType::IndexType labelIndex;
-      labelIndex[0] = It.GetIndex()[0];
-      labelIndex[1] = It.GetIndex()[1];
-      labelIndex[2] = n;
-      labelImage->SetPixel( labelIndex, n );
-      ++It;
-      }
-    }
-
-//  {
-//  typedef itk::ImageFileWriter<ImageType> WriterType;
-//  typename WriterType::Pointer writer = WriterType::New();
-//  writer->SetInput( labelImage );
-//  writer->SetFileName( "slicePoints.nii.gz" );
-//  writer->Update();
-//  }
-
-  //
-  // Smooth the results by creating a B-spline surface spanning
-  // all the slices.
-  //
-
-  typedef itk::Vector<float, 1> ScalarType;
-  typedef itk::PointSet<ScalarType, 2> PointSetType;
-  typedef itk::Image<ScalarType, 2> ScalarSliceType;
-
-  typename PointSetType::Pointer points = PointSetType::New();
-  points->Initialize();
-
-  unsigned long count = 0;
-
-  typename ImageType::DirectionType direction = labelImage->GetDirection();
-  typename ImageType::DirectionType identity;
-  identity.SetIdentity();
-  labelImage->SetDirection( identity );
-
-  itk::ImageRegionIteratorWithIndex<ImageType> ItL( labelImage,
-    labelImage->GetLargestPossibleRegion() );
-  for( ItL.GoToBegin(); !ItL.IsAtEnd(); ++ItL )
-    {
-    if( ItL.Get() != 0 )
-      {
-      typename PointSetType::PointType point;
-      point[0] = ItL.GetIndex()[1];
-      point[1] = ItL.GetIndex()[2];
-      points->SetPoint( count, point );
-
-      ScalarType scalar;
-      scalar[0] = ItL.GetIndex()[0];
-      points->SetPointData( count, scalar );
-
-      count++;
-      }
-    }
-
-  labelImage->SetDirection( direction );
-
-  typedef itk::BSplineScatteredDataPointSetToImageFilter<PointSetType,
-    ScalarSliceType> BSplinerType;
-
-  typename BSplinerType::ArrayType ncps;
-  ncps.Fill( 4 );
-
-  typename ScalarSliceType::PointType   bsplineOrigin;
-  typename ScalarSliceType::SizeType    bsplineSize;
-  typename ScalarSliceType::SpacingType bsplineSpacing;
-
-  for( unsigned int d = 1; d < ImageDimension; d++ )
-    {
-    bsplineSize[d-1]
-      = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[d];
-    bsplineOrigin[d-1]
-      = reader->GetOutput()->GetLargestPossibleRegion().GetIndex()[d];
-    bsplineSpacing[d-1] = 1;
-    }
-
-  typename BSplinerType::Pointer bspliner = BSplinerType::New();
-  bspliner->SetInput( points );
-  bspliner->SetGenerateOutputImage( true );
-  bspliner->SetSplineOrder( 3 );
-  bspliner->SetNumberOfLevels( 7 );
-  bspliner->SetNumberOfControlPoints( ncps );
-  bspliner->SetSize( bsplineSize );
-  bspliner->SetOrigin( bsplineOrigin );
-  bspliner->SetSpacing( bsplineSpacing );
-  bspliner->Update();
-
-  labelImage->FillBuffer( 0 );
-
-  itk::ImageRegionIteratorWithIndex<ScalarSliceType> ItB( bspliner->GetOutput(),
-    bspliner->GetOutput()->GetLargestPossibleRegion() );
-  for( ItB.GoToBegin(); !ItB.IsAtEnd(); ++ItB )
-    {
-    typename ImageType::IndexType index;
-    index[0] = static_cast<long>( vcl_floor( ItB.Get()[0] + 0.5 ) );
-    index[1] = ItB.GetIndex()[0];
-    index[2] = ItB.GetIndex()[1];
-
-    labelImage->SetPixel( index, 1 );
-    }
-
-  //
-  // Fill in the left side of the image with all '1's.
-  //
-
-  itk::ImageSliceIteratorWithIndex<ImageType> ItR( labelImage,
-    labelImage->GetLargestPossibleRegion() );
-  ItR.SetFirstDirection( 0 );
-  ItR.SetSecondDirection( 1 );
-
-  ItR.GoToBegin();
-  while( !ItR.IsAtEnd() )
-    {
-    while( !ItR.IsAtEndOfSlice() )
-      {
-      bool penDown = true;
-      while( !ItR.IsAtEndOfLine() )
+      // Check path is valid
+      if ( path->GetVertexList()->Size() == 0 )
         {
-        if( ItR.Get() == 1 )
-          {
-          penDown = false;
-          }
-        if( penDown )
-          {
-          ItR.Set( 1 );
-          }
-        ++ItR;
+        std::cout << "WARNING: Path " << (i+1) << " contains no points!" << std::endl;
+        continue;
         }
-      ItR.NextLine();
-      }
-    ItR.NextSlice();
-    }
 
-// 		{
-// 		typedef itk::ImageFileWriter<ImageType> WriterType;
-// 		typename WriterType::Pointer writer = WriterType::New();
-// 		writer->SetInput( labelImage );
-// 		writer->SetFileName( "bsplineSurface.nii.gz" );
-// 		writer->Update();
-// 		}
+      // Iterate path and convert to image
+      PathIteratorType it( output, path );
+      for (it.GoToBegin(); !it.IsAtEnd(); ++it)
+        {
+        it.Set( 1 );
+        }
+      }
 
-  /**
-   * Now combine the two labeled images and write the output.
-   */
-  {
-  itk::ImageRegionIteratorWithIndex<ImageType> ItL( labelImage,
-    labelImage->GetLargestPossibleRegion() );
-  itk::ImageRegionIteratorWithIndex<ImageType> ItR( relabeler->GetOutput(),
-    relabeler->GetOutput()->GetLargestPossibleRegion() );
-  for( ItL.GoToBegin(), ItR.GoToBegin(); !ItL.IsAtEnd(); ++ItL, ++ItR  )
-    {
-    if( ItR.Get() == 1 && ItL.Get() == 1 )
+    itk::ImageRegionIteratorWithIndex<OutputSliceType> ItS( output, output->GetLargestPossibleRegion() );
+    for( ItS.GoToBegin(); !ItS.IsAtEnd(); ++ItS )
       {
-      ItL.Set( 2 );
-      }
-    else if( ItR.Get() == 1 && ItL.Get() == 0 )
-      {
-      ItL.Set( 3 );
-      }
-    else
-      {
-      ItL.Set( 0 );
+      if( ItS.Get() > 0 )
+        {
+        OutputSliceType::IndexType sliceIndex = ItS.GetIndex();
+        ImageType::IndexType outputIndex;
+        outputIndex[0] = sliceIndex[0];
+        outputIndex[1] = sliceIndex[1];
+        outputIndex[2] = n;
+        outputImage->SetPixel( outputIndex, 1 );
+        }
       }
     }
-  }
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
-  typename WriterType::Pointer writer = WriterType::New();
-  writer->SetInput( labelImage );
-  writer->SetFileName( argv[3] );
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetInput( outputImage );
+  writer->SetFileName( argv[2] );
   writer->Update();
 
   return EXIT_SUCCESS;
-}
-
-int main( int argc, char *argv[] )
-{
-  if ( argc < 4 )
-
-    {
-
-    std::cout << "Usage: "<< argv[0] << " imageDimension inputImage outputImage" << std::endl;
-
-    exit( 1 );
-
-    }
-
-
-  switch( atoi( argv[1] ) )
-   {
-   case 2:
-     SplitHeliumLungs2D<2>( argc, argv );
-     break;
-   case 3:
-     SplitHeliumLungs3D<3>( argc, argv );
-     break;
-   default:
-      std::cerr << "Unsupported dimension" << std::endl;
-      exit( EXIT_FAILURE );
-   }
 }
 

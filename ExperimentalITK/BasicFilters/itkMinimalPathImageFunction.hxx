@@ -9,8 +9,8 @@
   Copyright (c) Insight Software Consortium. All rights reserved.
   See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
 
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+     This software is distributed WITHOUT ANY WARRANTY; without even
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
@@ -30,8 +30,8 @@ namespace itk
 {
 
 // Constructor
-template<class TInputImage>
-MinimalPathImageFunction<TInputImage>
+template<class TInputImage, class TOutputType>
+MinimalPathImageFunction<TInputImage, TOutputType>
 ::MinimalPathImageFunction()
 {
   this->m_UseFaceConnectedness = true;
@@ -42,10 +42,10 @@ MinimalPathImageFunction<TInputImage>
 
   this->m_AnchorSeed.Fill( 0 );
 }
- 
+
 // Destructor
-template<class TInputImage>
-MinimalPathImageFunction<TInputImage>
+template<class TInputImage, class TOutputType>
+MinimalPathImageFunction<TInputImage, TOutputType>
 ::~MinimalPathImageFunction()
 {
 }
@@ -53,18 +53,18 @@ MinimalPathImageFunction<TInputImage>
 /**
  * Initialize by setting the input image
  */
-template <class TInputImage>
+template <class TInputImage, class TOutputType>
 void
-MinimalPathImageFunction<TInputImage>
+MinimalPathImageFunction<TInputImage, TOutputType>
 ::SetInputImage( const InputImageType * ptr )
 {
-  Superclass::SetInputImage( ptr ); 
+  Superclass::SetInputImage( ptr );
   this->GeneratePathDirectionImage();
 }
 
-template <class TInputImage>
+template <class TInputImage, class TOutputType>
 void
-MinimalPathImageFunction<TInputImage>
+MinimalPathImageFunction<TInputImage, TOutputType>
 ::GeneratePathDirectionImage()
 {
   if ( !this->IsInsideBuffer( this->m_AnchorSeed ) )
@@ -92,7 +92,7 @@ MinimalPathImageFunction<TInputImage>
 
   typename ConstNeighborhoodIterator<InputImageType>::RadiusType radius;
   radius.Fill( 1 );
-  ConstNeighborhoodIterator<BooleanImageType> It( radius, expanded, 
+  ConstNeighborhoodIterator<BooleanImageType> It( radius, expanded,
     expanded->GetRequestedRegion() );
   unsigned int numberOfNeighbors = It.GetNeighborhood().Size();
 
@@ -103,32 +103,32 @@ MinimalPathImageFunction<TInputImage>
     scaleFactors[n] = 0;
     if ( n == static_cast<unsigned int>( 0.5 * numberOfNeighbors ) )
       {
-      continue; 
-      } 
-    typename Neighborhood<RealType, ImageDimension>::OffsetType offset 
+      continue;
+      }
+    typename Neighborhood<RealType, ImageDimension>::OffsetType offset
       = scaleFactors.GetOffset( n );
-   
+
 				bool isFaceConnected = true;
-				unsigned int sumOffset = 0; 
+				unsigned int sumOffset = 0;
 				for ( unsigned int d = 0; d < ImageDimension; d++ )
 						{
 						sumOffset += vnl_math_abs( offset[d] );
 						if ( this->m_UseImageSpacing )
 								{
-								scaleFactors[n] += ( static_cast<RealType>( offset[d] * offset[d] ) 
-										* this->GetInputImage()->GetSpacing()[d] 
-          * this->GetInputImage()->GetSpacing()[d] );  
+								scaleFactors[n] += ( static_cast<RealType>( offset[d] * offset[d] )
+										* this->GetInputImage()->GetSpacing()[d]
+          * this->GetInputImage()->GetSpacing()[d] );
 								}
 						else
 								{
-								scaleFactors[n] += static_cast<RealType>( offset[d] * offset[d] );  
+								scaleFactors[n] += static_cast<RealType>( offset[d] * offset[d] );
 								}
 						if ( sumOffset > 1 && this->m_UseFaceConnectedness )
 								{
 								isFaceConnected = false;
 								break;
 								}
-      }      
+      }
 				if ( !isFaceConnected )
 						{
 						scaleFactors[n] = 0;
@@ -136,21 +136,21 @@ MinimalPathImageFunction<TInputImage>
     if ( scaleFactors[n] > 0 )
       {
       scaleFactors[n] = vcl_sqrt( scaleFactors[n] );
-      } 
-    }   
+      }
+    }
   /**
    * Generate the PathDirectionImage with Dijkstra's algorithm
    */
 
   PriorityQueueElementType anchorElement( this->m_AnchorSeed, 0.0 );
 
-  if ( this->m_MaskImage && 
-       this->m_MaskImage->GetPixel( this->m_AnchorSeed ) 
+  if ( this->m_MaskImage &&
+       this->m_MaskImage->GetPixel( this->m_AnchorSeed )
          != this->m_InsideMaskPixelValue )
     {
-    itkWarningMacro( "The anchor seed is outside the user-defined mask region." ); 
+    itkWarningMacro( "The anchor seed is outside the user-defined mask region." );
     return;
-    }    
+    }
 
   typename PriorityQueueType::Pointer Q = PriorityQueueType::New();
   Q->Initialize();
@@ -158,13 +158,13 @@ MinimalPathImageFunction<TInputImage>
 
   while ( !Q->Empty() )
     {
-    PriorityQueueElementType centerElement = Q->Peek(); 
+    PriorityQueueElementType centerElement = Q->Peek();
     Q->Pop();
 
     expanded->SetPixel( centerElement.m_Element, true );
-    It.SetLocation( centerElement.m_Element ); 
+    It.SetLocation( centerElement.m_Element );
     PointType centerPoint;
-    this->GetInputImage()->TransformIndexToPhysicalPoint( 
+    this->GetInputImage()->TransformIndexToPhysicalPoint(
       centerElement.m_Element, centerPoint );
 
     for ( unsigned int n = 0; n < numberOfNeighbors; n++ )
@@ -172,63 +172,63 @@ MinimalPathImageFunction<TInputImage>
       if ( scaleFactors[n] == 0 )
         {
         continue;
-        } 
+        }
       bool inBounds;
       bool isExpanded = It.GetPixel( n, inBounds );
       if ( isExpanded || !inBounds )
         {
         continue;
-        }  
+        }
 
 						IndexType neighborIndex = It.GetIndex( n );
 
-						if ( this->m_MaskImage && this->m_MaskImage->GetPixel( 
+						if ( this->m_MaskImage && this->m_MaskImage->GetPixel(
 						  neighborIndex ) != this->m_InsideMaskPixelValue )
 								{
 								continue;
-								}    
+								}
 
-						RealType neighborCost 
+						RealType neighborCost
 						  = centerElement.m_Priority + scaleFactors[n] *
         this->GetInputImage()->GetPixel( neighborIndex );
 
 					 PriorityQueueElementType neighborElement( neighborIndex, neighborCost );
 
-						Q->Push( neighborElement ); 
+						Q->Push( neighborElement );
 
-						this->m_PathDirectionImage->SetPixel( neighborIndex, 
-								centerElement.m_Element - neighborElement.m_Element ); 
+						this->m_PathDirectionImage->SetPixel( neighborIndex,
+								centerElement.m_Element - neighborElement.m_Element );
 
 						PriorityQueueElementType element = Q->Peek();
 						while ( expanded->GetPixel( element.m_Element ) )
 								{
 								Q->Pop();
 								element = Q->Peek();
-								} 
-      }  
-    }  
+								}
+      }
+    }
 }
 
-template <class TInputImage>
-typename MinimalPathImageFunction<TInputImage>::OutputType::Pointer 
-MinimalPathImageFunction<TInputImage>
+template <class TInputImage, class TOutputType>
+typename MinimalPathImageFunction<TInputImage, TOutputType>::OutputPointer
+MinimalPathImageFunction<TInputImage, TOutputType>
 ::EvaluateAtIndex( const IndexType &index ) const
-{ 
+{
   if ( !this->IsInsideBuffer( index ) )
     {
     itkWarningMacro( "Requested index is not inside buffer." );
     return NULL;
     }
 
-  if ( this->m_MaskImage && 
-       this->m_MaskImage->GetPixel( index ) 
+  if ( this->m_MaskImage &&
+       this->m_MaskImage->GetPixel( index )
          != this->m_InsideMaskPixelValue )
     {
-    itkWarningMacro( "The index is outside the user-defined mask region." ); 
+    itkWarningMacro( "The index is outside the user-defined mask region." );
     return NULL;
-    }    
+    }
 
-  typename OutputType::Pointer output = OutputType::New();
+  typename TOutputType::Pointer output = TOutputType::New();
   output->Initialize();
 
   IndexType currentIndex = index;
@@ -236,7 +236,7 @@ MinimalPathImageFunction<TInputImage>
     {
     output->AddVertex( VertexType( currentIndex ) );
     currentIndex += this->m_PathDirectionImage->GetPixel( currentIndex );
-    } 
+    }
   output->AddVertex( VertexType( currentIndex ) );
 
   return output;
@@ -245,27 +245,27 @@ MinimalPathImageFunction<TInputImage>
 /**
  * Standard "PrintSelf" method
  */
-template <class TInputImage>
+template <class TInputImage, class TOutputType>
 void
-MinimalPathImageFunction<TInputImage>
+MinimalPathImageFunction<TInputImage, TOutputType>
 ::PrintSelf(std::ostream& os, Indent indent) const
 {
   Superclass::PrintSelf( os, indent );
 
-  os << indent << "AnchorSeed: " 
+  os << indent << "AnchorSeed: "
      << this->m_AnchorSeed << std::endl;
-  os << indent << "UseImageSpacing: " 
+  os << indent << "UseImageSpacing: "
      << this->m_UseImageSpacing << std::endl;
-  os << indent << "UseFaceConnectedness: " 
+  os << indent << "UseFaceConnectedness: "
      << this->m_UseFaceConnectedness << std::endl;
 
   os << indent << "MaskImage"
      << this->m_MaskImage << std::endl;
   os << indent << "InsideMaskPixelValue"
      << this->m_InsideMaskPixelValue << std::endl;
-  
+
 }
-  
+
 } // end namespace itk
 
 #endif

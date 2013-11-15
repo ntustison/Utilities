@@ -168,6 +168,11 @@ int UnaryOperateImage( int argc, char * argv[] )
             static_cast<double>( atof( argv[4] ) ) ) ) );
           break;
           }
+        case 'f':
+          {
+          It.Set( vnl_math_max( static_cast<float>( It.Get() ), static_cast<float>( atof( argv[4] ) ) ) );
+          break;
+          }
         case 'e':
           {
           It.Set( static_cast<PixelType>( vcl_exp( static_cast<double>( It.Get() ) ) ) );
@@ -253,8 +258,9 @@ int main( int argc, char *argv[] )
     std::cerr << "    x:   Multiply" << std::endl;
     std::cerr << "    /:   Divide" << std::endl;
     std::cerr << "    ^:   pow" << std::endl;
+    std::cerr << "    f:   set voxel to floor value, i.e. max( voxel, constant )" <<  std::endl;
     std::cerr << "    p:   set pixel to constant value [index1] [index2] ... index[n]" <<  std::endl;
-    std::cerr << "    q:  set pixel at physical point to constant value [point1] [point2] ... point[n]" <<  std::endl;
+    std::cerr << "    q:   set pixel at physical point to constant value [point1] [point2] ... point[n]" <<  std::endl;
     std::cerr << "    g:   get pixel value at physical point (gaussian interpolation)" << std::endl;
     std::cerr << "  The following operations ignore the \'constant\' argument." << std::endl;
     std::cerr << "    e:   exp" << std::endl;

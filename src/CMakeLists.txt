@@ -505,8 +505,8 @@ target_link_libraries(ShapePriorLevelSet ${ITK_LIBRARIES})
 add_executable(SmoothLungs SmoothLungs.cxx )
 target_link_libraries(SmoothLungs ${ITK_LIBRARIES})
 
-# add_executable(SplitHeliumLungs SplitHeliumLungs.cxx )
-# target_link_libraries(SplitHeliumLungs ${ITK_LIBRARIES})
+add_executable(SplitHeliumLungs SplitHeliumLungs.cxx )
+target_link_libraries(SplitHeliumLungs ${ITK_LIBRARIES})
 
 add_executable(SSI SSI.cxx )
 target_link_libraries(SSI ${ITK_LIBRARIES})
