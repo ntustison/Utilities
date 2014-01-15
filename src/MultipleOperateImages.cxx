@@ -286,6 +286,62 @@ int MultipleOperateImages( int argc, char * argv[] )
     writer->SetFileName( argv[3] );
     writer->Update();
     }
+  else if( op.compare( std::string( "center" ) ) == 0 )
+    {
+
+    typename ImageType::PointType averageCenter;
+    averageCenter.Fill( 0 );
+
+    for( unsigned int n = 0; n < filenames.size(); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+
+      typename ImageType::PointType origin = reader->GetOutput()->GetOrigin();
+      typename ImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
+      typename ImageType::RegionType::SizeType size =
+        reader->GetOutput()->GetLargestPossibleRegion().GetSize();
+
+      for( unsigned int d = 0; d < ImageDimension; d++ )
+        {
+        averageCenter[d] += ( origin[d] + 0.5 * static_cast<float>( size[d] - 1 ) * spacing[d] );
+        }
+      }
+    for( unsigned int d = 0; d < ImageDimension; d++ )
+      {
+      averageCenter[d] /= static_cast<float>( filenames.size() );
+      }
+
+    for( unsigned int n = 0; n < filenames.size(); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+
+      typename ImageType::PointType origin = reader->GetOutput()->GetOrigin();
+      typename ImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
+      typename ImageType::RegionType::SizeType size =
+        reader->GetOutput()->GetLargestPossibleRegion().GetSize();
+
+      std::cout << origin << " -> ";
+
+      typename ImageType::PointType center;
+      for( unsigned int d = 0; d < ImageDimension; d++ )
+        {
+        center[d] = ( origin[d] + 0.5 * static_cast<float>( size[d] - 1 ) * spacing[d] );
+        origin[d] += ( averageCenter[d] - center[d] );
+        }
+      std::cout << origin << std::endl;
+
+      reader->GetOutput()->SetOrigin( origin );
+      typedef itk::ImageFileWriter<ImageType> WriterType;
+      typename WriterType::Pointer writer = WriterType::New();
+      writer->SetInput( reader->GetOutput() );
+      writer->SetFileName( filenames[n].c_str() );
+      writer->Update();
+      }
+    }
   else if( op.compare( std::string( "max" ) ) == 0 )
     {
     typename ReaderType::Pointer reader = ReaderType::New();
@@ -1293,6 +1349,7 @@ int main( int argc, char *argv[] )
     std::cerr << "  operations: " << std::endl;
     std::cerr << "    s:      Create speed image from atlas" << std::endl;
     std::cerr << "    mean:   Create mean image" << std::endl;
+    std::cerr << "    center: Center all images by changing origin (assuming id. matrix)" << std::endl;
     std::cerr << "    sum:    Create sum image" << std::endl;
     std::cerr << "    max:    Create max image" << std::endl;
     std::cerr << "    var:    Create variance image" << std::endl;

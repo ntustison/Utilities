@@ -93,8 +93,7 @@ int ConvertDeformationFieldToAvantsLandmarkFiles( int argc, char *argv[] )
         tmp_pt[i] = pt[i];
         }
       }
-    if ( interpolator->IsInsideBuffer( tmp_pt ) && 
-         interpolator->Evaluate( tmp_pt ) > 0 )
+    if ( interpolator->Evaluate( tmp_pt ) > 0 )
       {
       strM << pt[0] << " " << pt[1] << " ";
       strF << pt[0]+disp[0] << " " << pt[1]+disp[1] << " ";
@@ -119,7 +118,7 @@ int ConvertDeformationFieldToAvantsLandmarkFiles( int argc, char *argv[] )
 }
 
 int main( int argc, char *argv[] )
-{
+  {
   if ( argc < 3 )
     {
     std::cout << "Usage: " << argv[0] << " ImageDimension"
@@ -128,16 +127,16 @@ int main( int argc, char *argv[] )
     exit( 1 );
     }
 
-  switch( atoi( argv[1] ) ) 
-   {
-   case 2:
-     ConvertDeformationFieldToAvantsLandmarkFiles<2>( argc, argv );
-     break;
-   case 3:
-     ConvertDeformationFieldToAvantsLandmarkFiles<3>( argc, argv );
-     break;
-   default:
+ switch( atoi( argv[1] ) )
+    {
+    case 2:
+      ConvertDeformationFieldToAvantsLandmarkFiles<2>( argc, argv );
+      break;
+    case 3:
+      ConvertDeformationFieldToAvantsLandmarkFiles<3>( argc, argv );
+      break;
+    default:
       std::cerr << "Unsupported dimension" << std::endl;
       exit( EXIT_FAILURE );
-   }
-}
+    }
+  }

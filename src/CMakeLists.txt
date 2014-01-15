@@ -541,6 +541,9 @@ target_link_libraries(TruncateImageIntensity ${ITK_LIBRARIES})
 add_executable(UnaryOperateImage UnaryOperateImage.cxx )
 target_link_libraries(UnaryOperateImage ${ITK_LIBRARIES})
 
+add_executable( volumeRender volumeRender )
+target_link_libraries( volumeRender ${VTK_LIBRARIES})
+
 add_executable(WarpPoints WarpPoints.cxx )
 target_link_libraries(WarpPoints ${ITK_LIBRARIES})
 
