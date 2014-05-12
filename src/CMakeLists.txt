@@ -130,19 +130,19 @@ target_link_libraries(CompareLandmarks ${ITK_LIBRARIES})
 add_executable(ConcatenateAvantsLandmarks ConcatenateAvantsLandmarks.cxx )
 target_link_libraries(ConcatenateAvantsLandmarks)
 
-if (USE_VTK_FILE)
-add_executable(ConvertAvantsLandmarkFileToVTK ConvertAvantsLandmarkFileToVTK.cxx )
-target_link_libraries(ConvertAvantsLandmarkFileToVTK vtkIO)
-endif (USE_VTK_FILE)
+# if (USE_VTK_FILE)
+# add_executable(ConvertAvantsLandmarkFileToVTK ConvertAvantsLandmarkFileToVTK.cxx )
+# target_link_libraries(ConvertAvantsLandmarkFileToVTK ${VTK_LIBRARIES} )
+# endif (USE_VTK_FILE)
+
+# if (USE_VTK_FILE)
+# add_executable(ConvertAvantsLandmarkFileToVTKLines ConvertAvantsLandmarkFileToVTKLines.cxx )
+# target_link_libraries(ConvertAvantsLandmarkFileToVTKLines ${VTK_LIBRARIES} )
+# endif (USE_VTK_FILE)
 
 if (USE_VTK_FILE)
-add_executable(ConvertAvantsLandmarkFileToVTKLines ConvertAvantsLandmarkFileToVTKLines.cxx )
-target_link_libraries(ConvertAvantsLandmarkFileToVTKLines vtkIO)
-endif (USE_VTK_FILE)
-
-if (USE_VTK_FILE)
-add_executable(ColorPolyDataByImage ColorPolyDataByImage.cxx )
-target_link_libraries(ColorPolyDataByImage ${ITK_LIBRARIES} vtkIO)
+# add_executable(ColorPolyDataByImage ColorPolyDataByImage.cxx )
+# target_link_libraries(ColorPolyDataByImage ${ITK_LIBRARIES} ${VTK_LIBRARIES})
 endif (USE_VTK_FILE)
 
 add_executable(ConvertAvantsLandmarkFileToImageLines ConvertAvantsLandmarkFileToImageLines.cxx )
@@ -154,10 +154,10 @@ target_link_libraries(ConvertDICOMImageSeries ${ITK_LIBRARIES})
 #add_executable(DicomSeriesReadImageWrite DicomSeriesReadImageWrite.cxx )
 #target_link_libraries(DicomSeriesReadImageWrite ${ITK_LIBRARIES})
 
-if (USE_VTK_FILE)
-add_executable(ConvertScalarImageToVTKSurface ConvertScalarImageToVTKSurface.cxx )
-target_link_libraries(ConvertScalarImageToVTKSurface ${ITK_LIBRARIES} vtkIO)
-endif (USE_VTK_FILE)
+# if (USE_VTK_FILE)
+# add_executable(ConvertScalarImageToVTKSurface ConvertScalarImageToVTKSurface.cxx )
+# target_link_libraries(ConvertScalarImageToVTKSurface ${ITK_LIBRARIES} ${VTK_LIBRARIES})
+# endif (USE_VTK_FILE)
 
 add_executable(ConvertLabeledPointSet ConvertLabeledPointSet.cxx )
 target_link_libraries(ConvertLabeledPointSet ${ITK_LIBRARIES})
@@ -171,7 +171,7 @@ target_link_libraries(ConvertDeformationFieldToAvantsLandmarkFiles ${ITK_LIBRARI
 add_executable(ConvertScalarImageToRGB ConvertScalarImageToRGB.cxx )
 target_link_libraries(ConvertScalarImageToRGB ${ITK_LIBRARIES})
 
-ADD_EXECUTABLE(ConvertImage ConvertImage.cxx )
+ADD_EXECUTABLE(ConvertImage ConvertImage.cxx ${CMAKE_SOURCE_DIR}/../ExperimentalITK/IO/itkFDFImageIO.cxx ${CMAKE_SOURCE_DIR}/../ExperimentalITK/IO/itkFDFCommonImageIO.cxx ${CMAKE_SOURCE_DIR}/../ExperimentalITK/IO/itkFDFImageIOFactory.cxx )
 TARGET_link_libraries(ConvertImage ${ITK_LIBRARIES})
 
 add_executable(ConvertImageToDicom ConvertImageToDicom.cxx )
@@ -318,6 +318,9 @@ target_link_libraries(GenerateImageFromIndexFile ${ITK_LIBRARIES})
 
 add_executable(SmoothDisplacementField SmoothDisplacementField.cxx )
 target_link_libraries(SmoothDisplacementField ${ITK_LIBRARIES})
+
+add_executable(SmoothLongitudinalDisplacementFields SmoothLongitudinalDisplacementFields.cxx )
+target_link_libraries(SmoothLongitudinalDisplacementFields ${ITK_LIBRARIES})
 
 add_executable(GenerateCooccurrenceMeasures GenerateCooccurrenceMeasures.cxx )
 target_link_libraries(GenerateCooccurrenceMeasures ${ITK_LIBRARIES})
@@ -520,8 +523,8 @@ target_link_libraries(DenoiseImage ${ITK_LIBRARIES})
 add_executable(DenoiseImage DenoiseImage.cxx )
 target_link_libraries(DenoiseImage ${ITK_LIBRARIES})
 
-add_executable(testRegulItkBspline testRegulItkBspline.cxx )
-target_link_libraries(testRegulItkBspline ${ITK_LIBRARIES} ${VTK_LIBRARIES} )
+# add_executable(testRegulItkBspline testRegulItkBspline.cxx )
+# target_link_libraries(testRegulItkBspline ${ITK_LIBRARIES} ${VTK_LIBRARIES} )
 
 add_executable(ThresholdImage ThresholdImage.cxx )
 target_link_libraries(ThresholdImage ${ITK_LIBRARIES})

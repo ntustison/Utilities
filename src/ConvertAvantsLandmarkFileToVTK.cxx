@@ -170,7 +170,7 @@ int main( int argc, char *argv[] )
   if ( strcmp( argv[1], argv[2] ) != 0 )
     {
     vtkPolyDataWriter *writerM = vtkPolyDataWriter::New();
-    writerM->SetInput( moving );
+    writerM->SetInputData( moving );
   //  writerM->SetFileTypeToBinary();
     writerM->SetFileName( filename.c_str() );
     writerM->Write();
@@ -211,7 +211,7 @@ int main( int argc, char *argv[] )
     }
 
   vtkPolyDataWriter *writerF = vtkPolyDataWriter::New();
-  writerF->SetInput( fixed );
+  writerF->SetInputData( fixed );
 //  writerF->SetFileTypeToBinary();
   writerF->SetFileName( filename.c_str() );
   writerF->Write();

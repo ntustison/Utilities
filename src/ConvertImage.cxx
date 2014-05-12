@@ -9,12 +9,18 @@
 #include "itkFlipImageFilter.h"
 #include "itkVectorIndexSelectionCastImageFilter.h"
 
+#include "itkFDFImageIOFactory.h"
+#include "itkFDFImageIO.h"
+
 #include <string>
 
 template <class TPixel, unsigned int ImageDimension>
 int ConvertImage( int argc, char *argv[] )
 {
   typedef TPixel PixelType;
+
+  // Register FDF Factory
+  itk::FDFImageIOFactory::RegisterOneFactory();
 
   if( atoi( argv[4] ) == 7 )
     {

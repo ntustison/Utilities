@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "itkImageFileReader.h"
+#include "itkImageRegionIterator.h"
 #include "itkImageRegionIteratorWithIndex.h"
 
 #include "itkLabelStatisticsImageFilter.h"

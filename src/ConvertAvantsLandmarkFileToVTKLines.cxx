@@ -88,7 +88,7 @@ int main( int argc, char *argv[] )
   id->Delete();
 
   vtkPolyDataWriter *writer = vtkPolyDataWriter::New();
-  writer->SetInput( data );
+  writer->SetInputData( data );
 //  writer->SetFileTypeToBinary();
   writer->SetFileName( argv[2] );
   writer->Write();
