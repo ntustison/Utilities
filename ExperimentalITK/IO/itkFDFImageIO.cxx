@@ -30,8 +30,6 @@ bool FDFImageIO::CanReadFile(const char* file)
 {
   this->SetFileName(file);
 
-  resolutions = new float[3];
-
   // First check the extension
   std::string filename = file;
   if(  filename == "" )
@@ -72,7 +70,7 @@ bool FDFImageIO::CanReadFile(const char* file)
     }
 
   // Check for a neccessary header variable
-  // HERE
+
 
   return true;
 }
@@ -85,137 +83,202 @@ void FDFImageIO::ReadImageInformation()
   std::string line;
   std::vector<std::string> tokens;
   std::string type, name, value;
-  int matrix_size = 1;
+
+  ImageIORegion region;
 
   std::ifstream inFile(m_FileName.c_str(), std::ios::in | std::ios::binary);
 
   // Check if there was an error opening the file
   if (!inFile)
-  {
+    {
     std::cout << "Unable to open the file\n";
     RAISE_EXCEPTION();
-  }
-
-  while (getline(inFile, line, '\n')) {
-
-    if ( line == "\0" ) {
-      break;
     }
+
+  this->SetFileTypeToBinary();
+
+  while( getline( inFile, line, '\n' ) )
+    {
+    if ( line == "\0" )
+      {
+      break;
+      }
 
     // Formats the lines in the FDF header such as removing whitespace between {}
-    line = ParseLine(line);
+    line = ParseLine( line );
+    Tokenize( line, tokens, " ;" );
 
-    Tokenize(line, tokens, " ;");
+    if( tokens.size() == 4 )
+      {
+      type = tokens[0];
+      name = tokens[1];
+      value = tokens[3];
 
-    if(tokens.size() == 4) {
-
-            type = tokens[0];
-            name = tokens[1];
-            value = tokens[3];
-
-            if (name == "spatial_rank") {
-                this->spatial_rank = value;
-            }
-
-            if (name == "matrix") {
-                StringToVector(value, matrix);
-
-                // Set the number of dimensions
-                this->SetNumberOfDimensions(matrix.size());
-
-                for(int i=0; i<matrix.size(); i++) {
-                    matrix_size *= this->matrix[i];
-                    // Set the size of each dimension
-                    this->SetDimensions(i,this->matrix[i]);
-                }
-            }
-
-            if (name == "span") {
-                StringToVector(value, span);
-            }
-
-            if (name == "roi") {
-                StringToVector(value, roi);
-            }
-
-            if (name == "location") {
-                StringToVector(value, location);
-            }
-
-            // Get the binary data type
-            if( name == "storage" )
-              {
-              this->storage = value;
-
-              this->SetPixelType( SCALAR );
-
-              if( value == "double" )
-                {
-                this->SetComponentType( DOUBLE );
-                }
-              else if( value == "float" )
-                {
-                this->SetComponentType( FLOAT );
-                }
-              else if( value == "long" )
-                {
-                this->SetComponentType( LONG );
-                }
-              else if( value == "unsigned long" )
-                {
-                this->SetComponentType( ULONG );
-                }
-              else if( value == "int" )
-                {
-                this->SetComponentType( INT );
-                }
-              else if( value == "unsigned int" )
-                {
-                this->SetComponentType( UINT );
-                }
-              else if( value == "short" )
-                {
-                this->SetComponentType( SHORT );
-                }
-              else if( value == "unsigned short" )
-                {
-                this->SetComponentType( USHORT );
-                }
-              else if( value == "char" )
-                {
-                this->SetComponentType( CHAR );
-                }
-              else if( value == "unsigned char" )
-                {
-                this->SetComponentType( UCHAR );
-                }
-              else
-                {
-                itkExceptionMacro( "Unknown component type: " << value );
-                }
-              }
-
-            // Get the bits
-            if (name == "bits") {
-                ConvertFromString (value, this->bits);
-            }
-
-            // Get the checksum
-            if (name == "checksum") {
-                ConvertFromString (value, this->checksum);
-            }
-
+      if( name == "spatial_rank" )
+        {
+        this->m_SpatialRank = value;
         }
 
-        tokens.clear();
+      if( name == "matrix" )
+        {
+        std::vector<float> dimensions;
+        StringToVector( value, dimensions );
+
+        // Set the number of dimensions
+        if( this->GetNumberOfDimensions() < dimensions.size() )
+          {
+          this->SetNumberOfDimensions( dimensions.size() );
+          }
+
+        ImageIORegion::SizeType   size( dimensions.size() );
+        ImageIORegion::IndexType  index( dimensions.size() );
+
+        for( unsigned int i = 0; i < dimensions.size(); i++ )
+          {
+          this->SetDimensions( i, dimensions[i] );
+          size[i] = dimensions[i];
+          index[i] = 0;
+          }
+
+        region.SetSize( size );
+        region.SetIndex( index );
+        this->SetIORegion( region );
+        }
+
+      if( name == "orientation" )
+        {
+        std::vector<double> orientation;
+        StringToVector( value, orientation );
+
+        for( unsigned int i = 0; i < this->GetNumberOfDimensions(); i++ )
+          {
+          std::vector<double> componentVector;
+          for( unsigned int j = 0; j < this->GetNumberOfDimensions(); j++ )
+            {
+            componentVector.push_back( orientation[i * this->GetNumberOfDimensions() + j] );
+            }
+          this->SetDirection( i, componentVector );
+          }
+        }
+
+      if( name == "span" )
+        {
+        StringToVector( value, this->m_Span );
+        }
+
+      if( name == "origin" )
+        {
+        std::vector<float> origin;
+        StringToVector( value, origin );
+
+        if( this->GetNumberOfDimensions() < origin.size() )
+          {
+          this->SetNumberOfDimensions( origin.size() );
+          }
+
+        for( unsigned int i = 0; i < origin.size(); i++ )
+          {
+          this->SetOrigin( i, origin[i] / 10.0 );
+          }
+        }
+
+      if( name == "roi" )
+        {
+        StringToVector( value, this->m_Roi );
+        }
+
+      if( name == "location" )
+        {
+        StringToVector( value, this->m_Location );
+        }
+
+      if( name == "bigendian" )
+        {
+        if( value == "0" )
+          {
+          this->SetByteOrderToLittleEndian();
+          }
+        else
+          {
+          this->SetByteOrderToBigEndian();
+          }
+        }
+
+      // Get the binary data type
+      if( name == "storage" )
+        {
+        this->SetPixelType( SCALAR );
+
+        if( value == "double" )
+          {
+          this->SetComponentType( DOUBLE );
+          }
+        else if( value == "float" )
+          {
+          this->SetComponentType( FLOAT );
+          }
+        else if( value == "long" )
+          {
+          this->SetComponentType( LONG );
+          }
+        else if( value == "unsigned long" )
+          {
+          this->SetComponentType( ULONG );
+          }
+        else if( value == "int" )
+          {
+          this->SetComponentType( INT );
+          }
+        else if( value == "unsigned int" )
+          {
+          this->SetComponentType( UINT );
+          }
+        else if( value == "short" )
+          {
+          this->SetComponentType( SHORT );
+          }
+        else if( value == "unsigned short" )
+          {
+          this->SetComponentType( USHORT );
+          }
+        else if( value == "char" )
+          {
+          this->SetComponentType( CHAR );
+          }
+        else if( value == "unsigned char" )
+          {
+          this->SetComponentType( UCHAR );
+          }
+        else
+          {
+          itkExceptionMacro( "Unknown component type: " << value );
+          }
+        }
+
+      // Get the bits
+      if( name == "bits" )
+        {
+        ConvertFromString( value, this->m_Bits );
+        }
+
+      // Get the checksum
+      if( name == "checksum" )
+        {
+        ConvertFromString( value, this->m_Checksum );
+        }
+      }
+
+    tokens.clear();
     }
 
-    inFile.seekg (0, std::ios::end);
-    long int fileSize = inFile.tellg();
-    this->m_InputPosition = fileSize - (matrix_size * 4);
-    this->resolutions[0] = (this->roi[0] * 10 ) / this->matrix[0];
-    this->resolutions[1] = (this->roi[1] * 10 ) / this->matrix[1];
-    this->resolutions[2] = (this->roi[2] * 10 ) / this->matrix[2];
+  inFile.seekg( 0, std::ios::end );
+  long int fileSize = inFile.tellg();
+  this->m_InputPosition = fileSize - this->GetImageSizeInBytes();
+
+  for( unsigned int i = 0; i < this->GetNumberOfDimensions(); i++ )
+    {
+    this->SetSpacing( i, ( this->m_Roi[i] * 10 ) / this->GetDimensions( i ) );
+    }
 }
 
 
@@ -305,14 +368,6 @@ void FDFImageIO::ReadVolume(void*)
 
 void FDFImageIO::Read(void* buffer)
 {
-  unsigned int dimensions = this->GetNumberOfDimensions();
-  unsigned int numberOfPixels = 1;
-
-  for( unsigned int dim=0; dim< dimensions; dim++ )
-  {
-    numberOfPixels *= m_Dimensions[ dim ];
-  }
-
   std::ifstream inFile(m_FileName.c_str(), std::ios::in | std::ios::binary);
 
   // Check if there was an error opening the file
@@ -321,12 +376,12 @@ void FDFImageIO::Read(void* buffer)
     RAISE_EXCEPTION();
   }
 
-  inFile.seekg( m_InputPosition );
+  inFile.seekg( this->m_InputPosition );
 
   if (!inFile)
-  {
+    {
     RAISE_EXCEPTION();
-  }
+    }
 
   char * p = static_cast<char *>(buffer);
 
@@ -335,20 +390,16 @@ void FDFImageIO::Read(void* buffer)
   bool success = !inFile.bad();
   inFile.close();
   if( !success )
-  {
+    {
     itkExceptionMacro("Error reading image data.");
-  }
+    }
 
-  SwapBytesIfNecessary( buffer, numberOfPixels );
-
+  this->SwapBytesIfNecessary( buffer, this->GetImageSizeInPixels() );
 }
 
 
 FDFImageIO::FDFImageIO()
 {
-  this->SetNumberOfDimensions(2);
-  this->m_FileType = Binary;
-  this->m_ByteOrder = BigEndian;
 }
 
 FDFImageIO::~FDFImageIO() {}
@@ -356,20 +407,17 @@ FDFImageIO::~FDFImageIO() {}
 void FDFImageIO::PrintSelf(std::ostream& os, Indent indent) const
 {
   Superclass::PrintSelf(os, indent);
-  os << indent << "PixelType " << m_PixelType << "\n";
-  os << indent << "Start of image in bytes from start of file " << this->m_InputPosition << "\n";
-  os << indent << "Number of pixels in image: " << this->GetImageSizeInPixels() << "\n";
-  os << indent << "Image size in bytes: " << this->GetImageSizeInBytes() << "\n";
-  os << indent << "Checksum: " << this->checksum << "\n";
-  os << indent << "Storage: " << this->storage << "\n";
-  os << indent << "Spatial Rank: " << this->spatial_rank << "\n";
-  os << indent << "Bits: " << this->bits << "\n";
-  os << indent; PrintVector(os, "Matrix", this->matrix);
-  os << indent; PrintVector(os, "Location", this->location);
-  os << indent; PrintVector(os, "ROI", this->roi);
-  os << indent; PrintVector(os, "Span", this->span);
-  os << indent << "resolutions: " << this->resolutions[0] << ", " << this->resolutions[1]
-                                                          << ", " << this->resolutions[2] << "\n";
+//   os << indent << "PixelType " << m_PixelType << "\n";
+//   os << indent << "Start of image in bytes from start of file " << this->m_InputPosition << "\n";
+//   os << indent << "Number of pixels in image: " << this->GetImageSizeInPixels() << "\n";
+//   os << indent << "Image size in bytes: " << this->GetImageSizeInBytes() << "\n";
+//   os << indent << "Checksum: " << this->checksum << "\n";
+//   os << indent << "Spatial Rank: " << this->spatial_rank << "\n";
+//   os << indent << "Bits: " << this->bits << "\n";
+//   os << indent; PrintVector(os, "Matrix", this->matrix);
+//   os << indent; PrintVector(os, "Location", this->location);
+//   os << indent; PrintVector(os, "ROI", this->roi);
+//   os << indent; PrintVector(os, "Span", this->span);
 }
 
 bool FDFImageIO::CanWriteFile( const char * name )
@@ -380,81 +428,137 @@ bool FDFImageIO::CanWriteFile( const char * name )
 
 void FDFImageIO::SwapBytesIfNecessary( void* buffer, unsigned long numberOfPixels )
 {
-  switch(m_PixelType)
+  switch( this->GetComponentType() )
     {
     case CHAR:
-    {
-    if ( m_ByteOrder == LittleEndian )
       {
-      ByteSwapper<int>::SwapRangeFromSystemToLittleEndian(
-        (int*)buffer, numberOfPixels );
+      if ( this->m_ByteOrder == LittleEndian )
+        {
+        ByteSwapper<char>::SwapRangeFromSystemToLittleEndian(
+          (char*)buffer, numberOfPixels );
+        }
+      else if ( this->m_ByteOrder == BigEndian )
+        {
+        ByteSwapper<char>::SwapRangeFromSystemToBigEndian(
+          (char *)buffer, numberOfPixels );
+        }
+      break;
       }
-    else if ( m_ByteOrder == BigEndian )
-      {
-      ByteSwapper<int>::SwapRangeFromSystemToBigEndian(
-        (int *)buffer, numberOfPixels );
-      }
-    break;
-    }
     case FLOAT:
-    {
-    if ( m_ByteOrder == LittleEndian )
       {
-      ByteSwapper<float>::SwapRangeFromSystemToLittleEndian(
-        (float *)buffer, numberOfPixels );
+      if ( this->m_ByteOrder == LittleEndian )
+        {
+        ByteSwapper<float>::SwapRangeFromSystemToLittleEndian(
+          (float *)buffer, numberOfPixels );
+        }
+      else if ( this->m_ByteOrder == BigEndian )
+        {
+        ByteSwapper<float>::SwapRangeFromSystemToBigEndian(
+          (float *)buffer, numberOfPixels );
+        }
+      break;
       }
-    else if ( m_ByteOrder == BigEndian )
-      {
-      ByteSwapper<float>::SwapRangeFromSystemToBigEndian(
-        (float *)buffer, numberOfPixels );
-      }
-    break;
-    }
     case UCHAR:
-    {
-    if ( m_ByteOrder == LittleEndian )
       {
-      ByteSwapper<unsigned int>::SwapRangeFromSystemToLittleEndian(
-        (unsigned int*)buffer, numberOfPixels );
+      if ( this->m_ByteOrder == LittleEndian )
+        {
+        ByteSwapper<unsigned char>::SwapRangeFromSystemToLittleEndian(
+          (unsigned char*)buffer, numberOfPixels );
+        }
+      else if ( this->m_ByteOrder == BigEndian )
+        {
+        ByteSwapper<unsigned char>::SwapRangeFromSystemToBigEndian(
+          (unsigned char *)buffer, numberOfPixels );
+        }
+      break;
       }
-    else if ( m_ByteOrder == BigEndian )
-      {
-      ByteSwapper<unsigned int>::SwapRangeFromSystemToBigEndian(
-        (unsigned int *)buffer, numberOfPixels );
-      }
-    break;
-    }
     case SHORT:
-    {
-    if ( m_ByteOrder == LittleEndian )
       {
-      ByteSwapper<short>::SwapRangeFromSystemToLittleEndian(
-        (short*)buffer, numberOfPixels );
+      if ( this->m_ByteOrder == LittleEndian )
+        {
+        ByteSwapper<short>::SwapRangeFromSystemToLittleEndian(
+          (short*)buffer, numberOfPixels );
+        }
+      else if ( this->m_ByteOrder == BigEndian )
+        {
+        ByteSwapper<short>::SwapRangeFromSystemToBigEndian(
+          (short *)buffer, numberOfPixels );
+        }
+      break;
       }
-    else if ( m_ByteOrder == BigEndian )
-      {
-      ByteSwapper<short>::SwapRangeFromSystemToBigEndian(
-        (short *)buffer, numberOfPixels );
-      }
-    break;
-    }
     case USHORT:
-    {
-    if ( m_ByteOrder == LittleEndian )
       {
-      ByteSwapper<unsigned short>::SwapRangeFromSystemToLittleEndian(
-        (unsigned short*)buffer, numberOfPixels );
+      if ( this->m_ByteOrder == LittleEndian )
+        {
+        ByteSwapper<unsigned short>::SwapRangeFromSystemToLittleEndian(
+          (unsigned short*)buffer, numberOfPixels );
+        }
+      else if ( this->m_ByteOrder == BigEndian )
+        {
+        ByteSwapper<unsigned short>::SwapRangeFromSystemToBigEndian(
+          (unsigned short *)buffer, numberOfPixels );
+        }
+      break;
       }
-    else if ( m_ByteOrder == BigEndian )
+    case INT:
       {
-      ByteSwapper<unsigned short>::SwapRangeFromSystemToBigEndian(
-        (unsigned short *)buffer, numberOfPixels );
+      if ( this->m_ByteOrder == LittleEndian )
+        {
+        ByteSwapper<int>::SwapRangeFromSystemToLittleEndian(
+          (int*)buffer, numberOfPixels );
+        }
+      else if ( this->m_ByteOrder == BigEndian )
+        {
+        ByteSwapper<int>::SwapRangeFromSystemToBigEndian(
+          (int *)buffer, numberOfPixels );
+        }
+      break;
       }
-    break;
-    }
+    case UINT:
+      {
+      if ( this->m_ByteOrder == LittleEndian )
+        {
+        ByteSwapper<unsigned int>::SwapRangeFromSystemToLittleEndian(
+          (unsigned int*)buffer, numberOfPixels );
+        }
+      else if ( this->m_ByteOrder == BigEndian )
+        {
+        ByteSwapper<unsigned int>::SwapRangeFromSystemToBigEndian(
+          (unsigned int *)buffer, numberOfPixels );
+        }
+      break;
+      }
+    case LONG:
+      {
+      if ( this->m_ByteOrder == LittleEndian )
+        {
+        ByteSwapper<long>::SwapRangeFromSystemToLittleEndian(
+          (long*)buffer, numberOfPixels );
+        }
+      else if ( this->m_ByteOrder == BigEndian )
+        {
+        ByteSwapper<long>::SwapRangeFromSystemToBigEndian(
+          (long *)buffer, numberOfPixels );
+        }
+      break;
+      }
+    case ULONG:
+      {
+      if ( this->m_ByteOrder == LittleEndian )
+        {
+        ByteSwapper<unsigned long>::SwapRangeFromSystemToLittleEndian(
+          (unsigned long*)buffer, numberOfPixels );
+        }
+      else if ( this->m_ByteOrder == BigEndian )
+        {
+        ByteSwapper<unsigned long>::SwapRangeFromSystemToBigEndian(
+          (unsigned long *)buffer, numberOfPixels );
+        }
+      break;
+      }
     default:
-      ExceptionObject exception(__FILE__, __LINE__);
-      exception.SetDescription("Pixel Type Unknown");
+      ExceptionObject exception( __FILE__, __LINE__ );
+      exception.SetDescription( "Pixel Type Unknown" );
       throw exception;
     }
 }

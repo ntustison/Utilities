@@ -42,6 +42,19 @@ public:
   /** Run-time type information (and related methods). */
   itkTypeMacro(FDFImageIO, ImageIOBase);
 
+  virtual bool SupportsDimension( unsigned long dim )
+    {
+    if( dim == 2 || dim == 3 )
+      {
+      return true;
+      }
+    else
+      {
+      return false;
+      }
+    }
+
+
   /*-------- This part of the interface deals with reading data. ------ */
 
   /** Determine the file type. Returns true if this ImageIO can read the
@@ -96,16 +109,14 @@ private:
 
   // Position after ReadImageInformation.
   size_t m_InputPosition;
-  float *resolutions;
 
-  std::string spatial_rank;
-  std::string checksum;
-  std::string storage;
-  std::string bits;
-  std::vector<int> matrix;
-  std::vector<float> location;
-  std::vector<float> span;
-  std::vector<float> roi;
+  std::string          m_SpatialRank;
+  std::string          m_Checksum;
+  std::string          m_Bits;
+  std::vector<int>     m_Size;
+  std::vector<float>   m_Location;
+  std::vector<float>   m_Span;
+  std::vector<float>   m_Roi;
 };
 
 } // end namespace itk

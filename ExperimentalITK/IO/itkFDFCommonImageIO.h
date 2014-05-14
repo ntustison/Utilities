@@ -28,7 +28,7 @@
 #include <iterator>
 #include <algorithm>
 
-void RemoveCharacters(std::string &line, std::string character);
+std::string RemoveCharacters( std::string, char );
 
 void Tokenize(const std::string& str, std::vector<std::string>& tokens, const std::string& delimiters = " ");
 
@@ -46,18 +46,18 @@ template <class T>
 void StringToVector (std::string value, std::vector<T>& values)
 {
     std::vector<std::string> tokens;
-                                                                                                                            
+
     // value consists of something like {256,256}
     std::string::size_type startBracketPosition = value.find_first_of("{", 0);
     std::string::size_type endBracketPosition = value.find_first_of("}", startBracketPosition);
-                                                                                                                            
+
     if ( startBracketPosition != std::string::npos && endBracketPosition != std::string::npos) {
         std::string elements = value.substr(startBracketPosition + 1, endBracketPosition - startBracketPosition - 1);
-                                                                                                                            
-                                                                                                                            
+
+
         Tokenize(elements, tokens, ",");
     }
-                                                                                                                            
+
     T element;
 
     for(int i=0; i<tokens.size(); i++) {
@@ -67,19 +67,19 @@ void StringToVector (std::string value, std::vector<T>& values)
 }
 
 template <class T>
-void PrintVector (std::ostream& os, std::string name, const std::vector<T>& vect) 
+void PrintVector (std::ostream& os, std::string name, const std::vector<T>& vect)
 {
   int size = vect.size();
 
   os << name << " {";
-                                                                                                                     
+
   for(int i=0; i < size; i++) {
       os << vect[i];
 
       if (i < size - 1)
         os << ", ";
   }
-                                                                                                                             
+
   os << "}" << std::endl;
 }
 

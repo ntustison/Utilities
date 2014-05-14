@@ -18,13 +18,10 @@
 #include "itkFDFCommonImageIO.h"
 
 // Remove a particular type of character from a string
-void RemoveCharacters(std::string &line, std::string character)
+std::string RemoveCharacters( std::string line, char character )
 {
-    std::string::size_type characterPosition = line.find_first_of(character, 0);
-                                                                                                                                while ( characterPosition != std::string::npos ) {
-        line.erase(characterPosition, 1);
-        characterPosition = line.find_first_of(character, characterPosition);
-    }
+  line.erase( std::remove( line.begin(), line.end(), character ), line.end() );
+  return line;
 }
 
 void Tokenize(const std::string& str, std::vector<std::string>& tokens, const std::string& delimiters)
@@ -48,21 +45,21 @@ void Tokenize(const std::string& str, std::vector<std::string>& tokens, const st
 std::string ParseLine(std::string line)
 {
     // strip *
-    RemoveCharacters(line, "*");
-    RemoveCharacters(line, "\"");
-    RemoveCharacters(line, "[");
-    RemoveCharacters(line, "]");
+    line = RemoveCharacters( line, '*' );
+    line = RemoveCharacters( line, '\"' );
+    line = RemoveCharacters( line, '[' );
+    line = RemoveCharacters( line, ']' );
 
     // Need to deal with space between {}
     std::string::size_type startBracketPosition = line.find_first_of("{", 0);
     std::string::size_type endBracketPosition = line.find_first_of("}", startBracketPosition);
-                                                                                                                            
+
     if ( startBracketPosition != std::string::npos && endBracketPosition != std::string::npos) {
         std::string element = line.substr(startBracketPosition, endBracketPosition - startBracketPosition);
-                                                                                                                            
+
         // Find whitespace within {} and erase
         std::string::size_type whiteSpacePosition = line.find_first_of(" ", startBracketPosition);
-                                                                                                                            
+
         while (whiteSpacePosition != std::string::npos)
         {
             line.erase(whiteSpacePosition, 1);
