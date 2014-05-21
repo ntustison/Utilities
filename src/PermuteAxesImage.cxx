@@ -3,54 +3,7 @@
 
 #include "itkPermuteAxesImageFilter.h"
 
-#include <string>
-#include <vector>
-
-template<class TValue> 
-TValue Convert( std::string optionString )
-			{
-			TValue value;
-			std::istringstream iss( optionString );
-			iss >> value;
-			return value;
-			}
-
-template<class TValue>
-std::vector<TValue> ConvertVector( std::string optionString )
-			{
-			std::vector<TValue> values;
-			std::string::size_type crosspos = optionString.find( 'x', 0 );
-			
-			if ( crosspos == std::string::npos )
-					{
-					values.push_back( Convert<TValue>( optionString ) );
-					}
-			else
-					{
-					std::string element = optionString.substr( 0, crosspos ) ;
-					TValue value;
-					std::istringstream iss( element );
-					iss >> value;
-					values.push_back( value );  
-					while ( crosspos != std::string::npos )
-							{
-							std::string::size_type crossposfrom = crosspos;
-							crosspos = optionString.find( 'x', crossposfrom + 1 );
-							if ( crosspos == std::string::npos )
-									{
-									element = optionString.substr( crossposfrom + 1, optionString.length() );
-									}
-							else
-									{
-									element = optionString.substr( crossposfrom + 1, crosspos ) ;
-									}
-							std::istringstream iss( element );
-							iss >> value;
-							values.push_back( value );  
-							}           
-					}   
-			return values;
-			}
+#include "Common.h"
 
 template<unsigned int ImageDimension>
 int PermuteAxesImage( int argc, char *argv[] )
@@ -63,21 +16,21 @@ int PermuteAxesImage( int argc, char *argv[] )
   typename ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName( argv[2] );
   reader->Update();
-  
+
   typedef itk::PermuteAxesImageFilter<ImageType> FilterType;
   typename FilterType::Pointer filter = FilterType::New();
   typename FilterType::PermuteOrderArrayType array;
 
-  std::vector<unsigned int> which 
+  std::vector<unsigned int> which
     = ConvertVector<unsigned int>( std::string( argv[4] ) );
   for ( unsigned int d = 0; d < ImageDimension; d++ )
     {
-    array[d] = which[d]; 
+    array[d] = which[d];
     }
 
   filter->SetInput( reader->GetOutput() );
-  filter->SetOrder( array ); 
-  
+  filter->SetOrder( array );
+
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( argv[3] );
@@ -95,7 +48,7 @@ int main( int argc, char *argv[] )
     exit( 1 );
     }
 
-  switch( atoi( argv[1] ) ) 
+  switch( atoi( argv[1] ) )
    {
    case 2:
      PermuteAxesImage<2>( argc, argv );
