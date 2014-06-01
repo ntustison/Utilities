@@ -886,6 +886,49 @@ int MultipleOperateImages( int argc, char * argv[] )
       writer->Update();
       }
     }
+  else if( op.compare( std::string( "concavity" ) ) == 0 )
+    {
+    if( filenames.size() != 3 )
+      {
+      std::cerr << "Expecting 3 input images." << std::endl;
+      return EXIT_FAILURE;
+      }
+
+    std::vector<typename ImageType::Pointer> images;
+    for( unsigned int n = 0; n < filenames.size(); n++ )
+      {
+      typename ReaderType::Pointer reader = ReaderType::New();
+      reader->SetFileName( filenames[n].c_str() );
+      reader->Update();
+      images.push_back( reader->GetOutput() );
+      }
+
+    itk::ImageRegionIteratorWithIndex<ImageType> It( images[0],
+      images[0]->GetLargestPossibleRegion() );
+    for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+      {
+      if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
+        {
+        std::vector<RealType> intensities;
+        for( unsigned int n = 0; n < filenames.size(); n++ )
+          {
+          intensities.push_back( images[n]->GetPixel( It.GetIndex() ) );
+          }
+
+        float c = intensities[2] - 2 * intensities[1] + intensities[0];
+        It.Set( c );
+        }
+      else
+        {
+        It.Set( 0 );
+        }
+      }
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( images[0] );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+    }
   else if( op.compare( 0, 4, std::string( "corr", 0, 4 ) ) == 0 )
     {
     std::vector<typename ImageType::Pointer> images;
@@ -1315,6 +1358,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    fft:    Perform voxelwise fft" << std::endl;
     std::cerr << "    labelAvg:   Perform labelwise averaging." << std::endl;
     std::cerr << "    corr=mxnxoxp...:   Create voxelwise correlation map with vector <m,n,x,o,p>" << std::endl;
+    std::cerr << "    concavity:   Create voxelwise concavity map from 3 input images" << std::endl;
     std::cerr << "    slope=mxnxoxp...:   Create voxelwise regression slope map with vector <m,n,x,o,p>" << std::endl;
     std::cerr << "    cohort=n...:   Create random cohort of n subjects from sample (gaussian modeling)" << std::endl;
     std::cerr << "    normalize=p1xp2xn:   Create normalized image set.  0 <= p1 < p2 <= 1.0 percentile min/max input intensity" << std::endl;
