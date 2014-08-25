@@ -14,6 +14,9 @@
 #include "itkBinaryThinning3DImageFilter.h"
 #include "itkBinaryThinningImageFilter.h"
 
+#include "itkCastImageFilter.h"
+#include "itkImageRegionIteratorWithIndex.h"
+#include "itkLabelStatisticsImageFilter.h"
 #include "itkSliceBySliceImageFilter.h"
 #include "itkVotingBinaryIterativeHoleFillingImageFilter.h"
 
@@ -83,6 +86,50 @@ int BinaryMorphology( int argc, char * argv[] )
     typedef itk::ImageFileWriter<ImageType>  WriterType;
     typename WriterType::Pointer writer = WriterType::New();
     writer->SetInput( filter->GetOutput() );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+
+    return EXIT_SUCCESS;
+    }
+  else if( operation == 7 )
+    {
+    typedef itk::Image<unsigned short, ImageDimension> ShortImageType;
+    typedef itk::CastImageFilter<ImageType, ShortImageType> CasterType;
+    typename CasterType::Pointer caster = CasterType::New();
+    caster->SetInput( reader->GetOutput() );
+    caster->Update();
+
+    typedef itk::LabelStatisticsImageFilter<ShortImageType, ShortImageType>
+      StatsFilterType;
+    typename StatsFilterType::Pointer stats = StatsFilterType::New();
+    stats->SetLabelInput( caster->GetOutput() );
+    stats->SetInput( caster->GetOutput() );
+    stats->Update();
+
+    typename ShortImageType::RegionType region = stats->GetRegion( foreground );
+    typename ShortImageType::IndexType lowerIndex = region.GetIndex();
+    typename ShortImageType::IndexType upperIndex = region.GetUpperIndex();
+
+    unsigned int direction = 0;
+    if ( argc > 8 )
+      {
+      direction = static_cast<unsigned int>( atof( argv[8] ) );
+      }
+
+    itk::ImageRegionIteratorWithIndex<ImageType> It( reader->GetOutput(),
+      reader->GetOutput()->GetLargestPossibleRegion() );
+    for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+      {
+      typename ImageType::IndexType index = It.GetIndex();
+      if( index[direction] == lowerIndex[direction] || index[direction] == upperIndex[direction] )
+        {
+        It.Set( 0 );
+        }
+      }
+
+    typedef itk::ImageFileWriter<ImageType>  WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( reader->GetOutput() );
     writer->SetFileName( argv[3] );
     writer->Update();
 
@@ -761,6 +808,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    4. thin " << std::endl;
     std::cerr << "    5. fill holes" << std::endl;
     std::cerr << "    6. iterative hole filling (approx. convex hull)" << std::endl;
+    std::cerr << "    7. remove first and last slice in 3-D (must also specify direction)" << std::endl;
     return EXIT_FAILURE;
     }
 
