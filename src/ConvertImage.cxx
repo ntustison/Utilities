@@ -169,7 +169,21 @@ int ConvertImage( int argc, char *argv[] )
       writer->SetFileName( filename.c_str() );
       writer->Update();
       }
+  else if( atoi( argv[4] ) == 10 )
+    {
+    typedef itk::Vector<PixelType, ImageDimension> VectorType;
 
+    typedef itk::ImageFileReader<VelocityFieldType> ReaderType;
+    typename ReaderType::Pointer reader = ReaderType::New();
+    reader->SetFileName( argv[2] );
+    reader->Update();
+
+    typedef itk::ImageFileWriter<ComponentImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( reader->GetOutput() );
+
+    writer->SetFileName( argv[3] );
+    writer->Update();
     }
   else if( atoi( argv[4] ) < 7 )
     {
@@ -234,6 +248,7 @@ int main( int argc, char *argv[] )
               << "            7 -> component images to a float vector image" << std::endl
               << "            8 -> vector image to component images" << std::endl
               << "            9 -> time-varying velocity field image to component images (ImageDimension is the dimensionality of the displacement vector)" << std::endl;
+              << "           10 -> float vector image" << std::endl;
 
     exit( 0 );
     }
@@ -305,4 +320,3 @@ int main( int argc, char *argv[] )
       exit( EXIT_FAILURE );
    }
 }
-
