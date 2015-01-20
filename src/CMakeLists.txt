@@ -1,6 +1,6 @@
 project( Utilities )
 
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 3.1)
 
 
 if(COMMAND cmake_policy)
@@ -10,10 +10,12 @@ endif(COMMAND cmake_policy)
 #
 # Find ITK
 #
-include (${CMAKE_ROOT}/Modules/FindITK.cmake)
-if (USE_ITK_FILE)
-  include(${USE_ITK_FILE})
-endif(USE_ITK_FILE)
+
+#include (${CMAKE_ROOT}/Modules/FindITK.cmake)
+find_package(ITK)
+if (ITK_FOUND)
+  include(${ITK_USE_FILE})
+endif(ITK_FOUND)
 
 set( CMAKE_INCLUDE_DIRECTORIES_BEFORE ON )
 
@@ -42,10 +44,10 @@ mark_as_advanced(USE_FFTWF)
 option(USE_SYSTEM_FFTW "Use an installed version of fftw" OFF)
 mark_as_advanced(USE_SYSTEM_FFTW)
 
-include (${CMAKE_ROOT}/Modules/FindVTK.cmake)
-if (USE_VTK_FILE)
-  include(${USE_VTK_FILE})
-endif (USE_VTK_FILE)
+find_package(VTK)
+if (VTK_FOUND)
+  include(${VTK_USE_FILE})
+endif(VTK_FOUND)
 
 link_directories(
   ${ITK_LIBRARY_PATH}
@@ -519,9 +521,6 @@ target_link_libraries(SSI ${ITK_LIBRARIES})
 
 add_executable( StatsForSkullThickness StatsForSkullThickness.cxx )
 target_link_libraries( StatsForSkullThickness ${ITK_LIBRARIES})
-
-add_executable(DenoiseImage DenoiseImage.cxx )
-target_link_libraries(DenoiseImage ${ITK_LIBRARIES})
 
 add_executable(DenoiseImage DenoiseImage.cxx )
 target_link_libraries(DenoiseImage ${ITK_LIBRARIES})
