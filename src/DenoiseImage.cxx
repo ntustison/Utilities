@@ -2,7 +2,7 @@
 #include "itkVectorImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-#include "itkMeasurementVectorTraits.h"
+// #include "itkMeasurementVectorTraits.h"
 #include "itkGaussianRandomSpatialNeighborSubsampler.h"
 #include "itkPatchBasedDenoisingImageFilter.h"
 

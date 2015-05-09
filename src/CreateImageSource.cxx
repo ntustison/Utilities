@@ -7,7 +7,7 @@
 #include "itkGaborImageSource.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-#include "itkImageRegionIteratorWithIndex.h";
+#include "itkImageRegionIteratorWithIndex.h"
 
 #include "Common.h"
 

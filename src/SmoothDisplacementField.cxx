@@ -115,7 +115,7 @@ int SmoothDisplacementField( int argc, char *argv[] )
     }
   else if( var.size() == ImageDimension )
     {
-    typedef itk::DisplacementFieldToBSplineImageFilter<DisplacementFieldType, DisplacementFieldType> BSplineFilterType;
+    typedef itk::DisplacementFieldToBSplineImageFilter<DisplacementFieldType> BSplineFilterType;
 
     unsigned int numberOfLevels = 1;
     if( argc > 5 )
@@ -147,7 +147,6 @@ int SmoothDisplacementField( int argc, char *argv[] )
       typename ConfidenceImageReaderType::Pointer cReader = ConfidenceImageReaderType::New();
       cReader->SetFileName( argv[7] );
       cReader->Update();
-
       bspliner->SetConfidenceImage( cReader->GetOutput() );
       }
     bspliner->SetEstimateInverse( false );
