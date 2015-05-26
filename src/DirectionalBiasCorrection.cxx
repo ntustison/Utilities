@@ -69,7 +69,7 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
 
   typedef itk::ImageFileReader<ImageType> ReaderType;
   typename ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( argv[2] );
+  reader->SetFileName( argv[1] );
 
   typename ImageType::Pointer inputImage = reader->GetOutput();
   inputImage->Update();
@@ -97,7 +97,7 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   unsigned int direction = 0;
   if( argc > 4 )
     {
-    atoi( argv[4] );
+    direction = atoi( argv[4] );
     }
   else
     {
@@ -114,7 +114,7 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
       }
     }
 
-  unsigned int model = 0;
+  unsigned int model = 1;
   if( argc > 5 )
     {
     model = atoi( argv[5] );
@@ -135,6 +135,7 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   RealType totalAverageIntensityValue = 0.0;
   unsigned int nonZeroSliceCount = 0;
 
+  std::cout << "slice,intensity" << std::endl;
   for( unsigned int n = 0; n < numberOfSlices; n++ )
     {
     index[direction] = n;
@@ -168,9 +169,14 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
         {
         Y.push_back( std::log( stats->GetMean( 1 ) ) );
         }
+      else
+        {
+        Y.push_back( stats->GetMean( 1 ) );
+        }
       totalAverageIntensityValue = totalAverageIntensityValue +
-        ( Y[nonZeroSliceCount] - totalAverageIntensityValue ) /
+        ( stats->GetMean( 1 ) - totalAverageIntensityValue ) /
         static_cast<RealType>( nonZeroSliceCount + 1 );
+      std::cout << X[nonZeroSliceCount] << "," << stats->GetMean( 1 ) << std::endl;
       nonZeroSliceCount++;
       }
     }
@@ -183,27 +189,37 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
 
   std::vector<RealType> line = FitRegressionLine( X, Y );
 
+  std::cout << std::endl << std::endl;
+  if( model == 0 )
+    {
+    std::cout << "Model:  y = " << std::exp( line[1] ) << " * exp(" << line[0] << "x)" << std::endl;;
+    }
+  else
+    {
+    std::cout << "Model:  y = " << line[1] << " + " << line[0] << "x" << std::endl;;
+    }
+
   typename ImageType::Pointer outputImage = ImageType::New();
   outputImage->CopyInformation( inputImage );
-  outputImage->SetRegions( inputImage->GetRequestedRegion() );
+  outputImage->SetRegions( inputImage->GetLargestPossibleRegion() );
   outputImage->Allocate();
   outputImage->FillBuffer( 0 );
 
   itk::ImageRegionIteratorWithIndex<ImageType> ItO( outputImage,
-    outputImage->GetRequestedRegion() );
+    outputImage->GetLargestPossibleRegion() );
   itk::ImageRegionConstIterator<ImageType> ItI( inputImage,
-    inputImage->GetRequestedRegion() );
+    inputImage->GetLargestPossibleRegion() );
   for( ItI.GoToBegin(), ItO.GoToBegin(); !ItI.IsAtEnd(); ++ItI, ++ItO )
     {
     typename ImageType::IndexType index = ItO.GetIndex();
 
-    RealType predictedValue = line[0] + line[1] * static_cast<RealType>( index[direction] );
+    RealType predictedValue = line[1] + line[0] * static_cast<RealType>( index[direction] );
     if( model == 0 )
       {
-      predictedValue = std::exp( line[0] ) * std::exp( line[1] * static_cast<RealType>( index[direction] ) );
+      predictedValue = std::exp( line[1] ) * std::exp( line[0] * static_cast<RealType>( index[direction] ) );
       }
     RealType residual = ItI.Get() - predictedValue;
-    ItO.Set( residual );
+    ItO.Set( residual + totalAverageIntensityValue );
     }
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
@@ -220,7 +236,7 @@ int main( int argc, char *argv[] )
   if ( argc < 3 )
     {
     std::cerr << "Usage: " << argv[0]
-      << "inputImage outputImage <maskImage> <direction=largest spacing> <model=0>" << std::endl;
+      << " inputImage outputImage <maskImage> <direction=largest spacing> <model=1>" << std::endl;
 
     std::cerr << "  model types: " << std::endl;
     std::cerr << "      0: exponential " << std::endl;
@@ -229,13 +245,13 @@ int main( int argc, char *argv[] )
     return EXIT_FAILURE;
     }
 
-  switch( atoi( argv[1] ) )
-   {
-   case 3:
+//   switch( atoi( argv[1] ) )
+//    {
+//    case 3:
      DirectionalBiasCorrection<3>( argc, argv );
-     break;
-   default:
-      std::cerr << "Unsupported dimension" << std::endl;
-      return EXIT_FAILURE;
-   }
+//      break;
+//    default:
+//       std::cerr << "Unsupported dimension" << std::endl;
+//       return EXIT_FAILURE;
+//    }
 }
