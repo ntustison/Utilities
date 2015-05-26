@@ -248,6 +248,9 @@ target_link_libraries( CreateBSplineDeformationFieldFromPoints ${ITK_LIBRARIES} 
 add_executable(CreateTopologicalNumberMapFromBinaryImage CreateTopologicalNumberMapFromBinaryImage.cxx )
 target_link_libraries(CreateTopologicalNumberMapFromBinaryImage ${ITK_LIBRARIES})
 
+add_executable(DirectionalBiasCorrection DirectionalBiasCorrection.cxx )
+target_link_libraries(DirectionalBiasCorrection ${ITK_LIBRARIES})
+
 add_executable(DivideLungs DivideLungs.cxx )
 target_link_libraries(DivideLungs ${ITK_LIBRARIES})
 
