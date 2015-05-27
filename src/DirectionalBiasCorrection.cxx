@@ -133,6 +133,8 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   index.Fill( 0 );
 
   RealType totalAverageIntensityValue = 0.0;
+  RealType maxIntensityValue = itk::NumericTraits<RealType>::NonpositiveMin();
+  RealType minIntensityValue = itk::NumericTraits<RealType>::max();
   unsigned int nonZeroSliceCount = 0;
 
   std::cout << "slice,intensity" << std::endl;
@@ -164,6 +166,15 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
 
     if( stats->GetCount( 1 ) > 0 )
       {
+      if( stats->GetMaximum( 1 ) > maxIntensityValue )
+        {
+        maxIntensityValue = stats->GetMaximum( 1 );
+        }
+      if( stats->GetMinimum( 1 ) < minIntensityValue )
+        {
+        minIntensityValue = stats->GetMinimum( 1 );
+        }
+
       X.push_back( static_cast<RealType>( n ) );
       if( model == 0 )
         {
@@ -205,6 +216,9 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   outputImage->Allocate();
   outputImage->FillBuffer( 0 );
 
+  RealType maxResidualValue = itk::NumericTraits<RealType>::NonpositiveMin();
+  RealType minResidualValue = itk::NumericTraits<RealType>::max();
+
   itk::ImageRegionIteratorWithIndex<ImageType> ItO( outputImage,
     outputImage->GetLargestPossibleRegion() );
   itk::ImageRegionConstIterator<ImageType> ItI( inputImage,
@@ -212,14 +226,46 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   for( ItI.GoToBegin(), ItO.GoToBegin(); !ItI.IsAtEnd(); ++ItI, ++ItO )
     {
     typename ImageType::IndexType index = ItO.GetIndex();
-
-    RealType predictedValue = line[1] + line[0] * static_cast<RealType>( index[direction] );
-    if( model == 0 )
+    if( maskImage->GetPixel( index ) == 1 )
       {
-      predictedValue = std::exp( line[1] ) * std::exp( line[0] * static_cast<RealType>( index[direction] ) );
+      RealType predictedValue = line[1] + line[0] * static_cast<RealType>( index[direction] );
+      if( model == 0 )
+        {
+        predictedValue = std::exp( line[1] ) * std::exp( line[0] * static_cast<RealType>( index[direction] ) );
+        }
+      RealType residual = ItI.Get() - predictedValue;
+      ItO.Set( residual );
+
+      if( residual > maxResidualValue )
+        {
+        maxResidualValue = residual;
+        }
+      if( residual < minResidualValue )
+        {
+        minResidualValue = residual;
+        }
       }
-    RealType residual = ItI.Get() - predictedValue;
-    ItO.Set( residual + totalAverageIntensityValue );
+    else
+      {
+      ItO.Set( ItI.Get() );
+      }
+    }
+
+  ///////////
+  //
+  // now do a global rescale
+  //
+
+  RealType slope =  ( maxIntensityValue - minIntensityValue ) / ( maxResidualValue - minResidualValue );
+
+  for( ItO.GoToBegin(); !ItO.IsAtEnd(); ++ItO )
+    {
+    typename ImageType::IndexType index = ItO.GetIndex();
+    if( maskImage->GetPixel( index ) == 1 )
+      {
+      RealType rescaledValue = maxIntensityValue + slope * ( ItO.Get() - maxResidualValue );
+      ItO.Set( rescaledValue );
+      }
     }
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
