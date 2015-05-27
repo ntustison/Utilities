@@ -2,6 +2,7 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkLabelContourImageFilter.h"
+#include "itkSliceBySliceImageFilter.h"
 
 template <unsigned int ImageDimension>
 int ExtractContours( int argc, char *argv[] )
@@ -55,6 +56,39 @@ int ExtractContours( int argc, char *argv[] )
   return 0;
 }
 
+int ExtractContoursSliceBySlice( int argc, char *argv[] )
+{
+  const unsigned int ImageDimension = 3;
+  typedef float PixelType;
+  typedef itk::Image<PixelType, ImageDimension> ImageType;
+
+  typedef itk::ImageFileReader<ImageType> ReaderType;
+  ReaderType::Pointer reader = ReaderType::New();
+  reader->SetFileName( argv[2] );
+  reader->Update();
+
+  typedef itk::SliceBySliceImageFilter<ImageType, ImageType> SliceFilterType;
+  SliceFilterType::Pointer sliceFilter = SliceFilterType::New();
+  sliceFilter->SetInput( reader->GetOutput() );
+
+  typedef itk::LabelContourImageFilter<SliceFilterType::InternalInputImageType, SliceFilterType::InternalOutputImageType> FilterType;
+  FilterType::Pointer filter = FilterType::New();
+  if( argc > 4 )
+    {
+    filter->SetFullyConnected( static_cast<PixelType>( atof( argv[4] ) ) );
+    }
+
+  sliceFilter->SetFilter( filter );
+
+  typedef itk::ImageFileWriter<ImageType> WriterType;
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName( argv[3] );
+  writer->SetInput( sliceFilter->GetOutput() );
+  writer->Update();
+
+  return 0;
+}
+
 int main( int argc, char *argv[] )
 {
   if ( argc < 4 )
@@ -64,16 +98,23 @@ int main( int argc, char *argv[] )
     exit( 1 );
     }
 
-  switch( atoi( argv[1] ) )
-   {
-   case 2:
-     ExtractContours<2>( argc, argv );
-     break;
-   case 3:
-     ExtractContours<3>( argc, argv );
-     break;
-   default:
-      std::cerr << "Unsupported dimension" << std::endl;
-      exit( EXIT_FAILURE );
+  if( *argv[1] == 'X' )
+    {
+    ExtractContoursSliceBySlice( argc, argv );
+    }
+  else
+    {
+    switch( atoi( argv[1] ) )
+     {
+     case 2:
+       ExtractContours<2>( argc, argv );
+       break;
+     case 3:
+       ExtractContours<3>( argc, argv );
+       break;
+     default:
+        std::cerr << "Unsupported dimension" << std::endl;
+        exit( EXIT_FAILURE );
+     }
    }
 }
