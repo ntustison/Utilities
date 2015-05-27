@@ -1047,6 +1047,7 @@ int MultipleOperateImages( int argc, char * argv[] )
     std::ofstream str( sampleFilename.c_str() );
     std::ofstream str2( indexFilename.c_str() );
 
+    str << "Label,";
     for( unsigned int n = 0; n < filenames.size() - 1; n++ )
       {
       str << filenames[n] << ",";
@@ -1064,6 +1065,15 @@ int MultipleOperateImages( int argc, char * argv[] )
           str2 << It.GetIndex()[d] << ",";
           }
         str2 << It.GetIndex()[ImageDimension-1] << std::endl;
+
+        if( !mask )
+          {
+          str << "NA,";
+          }
+        else
+          {
+          str << mask->GetPixel( It.GetIndex() ) << ",";
+          }
         for( unsigned int n = 0; n < images.size()-1; n++ )
           {
           str << images[n]->GetPixel( It.GetIndex() ) << ",";
