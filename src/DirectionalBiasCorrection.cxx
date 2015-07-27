@@ -139,6 +139,7 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
       direction = d;
       }
     }
+  index.Fill( 0 );
 
   unsigned int model = 1;
   if( argc > 5 )
@@ -161,6 +162,7 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   RealType minIntensityValue = itk::NumericTraits<RealType>::max();
   unsigned int nonZeroSliceCount = 0;
 
+  std::cout << "direction = " << direction << std::endl;
   std::cout << "slice,intensity" << std::endl;
   for( unsigned int n = 0; n < numberOfSlices; n++ )
     {
