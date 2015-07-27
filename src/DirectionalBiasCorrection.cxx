@@ -94,23 +94,49 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
     maskImage->FillBuffer( 1 );
     }
 
-  unsigned int direction = 0;
+
+  unsigned int physicalCoordinateComponent = 1;
   if( argc > 4 )
     {
-    direction = atoi( argv[4] );
-    }
-  else
-    {
-    typename ImageType::SpacingType spacing = inputImage->GetSpacing();
-    direction = 0;
-    RealType maxSpacing = spacing[0];
-    for( unsigned int d = 1; d < ImageDimension; d++ )
+    if( std::strcmp( argv[4], "x" ) == 0 )
       {
-      if( spacing[d] > maxSpacing )
-        {
-        direction = d;
-        maxSpacing = spacing[d];
-        }
+      physicalCoordinateComponent = 0;
+      }
+    else if( std::strcmp( argv[4], "y" ) == 0 )
+      {
+      physicalCoordinateComponent = 1;
+      }
+    else if( std::strcmp( argv[4], "z" ) == 0 )
+      {
+      physicalCoordinateComponent = 2;
+      }
+    else
+      {
+      std::cerr << "Unrecognized direction option.  Must choose 'x', 'y', or 'z'." << std::endl;
+      return EXIT_FAILURE;
+      }
+    }
+
+  unsigned int direction = 0;
+  float maxComponentValue = 0.0;
+
+  typename ImageType::IndexType index;
+  index.Fill( 0 );
+  typename ImageType::PointType pointOrigin;
+  inputImage->TransformIndexToPhysicalPoint( index, pointOrigin );
+
+  for( unsigned int d = 0; d < ImageDimension; d++ )
+    {
+    typename ImageType::PointType point;
+    index.Fill( 0 );
+    index[d] = 1;
+    inputImage->TransformIndexToPhysicalPoint( index, point );
+
+    typename ImageType::PointType::VectorType directionalVector = point - pointOrigin;
+
+    if( vnl_math_abs( directionalVector[physicalCoordinateComponent] ) > maxComponentValue )
+      {
+      direction = d;
       }
     }
 
@@ -129,8 +155,6 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   typename ImageType::RegionType::SizeType size = inputImage->GetRequestedRegion().GetSize();
   size[direction] = 0;
 
-  typename ImageType::IndexType index;
-  index.Fill( 0 );
 
   RealType totalAverageIntensityValue = 0.0;
   RealType maxIntensityValue = itk::NumericTraits<RealType>::NonpositiveMin();
@@ -282,7 +306,7 @@ int main( int argc, char *argv[] )
   if ( argc < 3 )
     {
     std::cerr << "Usage: " << argv[0]
-      << " inputImage outputImage <maskImage> <direction=largest spacing> <model=1>" << std::endl;
+      << " inputImage outputImage <maskImage> <direction=x,(y),z> <model=1>" << std::endl;
 
     std::cerr << "  model types: " << std::endl;
     std::cerr << "      0: exponential " << std::endl;
