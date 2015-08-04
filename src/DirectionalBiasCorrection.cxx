@@ -99,7 +99,7 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
     {
     typedef itk::ImageFileReader<MaskImageType> MaskReaderType;
     typename MaskReaderType::Pointer maskReader = MaskReaderType::New();
-    maskReader->SetFileName( argv[3] );
+    maskReader->SetFileName( argv[4] );
     maskImageUpdate = maskReader->GetOutput();
 
     maskImageUpdate->Update();
