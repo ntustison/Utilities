@@ -75,38 +75,57 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   inputImage->Update();
   inputImage->DisconnectPipeline();
 
-  typename MaskImageType::Pointer maskImage = MaskImageType::New();
+  typename MaskImageType::Pointer maskImageRegression = MaskImageType::New();
   if( argc > 3 )
     {
     typedef itk::ImageFileReader<MaskImageType> MaskReaderType;
     typename MaskReaderType::Pointer maskReader = MaskReaderType::New();
     maskReader->SetFileName( argv[3] );
-    maskImage = maskReader->GetOutput();
+    maskImageRegression = maskReader->GetOutput();
 
-    maskImage->Update();
-    maskImage->DisconnectPipeline();
+    maskImageRegression->Update();
+    maskImageRegression->DisconnectPipeline();
     }
   else
     {
-    maskImage->CopyInformation( inputImage );
-    maskImage->SetRegions( inputImage->GetRequestedRegion() );
-    maskImage->Allocate();
-    maskImage->FillBuffer( 1 );
+    maskImageRegression->CopyInformation( inputImage );
+    maskImageRegression->SetRegions( inputImage->GetRequestedRegion() );
+    maskImageRegression->Allocate();
+    maskImageRegression->FillBuffer( 1 );
+    }
+
+  typename MaskImageType::Pointer maskImageUpdate = MaskImageType::New();
+  if( argc > 4 )
+    {
+    typedef itk::ImageFileReader<MaskImageType> MaskReaderType;
+    typename MaskReaderType::Pointer maskReader = MaskReaderType::New();
+    maskReader->SetFileName( argv[3] );
+    maskImageUpdate = maskReader->GetOutput();
+
+    maskImageUpdate->Update();
+    maskImageUpdate->DisconnectPipeline();
+    }
+  else
+    {
+    maskImageUpdate->CopyInformation( inputImage );
+    maskImageUpdate->SetRegions( inputImage->GetRequestedRegion() );
+    maskImageUpdate->Allocate();
+    maskImageUpdate->FillBuffer( 1 );
     }
 
 
   unsigned int physicalCoordinateComponent = 1;
-  if( argc > 4 )
+  if( argc > 5 )
     {
-    if( std::strcmp( argv[4], "x" ) == 0 )
+    if( std::strcmp( argv[5], "x" ) == 0 )
       {
       physicalCoordinateComponent = 0;
       }
-    else if( std::strcmp( argv[4], "y" ) == 0 )
+    else if( std::strcmp( argv[5], "y" ) == 0 )
       {
       physicalCoordinateComponent = 1;
       }
-    else if( std::strcmp( argv[4], "z" ) == 0 )
+    else if( std::strcmp( argv[5], "z" ) == 0 )
       {
       physicalCoordinateComponent = 2;
       }
@@ -142,9 +161,9 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   index.Fill( 0 );
 
   unsigned int model = 1;
-  if( argc > 5 )
+  if( argc > 6 )
     {
-    model = atoi( argv[5] );
+    model = atoi( argv[6] );
     }
 
   unsigned int numberOfSlices = inputImage->GetRequestedRegion().GetSize()[direction];
@@ -179,7 +198,7 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
 
     typedef itk::ExtractImageFilter<MaskImageType, MaskSliceType> MaskExtracterType;
     typename MaskExtracterType::Pointer maskExtracter = MaskExtracterType::New();
-    maskExtracter->SetInput( maskImage );
+    maskExtracter->SetInput( maskImageRegression );
     maskExtracter->SetExtractionRegion( region );
     maskExtracter->SetDirectionCollapseToIdentity();
     maskExtracter->Update();
@@ -252,7 +271,7 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   for( ItI.GoToBegin(), ItO.GoToBegin(); !ItI.IsAtEnd(); ++ItI, ++ItO )
     {
     typename ImageType::IndexType index = ItO.GetIndex();
-    if( maskImage->GetPixel( index ) == 1 )
+    if( maskImageUpdate->GetPixel( index ) == 1 )
       {
       RealType predictedValue = line[1] + line[0] * static_cast<RealType>( index[direction] );
       if( model == 0 )
@@ -287,7 +306,7 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   for( ItO.GoToBegin(); !ItO.IsAtEnd(); ++ItO )
     {
     typename ImageType::IndexType index = ItO.GetIndex();
-    if( maskImage->GetPixel( index ) == 1 )
+    if( maskImageUpdate->GetPixel( index ) == 1 )
       {
       RealType rescaledValue = maxIntensityValue + slope * ( ItO.Get() - maxResidualValue );
       ItO.Set( rescaledValue );
@@ -308,7 +327,7 @@ int main( int argc, char *argv[] )
   if ( argc < 3 )
     {
     std::cerr << "Usage: " << argv[0]
-      << " inputImage outputImage <maskImage> <direction=x,(y),z> <model=1>" << std::endl;
+      << " inputImage outputImage <maskImageToDoRegression> <maskImageForUpdate> <direction=x,(y),z> <model=1>" << std::endl;
 
     std::cerr << "  model types: " << std::endl;
     std::cerr << "      0: exponential " << std::endl;
