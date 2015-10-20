@@ -193,6 +193,9 @@ int main( int argc, char *argv[] )
 
   switch( atoi( argv[1] ) )
    {
+   case 1:
+     FitBSplineCurveToPoints<2>( argc, argv );
+     break;
    case 2:
      FitBSplineCurveToPoints<2>( argc, argv );
      break;
