@@ -525,6 +525,9 @@ target_link_libraries(SSI ${ITK_LIBRARIES})
 add_executable( StatsForSkullThickness StatsForSkullThickness.cxx )
 target_link_libraries( StatsForSkullThickness ${ITK_LIBRARIES})
 
+add_executable( SuperResolution SuperResolution.cxx )
+target_link_libraries( SuperResolution ${ITK_LIBRARIES})
+
 add_executable(DenoiseImage DenoiseImage.cxx )
 target_link_libraries(DenoiseImage ${ITK_LIBRARIES})
 
