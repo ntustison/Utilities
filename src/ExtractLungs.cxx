@@ -57,7 +57,7 @@ int main( int argc, char *argv[] )
   const unsigned int ImageDimension = 3;
   typedef float RealType;
 
-  typedef itk::Image<PixelType, ImageDimension> ImageType;
+  typedef itk::Image<RealType, ImageDimension> ImageType;
   typedef itk::Image<int, ImageDimension> LabelImageType;
   typedef itk::Image<int, ImageDimension-1> LabelSliceType;
   typedef itk::Image<RealType, ImageDimension> RealImageType;
@@ -90,20 +90,6 @@ int main( int argc, char *argv[] )
     maskImage->Allocate();
     maskImage->FillBuffer( 1 );
     }
-
-  LabelImageType::RegionType sampleRegion;
-  LabelImageType::SizeType sampleSize;
-  sampleSize.Fill( 5 );
-  LabelImageType::IndexType sampleIndex;
-  sampleIndex.Fill( 0 );
-  sampleRegion.SetSize( sampleSize );
-
-  typedef itk::ExtractImageFilter<LabelImageType, LabelImageType> SampleExtracterType;
-  SampleExtracterType::Pointer sampleExtracter = SampleExtracterType::New();
-  sampleExtracter->SetInput( reader->GetOutput() );
-  sampleExtracter->SetDirectionCollapseToSubmatrix();
-  sampleExtracter->SetExtractionRegion( sampleRegion );
-  sampleExtracter->Update();
 
   /**
     * Threshold selection
@@ -184,7 +170,7 @@ int main( int argc, char *argv[] )
   lowerBound[0] = lowerBound[1] = upperBound[0] = upperBound[1] = 1;
   lowerBound[2] = upperBound[2] = 0;
 
-  typedef itk::ConstantPadImageFilter<ImageType, ImageType> PadderType;
+  typedef itk::ConstantPadImageFilter<LabelImageType, LabelImageType> PadderType;
   PadderType::Pointer padder = PadderType::New();
   padder->SetInput( otsuOutput );
   padder->SetPadLowerBound( lowerBound );
