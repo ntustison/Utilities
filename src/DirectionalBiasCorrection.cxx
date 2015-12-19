@@ -177,8 +177,6 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
 
 
   RealType totalAverageIntensityValue = 0.0;
-  RealType maxIntensityValue = itk::NumericTraits<RealType>::NonpositiveMin();
-  RealType minIntensityValue = itk::NumericTraits<RealType>::max();
   unsigned int nonZeroSliceCount = 0;
 
   std::cout << "direction = " << direction << std::endl;
@@ -211,15 +209,6 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
 
     if( stats->GetCount( 1 ) > 0 )
       {
-      if( stats->GetMaximum( 1 ) > maxIntensityValue )
-        {
-        maxIntensityValue = stats->GetMaximum( 1 );
-        }
-      if( stats->GetMinimum( 1 ) < minIntensityValue )
-        {
-        minIntensityValue = stats->GetMinimum( 1 );
-        }
-
       X.push_back( static_cast<RealType>( n ) );
       if( model == 0 )
         {
@@ -301,6 +290,15 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
   // now do a global rescale
   //
 
+  typedef itk::LabelStatisticsImageFilter<ImageType, MaskImageType> StatsFilterType2;
+  typename StatsFilterType2::Pointer stats2 = StatsFilterType2::New();
+  stats2->SetInput( inputImage );
+  stats2->SetLabelInput( maskImageUpdate );
+  stats2->Update();
+
+  RealType maxIntensityValue = stats2->GetMaximum( 1 );
+  RealType minIntensityValue = stats2->GetMinimum( 1 );
+
   RealType slope =  ( maxIntensityValue - minIntensityValue ) / ( maxResidualValue - minResidualValue );
 
   for( ItO.GoToBegin(); !ItO.IsAtEnd(); ++ItO )
@@ -308,7 +306,7 @@ int DirectionalBiasCorrection( int argc, char *argv[] )
     typename ImageType::IndexType index = ItO.GetIndex();
     if( maskImageUpdate->GetPixel( index ) == 1 )
       {
-      RealType rescaledValue = maxIntensityValue + slope * ( ItO.Get() - maxResidualValue );
+      RealType rescaledValue = minIntensityValue + slope * ( ItO.Get() - minResidualValue );
       ItO.Set( rescaledValue );
       }
     }

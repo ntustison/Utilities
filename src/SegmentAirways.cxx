@@ -68,14 +68,14 @@ int main( int argc, char *argv[] )
    * Set up the initial typedefs and read in the images.
    */
   const unsigned int ImageDimension = 3;
+  typedef float RealType;
 
   typedef itk::Image<int, ImageDimension> LabelImageType;
   typedef itk::Image<LabelImageType::PixelType, ImageDimension-1> LabelSliceType;
 
-  typedef itk::Image<int, ImageDimension> ImageType;
+  typedef itk::Image<RealType, ImageDimension> ImageType;
   typedef itk::Image<ImageType::PixelType, ImageDimension-1> SliceType;
 
-  typedef float RealType;
   typedef itk::Image<RealType, ImageDimension> RealImageType;
   typedef itk::Image<RealImageType::PixelType, ImageDimension-1> RealSliceType;
 
@@ -222,6 +222,8 @@ int main( int argc, char *argv[] )
     {
     RealType centerX = (*iter)->GetObjectToParentTransform()->GetOffset()[0];
     RealType centerY = (*iter)->GetObjectToParentTransform()->GetOffset()[1];
+
+    std::cout << centerX << ", " << centerY << std::endl;
 
     RealType distance = vnl_math_sqr( centerX - centerAnteriorX ) +
       0*vnl_math_sqr( centerY - centerAnteriorY );

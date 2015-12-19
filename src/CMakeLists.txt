@@ -176,8 +176,8 @@ target_link_libraries(ConvertScalarImageToRGB ${ITK_LIBRARIES})
 ADD_EXECUTABLE(ConvertImage ConvertImage.cxx ${CMAKE_SOURCE_DIR}/../ExperimentalITK/IO/itkFDFImageIO.cxx ${CMAKE_SOURCE_DIR}/../ExperimentalITK/IO/itkFDFCommonImageIO.cxx ${CMAKE_SOURCE_DIR}/../ExperimentalITK/IO/itkFDFImageIOFactory.cxx )
 TARGET_link_libraries(ConvertImage ${ITK_LIBRARIES})
 
-add_executable(ConvertImageToDicom ConvertImageToDicom.cxx )
-target_link_libraries(ConvertImageToDicom ${ITK_LIBRARIES})
+# add_executable(ConvertImageToDicom ConvertImageToDicom.cxx )
+# target_link_libraries(ConvertImageToDicom ${ITK_LIBRARIES})
 
 add_executable(CopyDicomHeader CopyDicomHeader.cxx )
 target_link_libraries(CopyDicomHeader ${ITK_LIBRARIES})
@@ -185,8 +185,8 @@ target_link_libraries(CopyDicomHeader ${ITK_LIBRARIES})
 add_executable(ImageReadDicomSeriesWrite ImageReadDicomSeriesWrite.cxx )
 target_link_libraries(ImageReadDicomSeriesWrite ${ITK_LIBRARIES})
 
-add_executable(ConvertImageToDicomRGB ConvertImageToDicomRGB.cxx )
-target_link_libraries(ConvertImageToDicomRGB ${ITK_LIBRARIES})
+# add_executable(ConvertImageToDicomRGB ConvertImageToDicomRGB.cxx )
+# target_link_libraries(ConvertImageToDicomRGB ${ITK_LIBRARIES})
 
 add_executable(GetDicomTagValue GetDicomTagValue.cxx )
 target_link_libraries(GetDicomTagValue ${ITK_LIBRARIES})
