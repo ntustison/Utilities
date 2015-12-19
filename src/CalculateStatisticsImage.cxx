@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include "itkFlatStructuringElement.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkNeighborhoodFirstOrderStatisticsImageFilter.h"
