@@ -363,6 +363,9 @@ target_link_libraries(GenerateRunLengthMeasures ${ITK_LIBRARIES})
 add_executable(GenerateStatisticsFromImage GenerateStatisticsFromImage.cxx )
 target_link_libraries(GenerateStatisticsFromImage ${ITK_LIBRARIES})
 
+add_executable( GenerateDomainImage GenerateDomainImage.cxx )
+target_link_libraries( GenerateDomainImage ${ITK_LIBRARIES} )
+
 add_executable(GetImageInformation GetImageInformation.cxx )
 target_link_libraries(GetImageInformation ${ITK_LIBRARIES})
 
