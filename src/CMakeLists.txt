@@ -147,6 +147,12 @@ if (USE_VTK_FILE)
 # target_link_libraries(ColorPolyDataByImage ${ITK_LIBRARIES} ${VTK_LIBRARIES})
 endif (USE_VTK_FILE)
 
+add_executable(ConnectedSegmentImage ConnectedSegmentImage.cxx )
+target_link_libraries(ConnectedSegmentImage ${ITK_LIBRARIES})
+
+add_executable(ConnectedSegmentImageSliceBySlice ConnectedSegmentImageSliceBySlice.cxx )
+target_link_libraries(ConnectedSegmentImageSliceBySlice ${ITK_LIBRARIES})
+
 add_executable(ConvertAvantsLandmarkFileToImageLines ConvertAvantsLandmarkFileToImageLines.cxx )
 target_link_libraries(ConvertAvantsLandmarkFileToImageLines ${ITK_LIBRARIES})
 

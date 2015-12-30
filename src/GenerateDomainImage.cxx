@@ -52,15 +52,6 @@ int GenerateDomainImage( unsigned int argc, char *argv[] )
 
   typedef itk::ImageFileReader<ImageType> ReaderType;
 
-  ReaderType::Pointer readerSA = ReaderType::New();
-  readerSA->SetFileName( argv[argc-3] );
-  readerSA->Update();
-
-  ImageType::DirectionType directionSA = readerSA->GetOutput()->GetDirection();
-  ImageType::PointType originSA = readerSA->GetOutput()->GetOrigin();
-  VectorType normalSA = directionSA * zVector;
-  RealType kSA = normalSA[0] * originSA[0] + normalSA[1] * originSA[1] + normalSA[2] * originSA[2];
-
   ReaderType::Pointer readerLA1 = ReaderType::New();
   readerLA1->SetFileName( argv[argc-2] );
   readerLA1->Update();
@@ -79,28 +70,45 @@ int GenerateDomainImage( unsigned int argc, char *argv[] )
   VectorType normalLA2 = directionLA2 * zVector;
   RealType kLA2 = normalLA2[0] * originLA2[0] + normalLA2[1] * originLA2[1] + normalLA2[2] * originLA2[2];
 
-  vnl_matrix<double> A( ImageDimension, ImageDimension );
-  A.set_row( 0, normalSA.GetVnlVector() );
-  A.set_row( 1, normalLA1.GetVnlVector() );
-  A.set_row( 2, normalLA2.GetVnlVector() );
-
-  vnl_vector<double> b( ImageDimension );
-  b[0] = kSA;
-  b[1] = kLA1;
-  b[2] = kLA2;
-
-  vnl_vector<double> x = vnl_svd<double>( A ).solve( b );
-
   ImageType::PointType intersectionPoint;
-  intersectionPoint[0] = x[0];
-  intersectionPoint[1] = x[1];
-  intersectionPoint[2] = x[2];
+  intersectionPoint.Fill( 0.0 );
 
-  if( ( intersectionPoint.GetVectorFromOrigin() ).GetNorm() > 1e8 )
+  unsigned int N = 0;
+  for( unsigned int n = 3; n < argc-2; n++ )
     {
-    std::cerr << "Planes are not parallel.  Make sure that you have specified a SA";
-    std::cerr << "slice and two LA slices as the last in the image list." << std::endl;
-    return EXIT_FAILURE;
+    ReaderType::Pointer readerSA = ReaderType::New();
+    readerSA->SetFileName( argv[n] );
+    readerSA->Update();
+
+    ImageType::DirectionType directionSA = readerSA->GetOutput()->GetDirection();
+    ImageType::PointType originSA = readerSA->GetOutput()->GetOrigin();
+    VectorType normalSA = directionSA * zVector;
+    RealType kSA = normalSA[0] * originSA[0] + normalSA[1] * originSA[1] + normalSA[2] * originSA[2];
+
+    vnl_matrix<double> A( ImageDimension, ImageDimension );
+    A.set_row( 0, normalSA.GetVnlVector() );
+    A.set_row( 1, normalLA1.GetVnlVector() );
+    A.set_row( 2, normalLA2.GetVnlVector() );
+
+    vnl_vector<double> b( ImageDimension );
+    b[0] = kSA;
+    b[1] = kLA1;
+    b[2] = kLA2;
+
+    vnl_vector<double> x = vnl_svd<double>( A ).solve( b );
+
+    for( unsigned int d = 0; d < ImageDimension; d++ )
+      {
+      intersectionPoint[d] = ( x[d] + static_cast<double>( N ) * intersectionPoint[d] ) / static_cast<double>( N + 1 );
+      }
+
+    if( ( intersectionPoint.GetVectorFromOrigin() ).GetNorm() > 1e8 )
+      {
+      std::cerr << "Planes are not parallel.  Make sure that you have specified a SA";
+      std::cerr << "slice and two LA slices as the last in the image list." << std::endl;
+      return EXIT_FAILURE;
+      }
+    N++;
     }
 
   ImageType::DirectionType direction;
@@ -123,7 +131,7 @@ int GenerateDomainImage( unsigned int argc, char *argv[] )
 
   // Get the bounding box along the long axis
 
-  unsigned int N = 0;
+  N = 0;
   for( unsigned int n = 3; n < argc-2; n++ )
     {
     typedef itk::ImageFileReader<ImageType> ReaderType;
@@ -151,7 +159,6 @@ int GenerateDomainImage( unsigned int argc, char *argv[] )
   boundingBoxLA->SetPoints( points );
   boundingBoxLA->ComputeBoundingBox();
   BoundingBoxType::BoundsArrayType boundsLA = boundingBoxLA->GetBounds();
-
 
   // Assume heart is less than 120 mm in diameter
 
@@ -204,10 +211,27 @@ int GenerateDomainImage( unsigned int argc, char *argv[] )
   BoundingBoxType::BoundsArrayType bounds = boundingBox->GetBounds();
 
   ImageType::PointType origin;
+
+//   RealType minDistance = itk::NumericTraits<RealType>::max();
+//   PointType minPoint;
+//
+//   const BoundingBoxType::PointsContainer* corners = boundingBox->GetCorners();
+//   VectorContainerType::ConstIterator corner = corners->Begin();
+//   while( corner != corners->End() )
+//     {
+//     RealType distance = originVolume.EuclideanDistanceTo( corner->Value() );
+//     if( distance < minDistance )
+//       {
+//       minPoint.CastFrom( corner->Value() );
+//       }
+//     corner++;
+//     }
+
   origin.CastFrom( boundingBox->GetMinimum() );
+//   origin.CastFrom( minPoint );
+
   ImageType::PointType center;
   center.CastFrom( boundingBox->GetCenter() );
-
   ImageType::SizeType size;
   for( unsigned int d = 0; d < ImageDimension; d++ )
     {
@@ -225,6 +249,11 @@ int GenerateDomainImage( unsigned int argc, char *argv[] )
   domainImage->SetRegions( size );
   domainImage->Allocate();
   domainImage->FillBuffer( 0.0 );
+
+  ImageType::IndexType intersectionIndex;
+  intersectionPoint = direction * intersectionPoint;
+  domainImage->TransformPhysicalPointToIndex( intersectionPoint, intersectionIndex );
+  domainImage->SetPixel( intersectionIndex, 1.0 );
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
   WriterType::Pointer writer = WriterType::New();
