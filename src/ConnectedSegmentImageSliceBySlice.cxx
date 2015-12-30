@@ -1,9 +1,16 @@
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
+
+#include "itkBinaryDilateImageFilter.h"
+#include "itkBinaryThresholdImageFunction.h"
+#include "itkBinaryBallStructuringElement.h"
 #include "itkExtractImageFilter.h"
+#include "itkFloodFilledImageFunctionConditionalIterator.h"
 #include "itkLabelGeometryImageFilter.h"
-#include "itkConfidenceConnectedImageFilter.h"
+#include "itkLabelStatisticsImageFilter.h"
+
+#include "Common.h"
 
 template <unsigned int ImageDimension>
 int ConnectedSegmentImage(int argc, char *argv[])
@@ -45,21 +52,21 @@ int ConnectedSegmentImage(int argc, char *argv[])
     multiplier = atof( argv[4] );
     }
 
-  unsigned int numberOfIterations = 1;
+  unsigned int radius = 1;
   if ( argc > 5 )
     {
-    numberOfIterations = atoi( argv[5] );
+    radius = atoi( argv[5] );
     }
 
   typedef itk::LabelGeometryImageFilter<LabelImageType, ImageType> LabelFilterType;
-  typename LabelFilterType::Pointer filter = LabelFilterType::New();
-  filter->SetInput( seedImage );
-  filter->CalculatePixelIndicesOff();
-  filter->CalculateOrientedBoundingBoxOff();
-  filter->CalculateOrientedLabelRegionsOff();
-  filter->Update();
+  typename LabelFilterType::Pointer geometryFilter = LabelFilterType::New();
+  geometryFilter->SetInput( seedImage );
+  geometryFilter->CalculatePixelIndicesOff();
+  geometryFilter->CalculateOrientedBoundingBoxOff();
+  geometryFilter->CalculateOrientedLabelRegionsOff();
+  geometryFilter->Update();
 
-  typename LabelImageType::PointType centroid = filter->GetCentroid( 1 );
+  typename LabelImageType::PointType centroid = geometryFilter->GetCentroid( 1 );
   typename ImageType::IndexType centroidIndex;
   for( unsigned int d = 0; d < ImageDimension; d++ )
     {
@@ -70,9 +77,47 @@ int ConnectedSegmentImage(int argc, char *argv[])
   typename ImageType::IndexType inputIndex;
   inputImage->TransformPhysicalPointToIndex( centroid, inputIndex );
 
+  // Temporarily set the seed pixel to perform binary dilation to get statistical info.
+
+  outputImage->SetPixel( inputIndex, 1 );
+
+  typedef itk::BinaryBallStructuringElement<PixelType, ImageDimension> StructuringElementType;
+  StructuringElementType  element;
+  element.SetRadius( radius );
+  element.CreateStructuringElement();
+
+  typedef itk::BinaryDilateImageFilter<LabelImageType, LabelImageType, StructuringElementType>  DilateFilterType;
+  typename DilateFilterType::Pointer  dilateFilter = DilateFilterType::New();
+  dilateFilter->SetKernel( element );
+  dilateFilter->SetInput( outputImage );
+  dilateFilter->SetBackgroundValue( 0 );
+  dilateFilter->SetForegroundValue( 1 );
+  dilateFilter->Update();
+
+  typedef itk::LabelStatisticsImageFilter<ImageType, LabelImageType> StatsFilterType;
+  typename StatsFilterType::Pointer stats = StatsFilterType::New();
+  stats->SetLabelInput( dilateFilter->GetOutput() );
+  stats->SetInput( inputImage );
+  stats->Update();
+
+  float meanValue = stats->GetMean( 1 );
+  float sigmaValue = stats->GetSigma( 1 );
+
+  outputImage->FillBuffer( 0 );
+
+  typedef itk::BinaryThresholdImageFunction<SliceType, float> FunctionType;
+  typedef itk::FloodFilledImageFunctionConditionalIterator<SliceType, FunctionType> IteratorType;
+
+  // Set up the image function used for connectivity
+  typename FunctionType::Pointer function = FunctionType::New();
+
   typename SliceType::IndexType seedIndex;
   seedIndex[0] = inputIndex[0];
   seedIndex[1] = inputIndex[1];
+
+  typedef std::vector<typename SliceType::IndexType> SeedsContainerType;
+  SeedsContainerType seedsContainer;
+  seedsContainer.push_back( seedIndex );
 
   // Do segmentations on all the slices
 
@@ -98,18 +143,11 @@ int ConnectedSegmentImage(int argc, char *argv[])
     extracter->SetDirectionCollapseToIdentity();
     extracter->Update();
 
-    typedef itk::ConfidenceConnectedImageFilter<SliceType, LabelSliceType> SegmenterType;
-    typename SegmenterType::Pointer segmenter = SegmenterType::New();
-    segmenter->SetInput( extracter->GetOutput() );
-    segmenter->SetReplaceValue( 1 );
-    segmenter->SetInitialNeighborhoodRadius( 1 );
-    segmenter->SetSeed( seedIndex );
-    segmenter->SetNumberOfIterations( numberOfIterations );
-    segmenter->SetMultiplier( multiplier );
-    segmenter->Update();
+    function->SetInputImage( extracter->GetOutput() );
+    function->ThresholdBetween( static_cast<PixelType>( meanValue - sigmaValue * multiplier ),
+                                static_cast<PixelType>( meanValue + sigmaValue * multiplier ) );
 
-    itk::ImageRegionIteratorWithIndex<LabelSliceType> It( segmenter->GetOutput(),
-      segmenter->GetOutput()->GetRequestedRegion() );
+    IteratorType It = IteratorType( extracter->GetOutput(), function, seedsContainer );
     for( It.GoToBegin(); !It.IsAtEnd(); ++It )
       {
       typename SliceType::IndexType sliceIndex = It.GetIndex();
@@ -119,7 +157,7 @@ int ConnectedSegmentImage(int argc, char *argv[])
       outputIndex[1] = sliceIndex[1];
       outputIndex[2] = index[2];
 
-      outputImage->SetPixel( outputIndex, It.Get() );
+      outputImage->SetPixel( outputIndex, 1 );
       }
     }
 
@@ -129,7 +167,7 @@ int ConnectedSegmentImage(int argc, char *argv[])
   writer->SetInput( outputImage );
   writer->Update();
 
- return 0;
+  return 0;
 }
 
 int main( int argc, char *argv[] )
@@ -137,7 +175,7 @@ int main( int argc, char *argv[] )
   if ( argc < 5 )
     {
     std::cerr << "Usage: "<< argv[0] << " inputImage seedImage outputImage "
-      "<multiplier=2.5> <numberOfIterations=1>" << std::endl;
+      "<multiplier=2.5> <radius=1>" << std::endl;
     return EXIT_FAILURE;
     }
 
