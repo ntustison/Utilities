@@ -46,16 +46,22 @@ int ConnectedSegmentImage(int argc, char *argv[])
   seedImage->Update();
   seedImage->DisconnectPipeline();
 
-  float multiplier = 2.5;
+  float lowerMultiplier = 2.5;
   if ( argc > 4 )
     {
-    multiplier = atof( argv[4] );
+    lowerMultiplier = atof( argv[4] );
+    }
+
+  float upperMultiplier = 2.5;
+  if ( argc > 5 )
+    {
+    upperMultiplier = atof( argv[5] );
     }
 
   unsigned int radius = 1;
-  if ( argc > 5 )
+  if ( argc > 6 )
     {
-    radius = atoi( argv[5] );
+    radius = atoi( argv[6] );
     }
 
   typedef itk::LabelGeometryImageFilter<LabelImageType, ImageType> LabelFilterType;
@@ -144,8 +150,8 @@ int ConnectedSegmentImage(int argc, char *argv[])
     extracter->Update();
 
     function->SetInputImage( extracter->GetOutput() );
-    function->ThresholdBetween( static_cast<PixelType>( meanValue - sigmaValue * multiplier ),
-                                static_cast<PixelType>( meanValue + sigmaValue * multiplier ) );
+    function->ThresholdBetween( static_cast<PixelType>( meanValue - sigmaValue * lowerMultiplier ),
+                                static_cast<PixelType>( meanValue + sigmaValue * upperMultiplier ) );
 
     IteratorType It = IteratorType( extracter->GetOutput(), function, seedsContainer );
     for( It.GoToBegin(); !It.IsAtEnd(); ++It )
@@ -175,7 +181,7 @@ int main( int argc, char *argv[] )
   if ( argc < 5 )
     {
     std::cerr << "Usage: "<< argv[0] << " inputImage seedImage outputImage "
-      "<multiplier=2.5> <radius=1>" << std::endl;
+      "<lowerMultiplier=2.5> <upperMultiplier=2.5> <radius=1>" << std::endl;
     return EXIT_FAILURE;
     }
 

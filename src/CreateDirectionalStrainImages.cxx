@@ -159,7 +159,7 @@ int main( int argc, char *argv[] )
     {
     std::cout << "Usage: " << argv[0] << " imageDimension deformationField"
        << " outputImagePrefix " <<
-       " \'whichComponent,e.g. e_xy=1x2 or normalizedDirectionalField\' [maskImage]" << std::endl;
+       " \'whichComponent,e.g. e_xy=0x1 or normalizedDirectionalField\' [maskImage]" << std::endl;
     std::cout << "   Note:  if normalizedDirectionalField is not specified, "
       << " the component strains are saved." << std::endl;
     exit( 1 );
