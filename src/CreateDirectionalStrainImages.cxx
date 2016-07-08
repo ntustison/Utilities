@@ -56,15 +56,13 @@ int CreateDirectionalStrainImages( int argc, char *argv[] )
     }
 
   typename RealImageType::Pointer lagrangian = RealImageType::New();
-  lagrangian->SetOrigin( reader->GetOutput()->GetOrigin() );
-  lagrangian->SetSpacing( reader->GetOutput()->GetSpacing() );
+  lagrangian->CopyInformation( reader->GetOutput() );
   lagrangian->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
   lagrangian->Allocate();
   lagrangian->FillBuffer( 0 );
 
   typename RealImageType::Pointer eulerian = RealImageType::New();
-  eulerian->SetOrigin( reader->GetOutput()->GetOrigin() );
-  eulerian->SetSpacing( reader->GetOutput()->GetSpacing() );
+  eulerian->CopyInformation( reader->GetOutput() );
   eulerian->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
   eulerian->Allocate();
   eulerian->FillBuffer( 0 );
