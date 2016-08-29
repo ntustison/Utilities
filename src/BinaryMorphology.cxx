@@ -16,6 +16,7 @@
 
 #include "itkCastImageFilter.h"
 #include "itkImageRegionIteratorWithIndex.h"
+#include "itkImageDuplicator.h"
 #include "itkLabelStatisticsImageFilter.h"
 #include "itkSliceBySliceImageFilter.h"
 #include "itkVotingBinaryIterativeHoleFillingImageFilter.h"
@@ -394,6 +395,126 @@ int BinaryMorphology( int argc, char * argv[] )
     }
   return EXIT_SUCCESS;
 }
+
+
+int myDilate( int argc, char * argv[] )
+{
+
+//  ImageType::Pointer im, ImageType::Pointer dmask, int Tlabel, int R
+
+    const unsigned int ImageDimension = 3;
+
+
+
+    typedef short PixelType;
+    typedef itk::Image<PixelType, ImageDimension> ImageType;
+
+    typedef itk::ImageRegionIteratorWithIndex< ImageType > IndexIteratorType;
+
+    typedef itk::ImageFileReader<ImageType>  ReaderType;
+    ReaderType::Pointer reader = ReaderType::New();
+    reader->SetFileName( argv[2] );
+    reader->Update();
+
+    int R = 1;
+    if ( argc > 5 )
+      {
+      R = atoi( argv[5] );
+      }
+
+    PixelType Tlabel = itk::NumericTraits<PixelType>::One;
+    if ( argc > 7 )
+      {
+      Tlabel = static_cast<PixelType>( atof( argv[7] ) );
+      }
+
+    ImageType::Pointer im = reader->GetOutput();
+    im->DisconnectPipeline();
+
+    typedef itk::ImageDuplicator<ImageType> DuplicatorType;
+    DuplicatorType::Pointer duplicator = DuplicatorType::New();
+    duplicator->SetInputImage( im );
+    duplicator->Update();
+
+    ImageType::Pointer dmask = duplicator->GetOutput();
+    dmask->DisconnectPipeline();
+
+    int x, y, z, j, k, l;
+    ImageType::IndexType idx;
+    ImageType::Pointer tmask = ImageType::New();
+    tmask->CopyInformation( im );
+    tmask->SetRegions( im->GetRequestedRegion() );
+    tmask->Allocate();
+    tmask->FillBuffer( 0 );
+
+    int Dx=im->GetRequestedRegion().GetSize()[0];
+    int Dy=im->GetRequestedRegion().GetSize()[1];
+    int Dz=im->GetRequestedRegion().GetSize()[2];
+
+    IndexIteratorType dmaskit(dmask, dmask->GetRequestedRegion());
+    IndexIteratorType tmaskit(tmask, tmask->GetRequestedRegion());
+    IndexIteratorType imit(im, im->GetRequestedRegion());
+    for (dmaskit.GoToBegin(),tmaskit.GoToBegin(); !dmaskit.IsAtEnd(); ++dmaskit,++tmaskit){
+      dmaskit.Set(0);
+      tmaskit.Set(0);
+    }
+    int tc=0;
+    for (imit.GoToBegin(); !imit.IsAtEnd(); ++imit){
+      idx = imit.GetIndex();
+      if ((Tlabel>=0 && imit.Value()==Tlabel) || (Tlabel<0 && imit.Value()>0)){
+        tc++;
+        x=idx[0];
+        for (j=-R;j<R+1;j++){
+          idx[0] = x+j;
+          if (idx[0]<0 || idx[0]>=Dx)
+            continue;
+
+          dmaskit.SetIndex(idx);
+          dmaskit.Set(1);
+        }
+      }
+    }
+//    cout<<"tc: "<<tc<<endl;
+    for (dmaskit.GoToBegin(); !dmaskit.IsAtEnd(); ++dmaskit){
+      idx = dmaskit.GetIndex();
+      if (dmaskit.Value()==1){
+        y=idx[1];
+        for (k=-R;k<R+1;k++){
+          idx[1] = y+k;
+          if (idx[1]<0 || idx[1]>=Dy)
+            continue;
+
+          tmaskit.SetIndex(idx);
+          tmaskit.Set(1);
+        }
+      }
+    }
+
+    for (tmaskit.GoToBegin(); !tmaskit.IsAtEnd(); ++tmaskit){
+      idx = tmaskit.GetIndex();
+      if (tmaskit.Value()==1){
+        z=idx[2];
+        for (l=-R;l<R+1;l++){
+          idx[2] = z+l;
+          if (idx[2]<0 || idx[2]>=Dz)
+            continue;
+
+          dmaskit.SetIndex(idx);
+          dmaskit.Set(1);
+        }
+      }
+    }
+
+    typedef itk::ImageFileWriter<ImageType> WriterType;
+    WriterType::Pointer writer = WriterType::New();
+    writer->SetInput( dmask );
+    writer->SetFileName( argv[3] );
+    writer->Update();
+
+    return EXIT_SUCCESS;
+}
+
+
 
 int BinaryMorphologySliceBySlice( int argc, char * argv[] )
 {
@@ -815,6 +936,10 @@ int main( int argc, char *argv[] )
   if( *argv[1] == 'X' )
     {
     BinaryMorphologySliceBySlice( argc, argv );
+    }
+  else if( *argv[1] == 'H' )
+    {
+    myDilate( argc, argv );
     }
   else
     {
