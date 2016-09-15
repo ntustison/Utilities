@@ -27,8 +27,7 @@ int CreatePrincipalStrainImages( int argc, char *argv[] )
   typename MaskImageType::Pointer mask = MaskImageType::New();
   if ( argc < 6 )
     {
-    mask->SetOrigin( reader->GetOutput()->GetOrigin() );
-    mask->SetSpacing( reader->GetOutput()->GetSpacing() );
+    mask->CopyInformation( reader->GetOutput() );
     mask->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
     mask->Allocate();
     mask->FillBuffer( 1 );
@@ -43,18 +42,15 @@ int CreatePrincipalStrainImages( int argc, char *argv[] )
     }
 
   typename VectorImageType::Pointer strain1 = VectorImageType::New();
-  strain1->SetOrigin( reader->GetOutput()->GetOrigin() );
-  strain1->SetSpacing( reader->GetOutput()->GetSpacing() );
+  strain1->CopyInformation( reader->GetOutput() );
   strain1->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
   strain1->Allocate();
   typename VectorImageType::Pointer strain2 = VectorImageType::New();
-  strain2->SetOrigin( reader->GetOutput()->GetOrigin() );
-  strain2->SetSpacing( reader->GetOutput()->GetSpacing() );
+  strain2->CopyInformation( reader->GetOutput() );
   strain2->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
   strain2->Allocate();
   typename VectorImageType::Pointer strain3 = VectorImageType::New();
-  strain3->SetOrigin( reader->GetOutput()->GetOrigin() );
-  strain3->SetSpacing( reader->GetOutput()->GetSpacing() );
+  strain3->CopyInformation( reader->GetOutput() );
   strain3->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
   strain3->Allocate();
 

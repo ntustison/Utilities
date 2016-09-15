@@ -56,15 +56,13 @@ int CreateDirectionalStrainImages( int argc, char *argv[] )
     }
 
   typename RealImageType::Pointer lagrangian = RealImageType::New();
-  lagrangian->SetOrigin( reader->GetOutput()->GetOrigin() );
-  lagrangian->SetSpacing( reader->GetOutput()->GetSpacing() );
+  lagrangian->CopyInformation( reader->GetOutput() );
   lagrangian->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
   lagrangian->Allocate();
   lagrangian->FillBuffer( 0 );
 
   typename RealImageType::Pointer eulerian = RealImageType::New();
-  eulerian->SetOrigin( reader->GetOutput()->GetOrigin() );
-  eulerian->SetSpacing( reader->GetOutput()->GetSpacing() );
+  eulerian->CopyInformation( reader->GetOutput() );
   eulerian->SetRegions( reader->GetOutput()->GetLargestPossibleRegion() );
   eulerian->Allocate();
   eulerian->FillBuffer( 0 );
@@ -159,7 +157,7 @@ int main( int argc, char *argv[] )
     {
     std::cout << "Usage: " << argv[0] << " imageDimension deformationField"
        << " outputImagePrefix " <<
-       " \'whichComponent,e.g. e_xy=1x2 or normalizedDirectionalField\' [maskImage]" << std::endl;
+       " \'whichComponent,e.g. e_xy=0x1 or normalizedDirectionalField\' [maskImage]" << std::endl;
     std::cout << "   Note:  if normalizedDirectionalField is not specified, "
       << " the component strains are saved." << std::endl;
     exit( 1 );

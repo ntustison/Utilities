@@ -3,6 +3,7 @@
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageFileWriter.h"
 #include "itkGaussianInterpolateImageFunction.h"
+#include "itkNumericSeriesFileNames.h"
 
 #include "Common.h"
 
@@ -32,6 +33,40 @@ int UnaryOperateImage( int argc, char * argv[] )
         }
       reader->GetOutput()->SetPixel( index, constant );
       }
+    }
+  else if( argv[3][0] == 'i' )
+    {
+    typename ImageType::Pointer inputImage = reader->GetOutput();
+    inputImage->DisconnectPipeline();
+
+    itk::NumericSeriesFileNames::Pointer fileNamesCreator = itk::NumericSeriesFileNames::New();
+    fileNamesCreator->SetStartIndex( 0 );
+    fileNamesCreator->SetEndIndex( ImageDimension );
+    fileNamesCreator->SetSeriesFormat( argv[5] );
+    const std::vector<std::string> & imageNames = fileNamesCreator->GetFileNames();
+
+    for( unsigned int d = 0; d < ImageDimension; d++ )
+      {
+      typename ImageType::Pointer indexImage = ImageType::New();
+      indexImage->CopyInformation( inputImage );
+      indexImage->SetRegions( inputImage->GetRequestedRegion() );
+      indexImage->Allocate();
+      indexImage->FillBuffer( 0 );
+
+      itk::ImageRegionIteratorWithIndex<ImageType> It( inputImage,
+        inputImage->GetRequestedRegion() );
+      for( It.GoToBegin(); !It.IsAtEnd(); ++It )
+        {
+        typename ImageType::IndexType index = It.GetIndex();
+        indexImage->SetPixel( index, static_cast<PixelType>( index[d] ) );
+        }
+      typedef itk::ImageFileWriter<ImageType> WriterType;
+      typename WriterType::Pointer writer = WriterType::New();
+      writer->SetInput( indexImage );
+      writer->SetFileName( imageNames[d] );
+      writer->Update();
+      }
+    return EXIT_SUCCESS;
     }
   else if( argv[3][0] == 'q' )
     {
@@ -215,6 +250,7 @@ int main( int argc, char *argv[] )
     std::cerr << "    q:   set pixel at physical point to constant value [point1] [point2] ... point[n]" <<  std::endl;
     std::cerr << "    g:   get pixel value at physical point (gaussian interpolation)" << std::endl;
     std::cerr << "  The following operations ignore the \'constant\' argument." << std::endl;
+    std::cerr << "    i:   index images (outputImage is specified in c-style format, i.e. foo%d.nii.gz)" << std::endl;
     std::cerr << "    e:   exp" << std::endl;
     std::cerr << "    l:   ln" << std::endl;
     std::cerr << "    b:   bounded reciprocal" << std::endl;
