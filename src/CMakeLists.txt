@@ -162,6 +162,9 @@ target_link_libraries(ConvertDICOMImageSeries ${ITK_LIBRARIES})
 #add_executable(DicomSeriesReadImageWrite DicomSeriesReadImageWrite.cxx )
 #target_link_libraries(DicomSeriesReadImageWrite ${ITK_LIBRARIES})
 
+add_executable(GenerateInterpolationMeasures GenerateInterpolationMeasures.cxx )
+target_link_libraries(GenerateInterpolationMeasures ${ITK_LIBRARIES})
+
 # if (USE_VTK_FILE)
 # add_executable(ConvertScalarImageToVTKSurface ConvertScalarImageToVTKSurface.cxx )
 # target_link_libraries(ConvertScalarImageToVTKSurface ${ITK_LIBRARIES} ${VTK_LIBRARIES})
