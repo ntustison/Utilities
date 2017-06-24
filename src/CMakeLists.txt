@@ -303,6 +303,9 @@ target_link_libraries(FindClosestPointsBetweenTwoObjects ${ITK_LIBRARIES})
 add_executable( FitBSplineCurveToAvantsLandmarks FitBSplineCurveToAvantsLandmarks.cxx )
 target_link_libraries(FitBSplineCurveToAvantsLandmarks ${ITK_LIBRARIES})
 
+add_executable( FitBSplineCurveToPoints FitBSplineCurveToPoints.cxx )
+target_link_libraries(FitBSplineCurveToPoints ${ITK_LIBRARIES})
+
 add_executable(FlipImage FlipImage.cxx )
 target_link_libraries(FlipImage ${ITK_LIBRARIES})
 
