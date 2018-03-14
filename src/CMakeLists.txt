@@ -44,14 +44,39 @@ mark_as_advanced(USE_FFTWF)
 option(USE_SYSTEM_FFTW "Use an installed version of fftw" OFF)
 mark_as_advanced(USE_SYSTEM_FFTW)
 
-find_package(VTK)
-if (VTK_FOUND)
-  include(${VTK_USE_FILE})
-endif(VTK_FOUND)
 
-link_directories(
-  ${ITK_LIBRARY_PATH}
-)
+
+
+# Set up VTK
+option(USE_VTK "Use VTK Libraries" OFF)
+if(USE_VTK)
+  find_package(VTK)
+  find_package(VTK COMPONENTS
+   vtkCommonCore
+   vtkCommonDataModel
+   vtkIOGeometry
+   vtkIOXML
+   vtkIOLegacy
+   vtkIOPLY
+   vtkFiltersModeling
+   vtkImagingStencil
+   vtkImagingGeneral
+   vtkRenderingAnnotation
+   vtkRenderingVolumeOpenGL
+ #   vtkRenderingVolumeOpenGL2 # VTK7
+   )
+
+  if(VTK_FOUND)
+    include(${VTK_USE_FILE})
+    include_directories(${VTK_INCLUDE_DIRS})
+    set(INIT_VTK_LIBRARIES ${VTK_LIBRARIES})
+  else(VTK_FOUND)
+     message("Cannot build some programs without VTK.  Please set VTK_DIR if you need these programs.")
+  endif(VTK_FOUND)
+endif(USE_VTK)
+
+
+
 
 set(SOURCES "${CMAKE_SOURCE_DIR}/../ExperimentalITK/Common/itkCommandLineParser" "${CMAKE_SOURCE_DIR}/../ExperimentalITK/Common/itkCommandLineOption" )
 
@@ -132,19 +157,19 @@ target_link_libraries(CompareLandmarks ${ITK_LIBRARIES})
 add_executable(ConcatenateAvantsLandmarks ConcatenateAvantsLandmarks.cxx )
 target_link_libraries(ConcatenateAvantsLandmarks)
 
-# if (USE_VTK_FILE)
-# add_executable(ConvertAvantsLandmarkFileToVTK ConvertAvantsLandmarkFileToVTK.cxx )
-# target_link_libraries(ConvertAvantsLandmarkFileToVTK ${VTK_LIBRARIES} )
-# endif (USE_VTK_FILE)
-
-# if (USE_VTK_FILE)
-# add_executable(ConvertAvantsLandmarkFileToVTKLines ConvertAvantsLandmarkFileToVTKLines.cxx )
-# target_link_libraries(ConvertAvantsLandmarkFileToVTKLines ${VTK_LIBRARIES} )
-# endif (USE_VTK_FILE)
+if (USE_VTK_FILE)
+add_executable(ConvertAvantsLandmarkFileToVTK ConvertAvantsLandmarkFileToVTK.cxx )
+target_link_libraries(ConvertAvantsLandmarkFileToVTK ${VTK_LIBRARIES} )
+endif (USE_VTK_FILE)
 
 if (USE_VTK_FILE)
-# add_executable(ColorPolyDataByImage ColorPolyDataByImage.cxx )
-# target_link_libraries(ColorPolyDataByImage ${ITK_LIBRARIES} ${VTK_LIBRARIES})
+add_executable(ConvertAvantsLandmarkFileToVTKLines ConvertAvantsLandmarkFileToVTKLines.cxx )
+target_link_libraries(ConvertAvantsLandmarkFileToVTKLines ${VTK_LIBRARIES} )
+endif (USE_VTK_FILE)
+
+if (USE_VTK_FILE)
+  add_executable(ColorPolyDataByImage ColorPolyDataByImage.cxx )
+  target_link_libraries(ColorPolyDataByImage ${ITK_LIBRARIES} ${VTK_LIBRARIES})
 endif (USE_VTK_FILE)
 
 add_executable(ConnectedSegmentImage ConnectedSegmentImage.cxx )
@@ -302,9 +327,6 @@ target_link_libraries(FindClosestPointsBetweenTwoObjects ${ITK_LIBRARIES})
 
 add_executable( FitBSplineCurveToAvantsLandmarks FitBSplineCurveToAvantsLandmarks.cxx )
 target_link_libraries(FitBSplineCurveToAvantsLandmarks ${ITK_LIBRARIES})
-
-add_executable( FitBSplineCurveToPoints FitBSplineCurveToPoints.cxx )
-target_link_libraries(FitBSplineCurveToPoints ${ITK_LIBRARIES})
 
 add_executable(FlipImage FlipImage.cxx )
 target_link_libraries(FlipImage ${ITK_LIBRARIES})
@@ -536,6 +558,9 @@ target_link_libraries(SplitHeliumLungs ${ITK_LIBRARIES})
 
 add_executable(SSI SSI.cxx )
 target_link_libraries(SSI ${ITK_LIBRARIES})
+
+add_executable( SsdHelper SsdHelper.cxx )
+target_link_libraries( SsdHelper ${ITK_LIBRARIES})
 
 add_executable( StatsForSkullThickness StatsForSkullThickness.cxx )
 target_link_libraries( StatsForSkullThickness ${ITK_LIBRARIES})
