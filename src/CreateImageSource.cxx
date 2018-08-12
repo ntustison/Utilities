@@ -205,7 +205,6 @@ int CreateImageSource( int argc, char *argv[] )
       gridder->SetWhichDimensions( which );
       gridder->SetSigma( sigma );
       gridder->SetScale( scale );
-      gridder->SetNumberOfThreads( 1 );
       gridder->Update();
 
       typedef itk::ImageFileWriter<ImageType> WriterType;

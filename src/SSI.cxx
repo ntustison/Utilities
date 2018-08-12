@@ -40,7 +40,7 @@ int SSI( unsigned int argc, char *argv[] )
   typename NeighborhoodIteratorType::RadiusType radius;
   radius.Fill( 4 );
 
-  typename MaskImageType::Pointer mask = NULL;
+  typename MaskImageType::Pointer mask = ITK_NULLPTR;
   if( argc > 5 )
     {
     typedef itk::ImageFileReader<MaskImageType> MaskReaderType;

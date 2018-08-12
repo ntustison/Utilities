@@ -32,7 +32,7 @@ int Tensor( int argc, char *argv[] )
     sigma = atof( argv[5] );
     }
 
-  typename MaskImageType::Pointer maskImage = NULL;
+  typename MaskImageType::Pointer maskImage = ITK_NULLPTR;
 
   if( argc > 5 )
     {

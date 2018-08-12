@@ -100,11 +100,14 @@ target_link_libraries( BSplineTest ${ITK_LIBRARIES})
 add_executable(AdaptiveHistogramEqualizeImage AdaptiveHistogramEqualizeImage.cxx )
 target_link_libraries(AdaptiveHistogramEqualizeImage ${ITK_LIBRARIES})
 
-add_executable(AddGaussianNoiseToImage AddGaussianNoiseToImage.cxx )
-target_link_libraries(AddGaussianNoiseToImage ${ITK_LIBRARIES})
+add_executable(HistogramStandardization HistogramStandarization.cpp )
+target_link_libraries(HistogramStandardization ${ITK_LIBRARIES})
 
-add_executable(AddImpulseNoiseToImage AddImpulseNoiseToImage.cxx )
-target_link_libraries(AddImpulseNoiseToImage ${ITK_LIBRARIES})
+# add_executable(AddGaussianNoiseToImage AddGaussianNoiseToImage.cxx )
+# target_link_libraries(AddGaussianNoiseToImage ${ITK_LIBRARIES})
+
+# add_executable(AddImpulseNoiseToImage AddImpulseNoiseToImage.cxx )
+# target_link_libraries(AddImpulseNoiseToImage ${ITK_LIBRARIES})
 
 add_executable(AlignImageCenters AlignImageCenters.cxx )
 target_link_libraries(AlignImageCenters ${ITK_LIBRARIES})
@@ -132,6 +135,9 @@ target_link_libraries( CalculateStatisticsImage ${ITK_LIBRARIES} )
 
 add_executable(LabelIntensityStatistics LabelIntensityStatistics.cxx )
 target_link_libraries(LabelIntensityStatistics ${ITK_LIBRARIES})
+
+add_executable(LabelOverlapMeasures2 LabelOverlapMeasures.cxx )
+target_link_libraries(LabelOverlapMeasures2 ${ITK_LIBRARIES})
 
 #add_executable(CalculateStatisticsFromImagePair CalculateStatisticsFromImagePair.cxx )
 #target_link_libraries(CalculateStatisticsFromImagePair ${ITK_LIBRARIES})
@@ -204,8 +210,8 @@ target_link_libraries(ConvertUnlabeledPointSet ${ITK_LIBRARIES})
 add_executable(ConvertDeformationFieldToAvantsLandmarkFiles ConvertDeformationFieldToAvantsLandmarkFiles.cxx )
 target_link_libraries(ConvertDeformationFieldToAvantsLandmarkFiles ${ITK_LIBRARIES})
 
-add_executable(ConvertScalarImageToRGB ConvertScalarImageToRGB.cxx )
-target_link_libraries(ConvertScalarImageToRGB ${ITK_LIBRARIES})
+# add_executable(ConvertScalarImageToRGB ConvertScalarImageToRGB.cxx )
+# target_link_libraries(ConvertScalarImageToRGB ${ITK_LIBRARIES})
 
 ADD_EXECUTABLE(ConvertImage ConvertImage.cxx ${CMAKE_SOURCE_DIR}/../ExperimentalITK/IO/itkFDFImageIO.cxx ${CMAKE_SOURCE_DIR}/../ExperimentalITK/IO/itkFDFCommonImageIO.cxx ${CMAKE_SOURCE_DIR}/../ExperimentalITK/IO/itkFDFImageIOFactory.cxx )
 TARGET_link_libraries(ConvertImage ${ITK_LIBRARIES})
@@ -297,8 +303,8 @@ target_link_libraries(DynamicProgrammingForSkullLayers ${ITK_LIBRARIES})
 add_executable( LaplacianForSkullLayers LaplacianForSkullLayers.cxx )
 target_link_libraries(LaplacianForSkullLayers ${ITK_LIBRARIES})
 
-add_executable(ExtractLungs ExtractLungs.cxx )
-target_link_libraries(ExtractLungs ${ITK_LIBRARIES})
+# add_executable(ExtractLungs ExtractLungs.cxx )
+# target_link_libraries(ExtractLungs ${ITK_LIBRARIES})
 
 add_executable(ExtractContours ExtractContours.cxx )
 target_link_libraries(ExtractContours ${ITK_LIBRARIES})
@@ -394,8 +400,8 @@ target_link_libraries(GeneratePercentileAttenuationMask ${ITK_LIBRARIES})
 add_executable(GenerateRunLengthMeasures GenerateRunLengthMeasures.cxx )
 target_link_libraries(GenerateRunLengthMeasures ${ITK_LIBRARIES})
 
-add_executable(GenerateStatisticsFromImage GenerateStatisticsFromImage.cxx )
-target_link_libraries(GenerateStatisticsFromImage ${ITK_LIBRARIES})
+# add_executable(GenerateStatisticsFromImage GenerateStatisticsFromImage.cxx )
+# target_link_libraries(GenerateStatisticsFromImage ${ITK_LIBRARIES})
 
 add_executable( GenerateDomainImage GenerateDomainImage.cxx )
 target_link_libraries( GenerateDomainImage ${ITK_LIBRARIES} )
@@ -430,11 +436,11 @@ target_link_libraries(GrayscaleMorphology ${ITK_LIBRARIES})
 add_executable(HessianBasedFeatures HessianBasedFeatures.cxx )
 target_link_libraries(HessianBasedFeatures ${ITK_LIBRARIES} )
 
-add_executable(HistogramMatchImages HistogramMatchImages.cxx )
-target_link_libraries(HistogramMatchImages ${ITK_LIBRARIES} )
+# add_executable(HistogramMatchImages HistogramMatchImages.cxx )
+# target_link_libraries(HistogramMatchImages ${ITK_LIBRARIES} )
 
-add_executable(HoughTransform HoughTransform.cxx )
-target_link_libraries(HoughTransform ${ITK_LIBRARIES})
+# add_executable(HoughTransform HoughTransform.cxx )
+# target_link_libraries(HoughTransform ${ITK_LIBRARIES})
 
 add_executable(InvertImageIntensity InvertImageIntensity.cxx )
 target_link_libraries(InvertImageIntensity ${ITK_LIBRARIES})
@@ -466,8 +472,8 @@ target_link_libraries(MakeCheckerBoardImage ${ITK_LIBRARIES})
 add_executable(MakeHilbertPath MakeHilbertPath.cxx )
 target_link_libraries(MakeHilbertPath ${ITK_LIBRARIES})
 
-add_executable( MinimalPath MinimalPath.cxx )
-target_link_libraries( MinimalPath ${ITK_LIBRARIES} )
+# add_executable( MinimalPath MinimalPath.cxx )
+# target_link_libraries( MinimalPath ${ITK_LIBRARIES} )
 
 add_executable( STAPLEAnalysis STAPLEAnalysis.cxx )
 target_link_libraries( STAPLEAnalysis ${ITK_LIBRARIES} )
@@ -475,8 +481,8 @@ target_link_libraries( STAPLEAnalysis ${ITK_LIBRARIES} )
 add_executable(MultipleOperateImages MultipleOperateImages.cxx )
 target_link_libraries(MultipleOperateImages ${ITK_LIBRARIES})
 
-add_executable(OtsuThresholdImage OtsuThresholdImage.cxx )
-target_link_libraries(OtsuThresholdImage ${ITK_LIBRARIES})
+# add_executable(OtsuThresholdImage OtsuThresholdImage.cxx )
+# target_link_libraries(OtsuThresholdImage ${ITK_LIBRARIES})
 
 #add_executable(MSQ MSQ.cxx )
 #target_link_libraries(MSQ ${ITK_LIBRARIES})
@@ -499,8 +505,8 @@ target_link_libraries(PointSetPairStatistics ${ITK_LIBRARIES})
 add_executable(PermuteAxesImage PermuteAxesImage.cxx)
 target_link_libraries(PermuteAxesImage ${ITK_LIBRARIES})
 
-add_executable(PropagateLabels PropagateLabels.cxx)
-target_link_libraries(PropagateLabels ${ITK_LIBRARIES})
+# add_executable(PropagateLabels PropagateLabels.cxx)
+# target_link_libraries(PropagateLabels ${ITK_LIBRARIES})
 
 add_executable(RegionalMinMax RegionalMinMax.cxx )
 target_link_libraries(RegionalMinMax ${ITK_LIBRARIES})
@@ -553,8 +559,8 @@ target_link_libraries(ShapePriorLevelSet ${ITK_LIBRARIES})
 add_executable(SmoothLungs SmoothLungs.cxx )
 target_link_libraries(SmoothLungs ${ITK_LIBRARIES})
 
-add_executable(SplitHeliumLungs SplitHeliumLungs.cxx )
-target_link_libraries(SplitHeliumLungs ${ITK_LIBRARIES})
+# add_executable(SplitHeliumLungs SplitHeliumLungs.cxx )
+# target_link_libraries(SplitHeliumLungs ${ITK_LIBRARIES})
 
 add_executable(SSI SSI.cxx )
 target_link_libraries(SSI ${ITK_LIBRARIES})
@@ -592,8 +598,8 @@ target_link_libraries(TruncateImageIntensity ${ITK_LIBRARIES})
 add_executable(UnaryOperateImage UnaryOperateImage.cxx )
 target_link_libraries(UnaryOperateImage ${ITK_LIBRARIES})
 
-add_executable( volumeRender volumeRender )
-target_link_libraries( volumeRender ${VTK_LIBRARIES})
+# add_executable( volumeRender volumeRender )
+# target_link_libraries( volumeRender ${VTK_LIBRARIES})
 
 add_executable(WarpPoints WarpPoints.cxx )
 target_link_libraries(WarpPoints ${ITK_LIBRARIES})

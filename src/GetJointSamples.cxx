@@ -21,7 +21,7 @@ int GetJointSamples( int argc, char * argv[] )
   typedef itk::Image<LabelType, ImageDimension> LabelImageType;
   typedef itk::ImageFileReader<LabelImageType> LabelReaderType;
 
-  typename LabelImageType::Pointer maskImage = NULL;
+  typename LabelImageType::Pointer maskImage = ITK_NULLPTR;
   try
     {
     typename LabelReaderType::Pointer maskReader = LabelReaderType::New();

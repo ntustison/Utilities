@@ -33,7 +33,7 @@ int GenerateRunLengthMeasures( int argc, char *argv[] )
   typename RunLengthFilterType::Pointer runLengthFilter = RunLengthFilterType::New();
   runLengthFilter->SetInput( imageReader->GetOutput() );
 
-  typename ImageType::Pointer mask = NULL;
+  typename ImageType::Pointer mask = ITK_NULLPTR;
   PixelType label = itk::NumericTraits<PixelType>::One;
   if ( argc > 4 )
     {

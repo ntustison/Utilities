@@ -11,9 +11,6 @@
 template <unsigned int ImageDimension>
 int CalculateFirstOrderStatistics( int argc, char *argv[] )
 {
-
-  itk::MultiThreader::SetGlobalDefaultNumberOfThreads( 1 );
-
   typedef int PixelType;
   typedef float RealType;
 

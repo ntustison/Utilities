@@ -43,7 +43,7 @@ int GenerateCooccurrenceMeasures( int argc, char *argv[] )
   typename TextureFilterType::Pointer textureFilter = TextureFilterType::New();
   textureFilter->SetInput( rescaler->GetOutput() );
 
-  typename ImageType::Pointer mask = NULL;
+  typename ImageType::Pointer mask = ITK_NULLPTR;
   PixelType label = itk::NumericTraits<PixelType>::One;
   if ( argc > 4 )
     {

@@ -26,7 +26,7 @@ int CreateDirectionalStrainImages( int argc, char *argv[] )
   reader->SetFileName( argv[2] );
   reader->Update();
 
-  typename VectorImageType::Pointer directions = NULL;
+  typename VectorImageType::Pointer directions = ITK_NULLPTR;
   std::vector<unsigned int> whichComponent;
   try
     {
@@ -45,7 +45,7 @@ int CreateDirectionalStrainImages( int argc, char *argv[] )
       }
     }
 
-  typename MaskImageType::Pointer mask = NULL;
+  typename MaskImageType::Pointer mask = ITK_NULLPTR;
   if ( argc > 5 )
     {
     typedef itk::ImageFileReader<MaskImageType> MaskReaderType;
