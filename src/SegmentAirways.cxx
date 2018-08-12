@@ -195,7 +195,7 @@ int main( int argc, char *argv[] )
 
 
   typedef itk::HoughTransform2DCirclesImageFilter<
-    RealType, RealType> HoughFilterType;
+    RealType, RealType, RealType> HoughFilterType;
   HoughFilterType::Pointer hough = HoughFilterType::New();
   hough->SetInput( gradFilter->GetOutput() );
   hough->SetMinimumRadius( voxelMinRadius );
@@ -207,7 +207,7 @@ int main( int argc, char *argv[] )
   hough->SetVariance( 1.0 );
   hough->Update();
 
-  HoughFilterType::CirclesListType circles = hough->GetCircles( hough->GetNumberOfCircles() );
+  HoughFilterType::CirclesListType circles = hough->GetCircles();
   HoughFilterType::CirclesListType::iterator iter;
   RealType minDistance = itk::NumericTraits<RealType>::max();
   RealType minCenterX = 0.0;
