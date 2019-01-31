@@ -100,8 +100,8 @@ target_link_libraries( BSplineTest ${ITK_LIBRARIES})
 add_executable(AdaptiveHistogramEqualizeImage AdaptiveHistogramEqualizeImage.cxx )
 target_link_libraries(AdaptiveHistogramEqualizeImage ${ITK_LIBRARIES})
 
-add_executable(HistogramStandardization HistogramStandarization.cpp )
-target_link_libraries(HistogramStandardization ${ITK_LIBRARIES})
+# add_executable(HistogramStandardization HistogramStandarization.cpp )
+# target_link_libraries(HistogramStandardization ${ITK_LIBRARIES})
 
 # add_executable(AddGaussianNoiseToImage AddGaussianNoiseToImage.cxx )
 # target_link_libraries(AddGaussianNoiseToImage ${ITK_LIBRARIES})

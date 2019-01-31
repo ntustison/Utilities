@@ -66,7 +66,14 @@ int SsdHelper( int argc, char * argv[] )
         {
         continue;
         }
+        
       FilterType::BoundingBoxType boundingBox = filter->GetBoundingBox( *allLabelsIt );
+
+      if( boundingBox[0] == boundingBox[1] || boundingBox[2] == boundingBox[3] )
+        {
+        continue;
+        }  
+
       std::cout << i << ',' << *allLabelsIt << ',' <<
         boundingBox[0] << ',' << boundingBox[1] << ',' <<
         boundingBox[2] << ',' << boundingBox[3] << std::endl;
