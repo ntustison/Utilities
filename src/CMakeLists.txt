@@ -328,6 +328,9 @@ if(USE_FFTWF)
 #  target_link_libraries(FourierTransformImage ${ITK_LIBRARIES})
 endif(USE_FFTWF)
 
+add_executable( FindOverlappingLabels FindOverlappingLabels.cxx )
+target_link_libraries( FindOverlappingLabels ${ITK_LIBRARIES} )
+
 add_executable( FindClosestPointsBetweenTwoObjects FindClosestPointsBetweenTwoObjects.cxx )
 target_link_libraries(FindClosestPointsBetweenTwoObjects ${ITK_LIBRARIES})
 
