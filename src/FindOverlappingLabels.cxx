@@ -3,6 +3,7 @@
 #include "itkImageFileWriter.h"
 
 #include "itkAddImageFilter.h"
+#include "itkImageDuplicator.h"
 #include "itkLabelGeometryImageFilter.h"
 #include "itkMultiplyImageFilter.h"
 #include "itkBinaryThresholdImageFilter.h"
@@ -49,11 +50,14 @@ int FindOverlappingLabels( int argc, char * argv[] )
   targetFilter->Update();
 
   typename RealImageType::Pointer outputImage = RealImageType::New();
+  outputImage->CopyInformation( targetLabelReader->GetOutput() );
   outputImage->SetRegions( targetLabelReader->GetOutput()->GetRequestedRegion() );
   outputImage->Allocate();
   outputImage->FillBuffer( 0 );
 
   typename FilterType::LabelsType sourceLabels = sourceFilter->GetLabels();
+  std::sort( sourceLabels.begin(), sourceLabels.end() );
+
   typename FilterType::LabelsType::iterator sourceLabelsIt;
   for( sourceLabelsIt = sourceLabels.begin(); sourceLabelsIt != sourceLabels.end(); sourceLabelsIt++ )
     {
@@ -61,6 +65,7 @@ int FindOverlappingLabels( int argc, char * argv[] )
       {
       continue;
       }
+    std::cout << "Handling source label: " << *sourceLabelsIt << std::endl;
 
     typedef itk::BinaryThresholdImageFilter<LabelImageType, RealImageType> ThresholderType;
     typename ThresholderType::Pointer thresholder = ThresholderType::New();
@@ -68,7 +73,7 @@ int FindOverlappingLabels( int argc, char * argv[] )
     thresholder->SetLowerThreshold( *sourceLabelsIt );
     thresholder->SetUpperThreshold( *sourceLabelsIt );
     thresholder->SetInsideValue( 1 );
-    thresholder->SetOutsideValue( 1 );
+    thresholder->SetOutsideValue( 0 );
 
     typedef itk::MultiplyImageFilter<LabelImageType, RealImageType> MultiplierType;
     typename MultiplierType::Pointer multiplier = MultiplierType::New();
@@ -83,6 +88,8 @@ int FindOverlappingLabels( int argc, char * argv[] )
     localFilter->Update();
 
     typename FilterType::LabelsType localLabels = localFilter->GetLabels();
+    std::sort( localLabels.begin(), localLabels.end() );
+
     typename FilterType::LabelsType::iterator localLabelsIt;
     for( localLabelsIt = localLabels.begin(); localLabelsIt != localLabels.end(); localLabelsIt++ )
       {
@@ -92,9 +99,12 @@ int FindOverlappingLabels( int argc, char * argv[] )
         }
 
       float volumeRatio = static_cast<float>( localFilter->GetVolume( *localLabelsIt ) ) /
-        static_cast<float>( localFilter->GetVolume( *localLabelsIt ) );
+        static_cast<float>( targetFilter->GetVolume( *localLabelsIt ) );
       if( volumeRatio >= thresholdPercentage )
         {
+        std::cout << "  Integrating target label: " << *localLabelsIt
+          << "  (ratio = " << volumeRatio << ")" << std::endl;
+
         typename ThresholderType::Pointer thresholder2 = ThresholderType::New();
         thresholder2->SetInput( targetLabelReader->GetOutput() );
         thresholder2->SetLowerThreshold( *localLabelsIt );
@@ -107,9 +117,14 @@ int FindOverlappingLabels( int argc, char * argv[] )
         adder->SetInput1( outputImage );
         adder->SetInput2( thresholder2->GetOutput() );
         adder->Update();
-        adder->GetOutput()->DisconnectPipeline();
 
-        outputImage = adder->GetOutput();
+        typedef itk::ImageDuplicator<RealImageType> DuplicatorType;
+        typename DuplicatorType::Pointer duplicator = DuplicatorType::New();
+        duplicator->SetInputImage( adder->GetOutput() );
+        duplicator->Update();
+
+        outputImage = duplicator->GetOutput();
+        outputImage->DisconnectPipeline();
         }
       }
     }
