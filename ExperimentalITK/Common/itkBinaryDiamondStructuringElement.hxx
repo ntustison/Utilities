@@ -47,7 +47,7 @@ BinaryDiamondStructuringElement<TPixel, VDimension, TAllocator>
     unsigned int manhattanDistance = 0;
     for ( unsigned int d = 0; d < NeighborhoodDimension; d++ )
       {
-      manhattanDistance += vnl_math_abs( offset[d] );
+      manhattanDistance += std::abs( offset[d] );
       }
     if ( manhattanDistance <= minRadius )
       {

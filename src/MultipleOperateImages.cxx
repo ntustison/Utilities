@@ -17,7 +17,6 @@
 
 #include "vnl/algo/vnl_fft_1d.h"
 #include "vnl/vnl_complex_traits.h"
-#include "vcl_complex.h"
 
 #include <string>
 #include <vector>
@@ -55,7 +54,7 @@ RealType CalculatePearsonCoefficient( std::vector<RealType> X, std::vector<RealT
     sumY2 += (*itY) * (*itY);
     }
 
-  RealType r = ( N * sumXY - sumX*sumY ) / ( ( vcl_sqrt( N *sumX2 - (sumX*sumX) ) ) * ( vcl_sqrt( N *sumY2 - (sumY*sumY) ) ) );
+  RealType r = ( N * sumXY - sumX*sumY ) / ( ( std::sqrt( N *sumX2 - (sumX*sumX) ) ) * ( std::sqrt( N *sumY2 - (sumY*sumY) ) ) );
 
   return r;
 }
@@ -320,7 +319,7 @@ int MultipleOperateImages( int argc, char * argv[] )
         {
         if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
           {
-          ItO.Set( vnl_math_max( ItO.Get(), It.Get() ) );
+          ItO.Set( std::max( ItO.Get(), It.Get() ) );
           }
         }
       }
@@ -555,7 +554,7 @@ int MultipleOperateImages( int argc, char * argv[] )
       {
       for( unsigned int d = 0; d < ImageDimension; d++ )
         {
-        maxProbabilityIndices[n][d] = vcl_floor( maxProbabilityIndices[n][d] /
+        maxProbabilityIndices[n][d] = std::floor( maxProbabilityIndices[n][d] /
           maxProbabilityCount[n] );
         }
       }
@@ -823,8 +822,8 @@ int MultipleOperateImages( int argc, char * argv[] )
 
     unsigned int numberOfImages = filenames.size();
 
-    RealType exponent = vcl_ceil( vcl_log( static_cast<RealType>( numberOfImages ) ) / vcl_log( 2.0 ) );
-    unsigned int paddedSize = static_cast<unsigned int>( vcl_pow( static_cast<RealType>( 2.0 ), exponent ) + 0.5 );
+    RealType exponent = std::ceil( std::log( static_cast<RealType>( numberOfImages ) ) / std::log( 2.0 ) );
+    unsigned int paddedSize = static_cast<unsigned int>( std::pow( static_cast<RealType>( 2.0 ), exponent ) + 0.5 );
 
     for( unsigned int n = 0; n < paddedSize; n++ )
       {
@@ -834,7 +833,7 @@ int MultipleOperateImages( int argc, char * argv[] )
         {
         std::ostringstream str;
         str << n;
-        leadingZeros = std::string( 4 - static_cast<unsigned int>( vcl_log( n )/vcl_log( 10 ) + 1 ), '0' ).append( str.str() );
+        leadingZeros = std::string( 4 - static_cast<unsigned int>( std::log( n )/std::log( 10 ) + 1 ), '0' ).append( str.str() );
         }
 
       std::string outname = std::string( argv[3] ) + std::string( "FT" ) + leadingZeros + std::string( ".nii.gz" );
@@ -857,18 +856,18 @@ int MultipleOperateImages( int argc, char * argv[] )
       {
       if( !mask || mask->GetPixel( It.GetIndex() ) != 0 )
         {
-        vnl_vector< vcl_complex<RealType> > V( paddedSize, vcl_complex<RealType>( 0.0, 0.0 ) );
+        vnl_vector< std::complex<RealType> > V( paddedSize, std::complex<RealType>( 0.0, 0.0 ) );
 
         for( unsigned int n = 0; n < numberOfImages; n++ )
           {
           // Multiply intensity by Hann window
-          V[n] = images[n]->GetPixel( It.GetIndex() ) * 0.5 * ( 1 - vcl_cos( 2 * vnl_math::pi * n / ( paddedSize - 1 ) ) );
+          V[n] = images[n]->GetPixel( It.GetIndex() ) * 0.5 * ( 1 - std::cos( 2 * vnl_math::pi * n / ( paddedSize - 1 ) ) );
           }
         fft.fwd_transform( V );
 
         for( unsigned int n = 0; n < paddedSize; n++ )
           {
-          outputImages[n]->SetPixel( It.GetIndex(),  vcl_norm( V[n] ) );
+          outputImages[n]->SetPixel( It.GetIndex(),  std::norm( V[n] ) );
           }
         }
       else
@@ -1160,8 +1159,8 @@ int MultipleOperateImages( int argc, char * argv[] )
         if( !mask || mask->GetPixel( ItO.GetIndex() ) != 0 )
           {
           double intensity = randomizer->GetNormalVariate( ItM.Get(), ItV.Get() );
-          intensity = vnl_math_min( 1.0, intensity );
-          intensity = vnl_math_max( 0.0, intensity );
+          intensity = std::min( 1.0, intensity );
+          intensity = std::max( 0.0, intensity );
           ItO.Set( intensity );
           }
         }
@@ -1293,7 +1292,7 @@ int MultipleOperateImages( int argc, char * argv[] )
         {
         if( mask->GetPixel( ItI.GetIndex() ) == 1 )
           {
-          RealType x = vnl_math_max( vnl_math_min( ItI.Get(), p2_n[n] ), p1_n[n] );
+          RealType x = std::max( std::min( ItI.Get(), p2_n[n] ), p1_n[n] );
 
           RealType x1 = p1_n[n];
           RealType x2 = IQs_n[n][0];

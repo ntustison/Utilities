@@ -13,11 +13,13 @@
 #include "itkBinaryDiamondStructuringElement.h"
 #include "itkBinaryThinning3DImageFilter.h"
 #include "itkBinaryThinningImageFilter.h"
+#include "itkBinaryThresholdImageFilter.h"
 
 #include "itkCastImageFilter.h"
 #include "itkImageRegionIteratorWithIndex.h"
 #include "itkImageDuplicator.h"
 #include "itkLabelStatisticsImageFilter.h"
+#include "itkSignedMaurerDistanceMapImageFilter.h"
 #include "itkSliceBySliceImageFilter.h"
 #include "itkVotingBinaryIterativeHoleFillingImageFilter.h"
 
@@ -396,6 +398,81 @@ int BinaryMorphology( int argc, char * argv[] )
   return EXIT_SUCCESS;
 }
 
+
+int myDistanceDilate( int argc, char * argv[] )
+{
+  const unsigned int ImageDimension = 3;
+
+  typedef float PixelType;
+  typedef itk::Image<PixelType, ImageDimension> ImageType;
+
+  typedef itk::ImageRegionIteratorWithIndex< ImageType > IndexIteratorType;
+
+  typedef itk::ImageFileReader<ImageType>  ReaderType;
+  ReaderType::Pointer reader = ReaderType::New();
+  reader->SetFileName( argv[2] );
+  reader->Update();
+
+  float R = 1;
+  if ( argc > 5 )
+    {
+    R = atof( argv[5] );
+    }
+
+  PixelType Tlabel = itk::NumericTraits<PixelType>::One;
+  if ( argc > 7 )
+    {
+    Tlabel = static_cast<PixelType>( atof( argv[7] ) );
+    }
+
+  ImageType::Pointer im = reader->GetOutput();
+  im->DisconnectPipeline();
+
+  typedef itk::BinaryThresholdImageFilter<ImageType, ImageType> ThresholderType;
+  ThresholderType::Pointer thresholder = ThresholderType::New();
+  thresholder->SetInput( im );
+
+  if( Tlabel >= 0 )
+    {
+    thresholder->SetLowerThreshold( Tlabel );
+    thresholder->SetUpperThreshold( Tlabel );
+    thresholder->SetInsideValue( 1 );
+    thresholder->SetOutsideValue( 0 );
+    }
+  else
+    {
+    thresholder->SetLowerThreshold( 0 );
+    thresholder->SetUpperThreshold( 0 );
+    thresholder->SetInsideValue( 0 );
+    thresholder->SetOutsideValue( 1 );
+    }
+
+  typedef itk::SignedMaurerDistanceMapImageFilter<ImageType, ImageType> FilterType;
+  FilterType::Pointer filter = FilterType::New();
+  filter->SetInput( thresholder->GetOutput() );
+  filter->SetSquaredDistance( false );
+  filter->SetUseImageSpacing( true );
+  filter->SetInsideIsPositive( false );
+
+  ThresholderType::Pointer thresholder2 = ThresholderType::New();
+  thresholder2->SetInput( filter->GetOutput() );
+  thresholder2->SetLowerThreshold( -1e6 );
+  thresholder2->SetUpperThreshold( R );
+  thresholder2->SetInsideValue( 1 );
+  thresholder2->SetOutsideValue( 0 );
+
+  ImageType::Pointer dmask = thresholder2->GetOutput();
+  dmask->Update();
+  dmask->DisconnectPipeline();
+
+  typedef itk::ImageFileWriter<ImageType> WriterType;
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetInput( dmask );
+  writer->SetFileName( argv[3] );
+  writer->Update();
+
+  return EXIT_SUCCESS;
+}
 
 int myDilate( int argc, char * argv[] )
 {
@@ -940,6 +1017,10 @@ int main( int argc, char *argv[] )
   else if( *argv[1] == 'H' )
     {
     myDilate( argc, argv );
+    }
+  else if( *argv[1] == 'N' )
+    {
+    myDistanceDilate( argc, argv );
     }
   else
     {
