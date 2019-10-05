@@ -118,7 +118,7 @@ int BinaryOperateImages( int argc, char * argv[] )
       }
     else if( op.compare( "max" ) == 0 )
       {
-      It.SetCenterPixel( vnl_math_max( It1.GetCenterPixel(), It2.GetCenterPixel() ) );
+      It.SetCenterPixel( std::max( It1.GetCenterPixel(), It2.GetCenterPixel() ) );
       }
     else if( op.compare( "replace" ) == 0 )
       {
@@ -141,7 +141,7 @@ int BinaryOperateImages( int argc, char * argv[] )
       }
     else if( op.compare( "min" ) == 0 )
       {
-      It.SetCenterPixel( vnl_math_min( It1.GetCenterPixel(), It2.GetCenterPixel() ) );
+      It.SetCenterPixel( std::min( It1.GetCenterPixel(), It2.GetCenterPixel() ) );
       }
     else if( op.compare( "zscore" ) == 0 )
       {
@@ -152,7 +152,7 @@ int BinaryOperateImages( int argc, char * argv[] )
         }
 
       RealType mean = It1.GetCenterPixel();
-      RealType std = vcl_sqrt( It2.GetCenterPixel() );
+      RealType std = std::sqrt( It2.GetCenterPixel() );
       RealType pixel = reader3->GetOutput()->GetPixel( It1.GetIndex() );
       if( std > 0 )
         {

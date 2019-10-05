@@ -197,7 +197,7 @@ int CalculateFirstOrderStatistics( int argc, char *argv[] )
 								/ static_cast<RealType>( histogram->GetTotalFrequency() );
 						if ( p > 0 )
 								{
-								entropy += ( -p * vcl_log( p ) / vcl_log( 2.0 ) );
+								entropy += ( -p * std::log( p ) / std::log( 2.0 ) );
 								}
 						}
 
