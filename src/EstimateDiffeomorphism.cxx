@@ -13,25 +13,7 @@
 #include "itkVectorNeighborhoodOperatorImageFilter.h"
 #include "itkWindowConvergenceMonitoringFunction.h"
 
-
-template<class DisplacementFieldType>
-typename DisplacementFieldType::Pointer
-InvertDisplacementField(const DisplacementFieldType * field, const DisplacementFieldType * inverseFieldEstimate)
-{
-  using InverterType = itk::InvertDisplacementFieldImageFilter<DisplacementFieldType>;
-
-  typename InverterType::Pointer inverter = InverterType::New();
-  inverter->SetInput(field);
-  inverter->SetInverseFieldInitialEstimate(inverseFieldEstimate);
-  inverter->SetMaximumNumberOfIterations(20);
-  inverter->SetMeanErrorToleranceThreshold(0.001);
-  inverter->SetMaxErrorToleranceThreshold(0.1);
-  inverter->Update();
-
-  typename DisplacementFieldType::Pointer inverseField = inverter->GetOutput();
-
-  return inverseField;
-}
+#include "Common.h"
 
 template<class DisplacementFieldType, class RealType = float>
 float GetSimilarityErrorValue(const DisplacementFieldType * field1, const DisplacementFieldType * field2)
@@ -89,98 +71,23 @@ float GetInverseErrorValue(const DisplacementFieldType * field, const Displaceme
   return(value / N);
 }
 
-template<class DisplacementFieldType, class RealType = float>
+template<class DisplacementFieldType>
 typename DisplacementFieldType::Pointer
-GetUpdateField(const DisplacementFieldType * currentField, const DisplacementFieldType * inputField, RealType learningRate)
+InvertDisplacementField(const DisplacementFieldType * field, const DisplacementFieldType * inverseFieldEstimate)
 {
-  const typename DisplacementFieldType::PixelType zeroVector(0.0);
+  using InverterType = itk::InvertDisplacementFieldImageFilter<DisplacementFieldType>;
 
-  using RealImageType = itk::Image<RealType, DisplacementFieldType::ImageDimension>;
+  typename InverterType::Pointer inverter = InverterType::New();
+  inverter->SetInput(field);
+  inverter->SetInverseFieldInitialEstimate(inverseFieldEstimate);
+  inverter->SetMaximumNumberOfIterations(20);
+  inverter->SetMeanErrorToleranceThreshold(0.001);
+  inverter->SetMaxErrorToleranceThreshold(0.1);
+  inverter->Update();
 
-  typename DisplacementFieldType::Pointer updateField = DisplacementFieldType::New();
-  updateField->CopyInformation(inputField);
-  updateField->SetRegions(inputField->GetLargestPossibleRegion());
-  updateField->Allocate();
-  updateField->FillBuffer(zeroVector);
+  typename DisplacementFieldType::Pointer inverseField = inverter->GetOutput();
 
-  using InterpolatorType = itk::VectorLinearInterpolateImageFunction<DisplacementFieldType, RealType>;
-  typename InterpolatorType::Pointer interpolator = InterpolatorType::New();
-  interpolator->SetInputImage(inputField);
-
-  itk::ImageRegionConstIteratorWithIndex<DisplacementFieldType> It(currentField, currentField->GetLargestPossibleRegion());
-  itk::ImageRegionIterator<DisplacementFieldType> ItU(updateField, updateField->GetLargestPossibleRegion());
-
-  for(It.GoToBegin(), ItU.GoToBegin(); !It.IsAtEnd(); ++It, ++ItU)
-    {
-    typename DisplacementFieldType::PointType imagePoint;
-    currentField->TransformIndexToPhysicalPoint(It.GetIndex(), imagePoint);
-    typename DisplacementFieldType::PixelType displacement = It.Get();
-
-    typename InterpolatorType::PointType inputPoint;
-    for(unsigned int d = 0; d < DisplacementFieldType::ImageDimension; d++)
-      {
-      inputPoint[d] = imagePoint[d] + displacement[d];
-      }
-
-    typename InterpolatorType::OutputType inputDisplacement;
-    if(interpolator->IsInsideBuffer(inputPoint))
-      {
-      inputDisplacement = interpolator->Evaluate(inputPoint);
-      }
-    else
-      {
-      inputDisplacement.Fill(0.0);
-      }
-
-    typename DisplacementFieldType::PixelType updateDisplacement;
-    for(unsigned int d = 0; d < DisplacementFieldType::ImageDimension; d++)
-      {
-      updateDisplacement[d] = inputDisplacement[d];
-      }
-    ItU.Set(updateDisplacement);
-    }
-
-  // Scale the update field
-
-  typename DisplacementFieldType::SpacingType spacing = updateField->GetSpacing();
-  itk::ImageRegionConstIterator<DisplacementFieldType> ItF(updateField, updateField->GetLargestPossibleRegion());
-
-  RealType maxNorm = itk::NumericTraits<RealType>::NonpositiveMin();
-  for(ItF.GoToBegin(); !ItF.IsAtEnd(); ++ItF)
-    {
-    typename DisplacementFieldType::PixelType vector = ItF.Get();
-
-    RealType localNorm = 0;
-    for(itk::SizeValueType d = 0; d < DisplacementFieldType::ImageDimension; d++)
-      {
-      localNorm += itk::Math::sqr(vector[d] / spacing[d]);
-      }
-    localNorm = std::sqrt(localNorm);
-
-    if(localNorm > maxNorm)
-      {
-      maxNorm = localNorm;
-      }
-    }
-
-  RealType scale = learningRate;
-  if (maxNorm > itk::NumericTraits<RealType>::ZeroValue())
-    {
-    scale /= maxNorm;
-    }
-
-  using RealImageType = itk::Image<RealType, DisplacementFieldType::ImageDimension>;
-
-  using MultiplierType = itk::MultiplyImageFilter<DisplacementFieldType, RealImageType, DisplacementFieldType>;
-  typename MultiplierType::Pointer multiplier = MultiplierType::New();
-  multiplier->SetInput(updateField);
-  multiplier->SetConstant(scale);
-
-  typename DisplacementFieldType::Pointer scaledUpdateField = multiplier->GetOutput();
-  scaledUpdateField->Update();
-  scaledUpdateField->DisconnectPipeline();
-
-  return scaledUpdateField;
+  return inverseField;
 }
 
 template<class DisplacementFieldType, class RealType = float>
@@ -218,16 +125,7 @@ GaussianSmoothDisplacementField(const DisplacementFieldType * field, const RealT
     // todo: make sure we only smooth within the buffered region
     smoother->SetOperator(gaussianSmoothingOperator);
     smoother->SetInput(smoothField);
-    try
-      {
-      smoother->Update();
-      }
-    catch(itk::ExceptionObject & exc)
-      {
-      std::string msg("Caught exception: ");
-      msg += exc.what();
-      exit(1);
-      }
+    smoother->Update();
 
     smoothField = smoother->GetOutput();
     smoothField->Update();
@@ -276,6 +174,104 @@ GaussianSmoothDisplacementField(const DisplacementFieldType * field, const RealT
   return smoothField;
 }
 
+template<class DisplacementFieldType, class RealType = float>
+typename DisplacementFieldType::Pointer
+GetUpdateField(const DisplacementFieldType * currentField, const DisplacementFieldType *
+  inputField, RealType learningRate, RealType updateFieldSmoothingVariance )
+{
+  const typename DisplacementFieldType::PixelType zeroVector(0.0);
+
+  using RealImageType = itk::Image<RealType, DisplacementFieldType::ImageDimension>;
+
+  typename DisplacementFieldType::Pointer updateField = DisplacementFieldType::New();
+  updateField->CopyInformation(inputField);
+  updateField->SetRegions(inputField->GetLargestPossibleRegion());
+  updateField->Allocate();
+  updateField->FillBuffer(zeroVector);
+
+  using InterpolatorType = itk::VectorLinearInterpolateImageFunction<DisplacementFieldType, RealType>;
+  typename InterpolatorType::Pointer interpolator = InterpolatorType::New();
+  interpolator->SetInputImage(inputField);
+
+  itk::ImageRegionConstIteratorWithIndex<DisplacementFieldType> It(currentField, currentField->GetLargestPossibleRegion());
+  itk::ImageRegionIterator<DisplacementFieldType> ItU(updateField, updateField->GetLargestPossibleRegion());
+
+  for(It.GoToBegin(), ItU.GoToBegin(); !It.IsAtEnd(); ++It, ++ItU)
+    {
+    typename DisplacementFieldType::PointType imagePoint;
+    currentField->TransformIndexToPhysicalPoint(It.GetIndex(), imagePoint);
+    typename DisplacementFieldType::PixelType displacement = It.Get();
+
+    typename InterpolatorType::PointType inputPoint;
+    for(unsigned int d = 0; d < DisplacementFieldType::ImageDimension; d++)
+      {
+      inputPoint[d] = imagePoint[d] + displacement[d];
+      }
+
+    typename InterpolatorType::OutputType inputDisplacement;
+    if(interpolator->IsInsideBuffer(inputPoint))
+      {
+      inputDisplacement = interpolator->Evaluate(inputPoint);
+      }
+    else
+      {
+      inputDisplacement.Fill(0.0);
+      }
+
+    typename DisplacementFieldType::PixelType updateDisplacement;
+    for(unsigned int d = 0; d < DisplacementFieldType::ImageDimension; d++)
+      {
+      updateDisplacement[d] = inputDisplacement[d];
+      }
+    ItU.Set(updateDisplacement);
+    }
+
+  typename DisplacementFieldType::Pointer smoothUpdateField =
+    GaussianSmoothDisplacementField<DisplacementFieldType>(updateField, updateFieldSmoothingVariance);
+
+  // Scale the update field
+
+  typename DisplacementFieldType::SpacingType spacing = smoothUpdateField->GetSpacing();
+  itk::ImageRegionConstIterator<DisplacementFieldType> ItF(smoothUpdateField, smoothUpdateField->GetLargestPossibleRegion());
+
+  RealType maxNorm = itk::NumericTraits<RealType>::NonpositiveMin();
+  for(ItF.GoToBegin(); !ItF.IsAtEnd(); ++ItF)
+    {
+    typename DisplacementFieldType::PixelType vector = ItF.Get();
+
+    RealType localNorm = 0;
+    for(itk::SizeValueType d = 0; d < DisplacementFieldType::ImageDimension; d++)
+      {
+      localNorm += itk::Math::sqr(vector[d] / spacing[d]);
+      }
+    localNorm = std::sqrt(localNorm);
+
+    if(localNorm > maxNorm)
+      {
+      maxNorm = localNorm;
+      }
+    }
+
+  RealType scale = learningRate;
+  if (maxNorm > itk::NumericTraits<RealType>::ZeroValue())
+    {
+    scale /= maxNorm;
+    }
+
+  using RealImageType = itk::Image<RealType, DisplacementFieldType::ImageDimension>;
+
+  using MultiplierType = itk::MultiplyImageFilter<DisplacementFieldType, RealImageType, DisplacementFieldType>;
+  typename MultiplierType::Pointer multiplier = MultiplierType::New();
+  multiplier->SetInput(smoothUpdateField);
+  multiplier->SetConstant(scale);
+
+  typename DisplacementFieldType::Pointer scaledUpdateField = multiplier->GetOutput();
+  scaledUpdateField->Update();
+  scaledUpdateField->DisconnectPipeline();
+
+  return scaledUpdateField;
+}
+
 template<unsigned int ImageDimension>
 int EstimateDiffeomorphism(int argc, char *argv[])
 {
@@ -294,6 +290,38 @@ int EstimateDiffeomorphism(int argc, char *argv[])
   DisplacementFieldPointer inputField = reader->GetOutput();
   inputField->Update();
   inputField->DisconnectPipeline();
+
+  // Read in optional arguments
+
+  RealType updateFieldSmoothingVariance = 0.0;
+  if(argc > 4)
+    {
+    updateFieldSmoothingVariance = Convert<RealType>(std::string(argv[4]));
+    }
+
+  RealType totalFieldSmoothingVariance = 0.0;
+  if(argc > 5)
+    {
+    totalFieldSmoothingVariance = Convert<RealType>(std::string(argv[5]));
+    }
+
+  unsigned int totalNumberOfIterations = 100;
+  if(argc > 6)
+    {
+    totalNumberOfIterations = Convert<RealType>(std::string(argv[6]));
+    }
+
+  RealType learningRate = 0.1;
+  if(argc > 7)
+    {
+    learningRate = Convert<RealType>(std::string(argv[7]));
+    }
+
+  RealType convergenceThreshold = 0.0;
+  if(argc > 8)
+    {
+    convergenceThreshold = Convert<RealType>(std::string(argv[8]));
+    }
 
   const DisplacementVectorType zeroVector(0.0);
 
@@ -321,13 +349,6 @@ int EstimateDiffeomorphism(int argc, char *argv[])
   bool isConverged = false;
   unsigned int currentIteration = 0;
 
-  /** **/
-  unsigned int totalNumberOfIterations = 100;
-  RealType convergenceThreshold = 0.0001;
-  RealType totalSmoothingGaussianVariance = 0.0;
-  RealType learningRate = 0.1;
-  /** **/
-
   std::cout << std::setw(10) << "Iter";
   std::cout << std::setw(20) << "Similarity error";
   std::cout << std::setw(20) << "(Inverse error)";
@@ -335,7 +356,8 @@ int EstimateDiffeomorphism(int argc, char *argv[])
 
   while(currentIteration++ < totalNumberOfIterations && isConverged == false)
     {
-    DisplacementFieldPointer updateField = GetUpdateField<DisplacementFieldType>(forwardDisplacementField, inputField, learningRate);
+    DisplacementFieldPointer updateField = GetUpdateField<DisplacementFieldType>(
+      forwardDisplacementField, inputField, learningRate, updateFieldSmoothingVariance);
 
     using ComposerType = itk::ComposeDisplacementFieldsImageFilter<DisplacementFieldType>;
 
@@ -345,7 +367,7 @@ int EstimateDiffeomorphism(int argc, char *argv[])
     forwardComposer->Update();
 
     DisplacementFieldPointer forwardSmoothTotalField = GaussianSmoothDisplacementField<DisplacementFieldType>(
-      forwardComposer->GetOutput(), totalSmoothingGaussianVariance);
+      forwardComposer->GetOutput(), totalFieldSmoothingVariance);
 
     DisplacementFieldPointer inverseField = InvertDisplacementField<DisplacementFieldType>(
       forwardSmoothTotalField, transform->GetInverseDisplacementField());
@@ -398,9 +420,11 @@ int EstimateDiffeomorphism(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-  if (argc < 7)
+  if(argc < 4)
     {
-    std::cout << argv[0] << " imageDimension inputDisplacementField outputPrefix" << std::endl;
+    std::cout << argv[0] << " imageDimension inputDisplacementField outputPrefix "
+                         << " [totalFieldSmoothingVariance=0.0] [updateFieldSmoothingVariance=0.0] "
+                         << " [numberOfIterations=100] [learningRate=0.1] [convergenceThreshold=0.0]" << std::endl;
     exit(0);
     }
 
