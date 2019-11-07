@@ -2,6 +2,7 @@
 
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
+#include "itkChangeInformationImageFilter.h"
 #include "itkSymmetricSecondRankTensor.h"
 #include "itkVector.h"
 
@@ -19,6 +20,10 @@ int ChangeImageInformation( int argc, char *argv[] )
   reader->SetFileName( argv[2] );
   reader->Update();
 
+  using FilterType = itk::ChangeInformationImageFilter<ImageType>;
+  typename FilterType::Pointer filter = FilterType::New();
+  filter->SetInput( reader->GetOutput() );
+
   switch( atoi( argv[4] ) )
     {
     case 0:
@@ -35,7 +40,8 @@ int ChangeImageInformation( int argc, char *argv[] )
         {
         origin[d] = what[d];
         }
-      reader->GetOutput()->SetOrigin( origin );
+      filter->SetOutputOrigin( origin );
+      filter->ChangeOriginOn();
       break;
       }
     case 1:
@@ -52,14 +58,16 @@ int ChangeImageInformation( int argc, char *argv[] )
         {
         spacing[d] = what[d];
         }
-      reader->GetOutput()->SetSpacing( spacing );
+      filter->SetOutputSpacing( spacing );
+      filter->ChangeSpacingOn();
       break;
       }
     case 2:
       {
       typename ImageType::DirectionType direction;
       direction.SetIdentity();
-      reader->GetOutput()->SetDirection( direction );
+      filter->SetOutputDirection( direction );
+      filter->ChangeDirectionOn();
       break;
       }
     case 3:
@@ -79,16 +87,17 @@ int ChangeImageInformation( int argc, char *argv[] )
           direction[i][j] = what[i*ImageDimension+j];
           }
         }
-      reader->GetOutput()->SetDirection( direction );
+      filter->SetOutputDirection( direction );
+      filter->ChangeDirectionOn();
       break;
       }
     case 4:
       {
-						typename ReaderType::Pointer refReader = ReaderType::New();
-						refReader->SetFileName( argv[5] );
+      typename ReaderType::Pointer refReader = ReaderType::New();
+      refReader->SetFileName( argv[5] );
       try
         {
-  						refReader->Update();
+        refReader->Update();
         }
       catch( ... )
         {
@@ -99,6 +108,14 @@ int ChangeImageInformation( int argc, char *argv[] )
       reader->GetOutput()->SetOrigin( refReader->GetOutput()->GetOrigin() );
       reader->GetOutput()->SetSpacing( refReader->GetOutput()->GetSpacing() );
       reader->GetOutput()->SetDirection( refReader->GetOutput()->GetDirection() );
+
+      filter->SetOutputDirection( refReader->GetOutput()->GetDirection() );
+      filter->ChangeDirectionOn();
+      filter->SetOutputSpacing( refReader->GetOutput()->GetSpacing() );
+      filter->ChangeSpacingOn();
+      filter->SetOutputOrigin( refReader->GetOutput()->GetOrigin() );
+      filter->ChangeOriginOn();
+
       break;
       }
     case 5:
@@ -131,7 +148,7 @@ int ChangeImageInformation( int argc, char *argv[] )
 
   typedef itk::ImageFileWriter<ImageType> WriterType;
   typename WriterType::Pointer writer = WriterType::New();
-  writer->SetInput( reader->GetOutput() );
+  writer->SetInput( filter->GetOutput() );
   writer->SetFileName( argv[3] );
   writer->Update();
 
