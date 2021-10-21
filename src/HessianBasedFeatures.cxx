@@ -1,6 +1,5 @@
 #include <stdio.h>
 
-#include "itkDecomposeTensorFunction.h"
 #include "itkDiscreteHessianGaussianImageFunction.h"
 #include "itkFixedArray.h"
 #include "itkHessianToObjectnessMeasureImageFilter.h"
